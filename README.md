@@ -1,2 +1,1 @@
-# ascii
-ASCII post-processing shader.
+# Rendering sandbox
