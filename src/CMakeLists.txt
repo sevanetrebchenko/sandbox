@@ -2,40 +2,66 @@
 # PROJECT FILES
 set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/main.cpp"
+
+        # Buffer
+        "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/buffer/vbo.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/buffer/vao.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/buffer/ebo.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/buffer/ubo.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/buffer/fbo.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/buffer/rbo.cpp"
+
+        # Framework
+        "${PROJECT_SOURCE_DIR}/src/framework/backend.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/camera.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/directory_utils.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/imgui_log.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/mesh.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/object_loader.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/scene.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/shader.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/shader_data_types.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/shader_library.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/shader_uniform.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/texture.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/transform.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/window.cpp"
         )
 
-add_executable(ascii ${CORE_SOURCE_FILES})
+add_executable(Sandbox ${CORE_SOURCE_FILES})
 
-target_include_directories(ascii PUBLIC "${PROJECT_SOURCE_DIR}/include/")
+target_include_directories(Sandbox PUBLIC "${PROJECT_SOURCE_DIR}/include/")
+target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/sandbox.h")
 
 # DEPENDENCIES
 # Link OpenGL
 set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED) # Ensure OpenGL exists on the system.
 message(STATUS "Linking OpenGL to ascii project.")
-target_link_libraries(ascii OpenGL::GL)
+target_link_libraries(Sandbox OpenGL::GL)
 
 # Link Glad.
 # Glad gives access to both OpenGL extensions and the modern version of the core OpenGL API.
-message(STATUS "Linking Glad to ascii project.")
-target_link_libraries(ascii ascii-glad)
+message(STATUS "Linking Glad to Sandbox project.")
+target_link_libraries(Sandbox glad)
 
 # Link GLFW
 # GLFW does not depend on OpenGL - OpenGL/Vulkan dependencies get loaded in at runtime.
-message(STATUS "Linking GLFW to ascii project.")
-target_link_libraries(ascii glfw)
+message(STATUS "Linking GLFW to Sandbox project.")
+target_link_libraries(Sandbox glfw)
 
 # GLM.
-message(STATUS "Linking GLM to ascii project.")
-target_link_libraries(ascii glm)
+message(STATUS "Linking GLM to Sandbox project.")
+target_link_libraries(Sandbox glm)
 
 # STB.
-message(STATUS "Linking STB to ascii project.")
-target_link_libraries(ascii ascii-stb)
+message(STATUS "Linking STB to Sandbox project.")
+target_link_libraries(Sandbox stb)
 
 # ImGui.
-message(STATUS "Linking ImGui to ascii project.")
-target_link_libraries(ascii ascii-imgui)
+message(STATUS "Linking ImGui to Sandbox project.")
+target_link_libraries(Sandbox imgui)
 
 
 

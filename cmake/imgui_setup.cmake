@@ -16,18 +16,18 @@ set(IMGUI_INCLUDE_DIRS
         )
 
 # Add ImGui as a library.
-add_library(ascii-imgui STATIC "${SOURCE_FILES}")
+add_library(imgui STATIC "${SOURCE_FILES}")
 
 # Anything that targets ImGui will need to see the directories for ImGui includes.
-target_include_directories(ascii-imgui PUBLIC "${IMGUI_INCLUDE_DIRS}")
+target_include_directories(imgui PUBLIC "${IMGUI_INCLUDE_DIRS}")
 
 # Use Glad for ImGui.
-target_compile_definitions(ascii-imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLAD)
+target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
 message(STATUS "Linking Glad to ImGui.")
-target_link_libraries(ascii-imgui ascii-glad) # Link Glad to ImGui
+target_link_libraries(imgui glad) # Link Glad to ImGui
 message(STATUS "Linking GLFW to ImGui.")
-target_link_libraries(ascii-imgui glfw)       # Link GLFW to ImGui
+target_link_libraries(imgui glfw) # Link GLFW to ImGui
 
 
 

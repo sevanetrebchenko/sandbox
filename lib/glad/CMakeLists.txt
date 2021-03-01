@@ -1,5 +1,12 @@
 # Add Glad as a library.
-add_library(ascii-glad STATIC src/glad.c ../stb/stb_image.h)
+add_library(glad STATIC
+        "${PROJECT_SOURCE_DIR}/lib/glad/src/glad.c"
+        )
+
+# Set includes for targets using library.
+set(PROJECT_INCLUDE_DIRS
+        "${PROJECT_SOURCE_DIR}/lib/glad/include/glad/glad.h"
+        )
 
 # Set includes for targets using library.
 set(PROJECT_INCLUDE_DIRS
@@ -7,4 +14,4 @@ set(PROJECT_INCLUDE_DIRS
         )
 
 # Any targets that link to the 'CS350-glad' target will also need the 'glad' include files directory.
-target_include_directories(ascii-glad PUBLIC "${PROJECT_INCLUDE_DIRS}")
+target_include_directories(glad PUBLIC "${PROJECT_INCLUDE_DIRS}")

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 # Project information.
-project(ascii
+project(Sandbox
         VERSION 1.0
         LANGUAGES C CXX)
 
