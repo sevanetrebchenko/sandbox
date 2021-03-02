@@ -2,6 +2,9 @@
 #ifndef SANDBOX_SHADER_TPP
 #define SANDBOX_SHADER_TPP
 
+#include <framework/texture.h>
+#include <framework/backend.h>
+
 namespace Sandbox {
 
     template <typename DataType>
@@ -50,6 +53,16 @@ namespace Sandbox {
         // MAT4
         else if constexpr (std::is_same_v<DataType, glm::mat4>) {
             glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(value));
+        }
+        // Texture
+        else if constexpr (std::is_same_v<DataType, std::pair<int, Texture*>>) {
+            std::pair<int, Texture*> data = static_cast<std::pair<int, Texture*>>(value);
+            int textureSamplerID = data.first;
+            Texture* texture = data.second;
+
+            glActiveTexture(GL_TEXTURE0 + textureSamplerID);
+            glUniform1i(uniformLocation, textureSamplerID);
+            texture->Bind();
         }
     }
 

@@ -4,9 +4,6 @@
 
 #include <framework/scene.h>
 #include <framework/buffer/fbo.h>
-#include <framework/material_library.h>
-#include <framework/shader_library.h>
-#include <framework/imgui_log.h>
 
 namespace Sandbox {
 
@@ -30,6 +27,7 @@ namespace Sandbox {
 
         private:
             void InitializeShaders();
+            void InitializeTextures();
             void InitializeMaterials();
             void ConfigureModels();
             void ConstructFBO();

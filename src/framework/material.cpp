@@ -4,7 +4,7 @@
 namespace Sandbox {
 
     Material::Material(std::string name, Shader* shaderProgram, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms) : _name(std::move(name)),
-                                                                                                                                         _shaderProgram(shaderProgram) {
+                                                                                                                                                       _shaderProgram(shaderProgram) {
         for (const std::pair<std::string, ShaderUniform::UniformEntry>& uniformData : uniforms) {
             const std::string& uniformName = uniformData.first;
             const ShaderUniform::UniformEntry& uniform = uniformData.second;
@@ -87,6 +87,15 @@ namespace Sandbox {
 
     void Material::SetUniform(const std::string &uniformName, ShaderUniform::UniformEntry uniformData) {
         _uniforms[uniformName] = new ShaderUniform(uniformName, uniformData);
+    }
+
+    ShaderUniform *Material::GetUniform(const std::string &uniformName) const {
+        auto uniformIter = _uniforms.find(uniformName);
+        if (uniformIter != _uniforms.end()) {
+            return uniformIter->second;
+        }
+
+        return nullptr;
     }
 
 }

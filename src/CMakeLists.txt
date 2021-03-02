@@ -36,6 +36,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/texture.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/transform.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/window.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/texture_library.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})

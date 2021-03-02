@@ -2,6 +2,10 @@
 #include <scenes/deferred_rendering.h>
 #include <framework/imgui_log.h>
 #include <framework/backend.h>
+#include <framework/material_library.h>
+#include <framework/shader_library.h>
+#include <framework/texture_library.h>
+#include <framework/imgui_log.h>
 
 namespace Sandbox {
 
@@ -16,6 +20,7 @@ namespace Sandbox {
 
     void SceneDeferredRendering::OnInit() {
         InitializeShaders();
+        InitializeTextures();
         InitializeMaterials();
 
         ConstructFBO();
@@ -50,23 +55,50 @@ namespace Sandbox {
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        Shader* singleColorShader = shaderLibrary.GetShader("SingleColor");
-        singleColorShader->Bind();
-        singleColorShader->SetUniform("cameraTransform", _camera.GetMatrix());
+//        Shader* singleColorShader = shaderLibrary.GetShader("SingleColor");
+//        singleColorShader->Bind();
+//        singleColorShader->SetUniform("cameraTransform", _camera.GetMatrix());
+//
+//        for (Model* model : _modelManager.GetModels()) {
+//            Transform& transform = model->GetTransform();
+//            Mesh& mesh = model->GetMesh();
+//            Material* material = model->GetMaterial(singleColorShader);
+//
+//            // Pre render stage.
+//            if (material) {
+//                const glm::mat4& modelTransform = transform.GetMatrix();
+//                singleColorShader->SetUniform("modelTransform", modelTransform);
+//                singleColorShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+//
+//                // Bind all related uniforms with this shader.
+//                material->Bind(singleColorShader);
+//            }
+//
+//            // Render stage.
+//            mesh.Bind();
+//            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
+//            mesh.Unbind();
+//
+//            // Post render stage.
+//        }
+
+        Shader* textureShader = shaderLibrary.GetShader("Texture");
+        textureShader->Bind();
+        textureShader->SetUniform("cameraTransform", _camera.GetMatrix());
 
         for (Model* model : _modelManager.GetModels()) {
             Transform& transform = model->GetTransform();
             Mesh& mesh = model->GetMesh();
-            Material* material = model->GetMaterial(singleColorShader);
+            Material* material = model->GetMaterial(textureShader);
 
             // Pre render stage.
             if (material) {
                 const glm::mat4& modelTransform = transform.GetMatrix();
-                singleColorShader->SetUniform("modelTransform", modelTransform);
-                singleColorShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+                textureShader->SetUniform("modelTransform", modelTransform);
+                textureShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
 
                 // Bind all related uniforms with this shader.
-                material->Bind(singleColorShader);
+                material->Bind(textureShader);
             }
 
             // Render stage.
@@ -115,7 +147,13 @@ namespace Sandbox {
 
         ImGui::End();
 
+        // ImGui log output.
         log.OnImGui();
+
+        // Materials.
+        materialLibrary.OnImGui();
+
+        _modelManager.OnImGui();
     }
 
     void SceneDeferredRendering::OnShutdown() {
@@ -126,15 +164,34 @@ namespace Sandbox {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
 
         shaderLibrary.AddShader("SingleColor", { "assets/shaders/color.vert", "assets/shaders/color.frag" });
+        shaderLibrary.AddShader("Texture", { "assets/shaders/texture.vert", "assets/shaders/texture.frag" });
+    }
+
+    void SceneDeferredRendering::InitializeTextures() {
+        TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
+
+        textureLibrary.AddTexture("viking room", "assets/textures/viking_room.png");
     }
 
     void SceneDeferredRendering::InitializeMaterials() {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
+        TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
 
-        materialLibrary.AddMaterial("SingleColor", shaderLibrary.GetShader("SingleColor"), {
+        // Single color material.
+        Shader* singleColorShader = shaderLibrary.GetShader("SingleColor");
+        Material* singleColorMaterial = new Material("SingleColor", singleColorShader, {
             { "surfaceColor", glm::vec3(1.0f) }
         });
+        singleColorMaterial->GetUniform("surfaceColor")->UseColorPicker(true);
+        materialLibrary.AddMaterial(singleColorMaterial);
+
+        // Textured material.
+        Shader* textureShader = shaderLibrary.GetShader("Texture");
+        Material* textureMaterial = new Material("Texture", textureShader, {
+            { "modelTexture", std::make_pair(0, textureLibrary.GetTexture("viking room")) }
+        });
+        materialLibrary.AddMaterial(textureMaterial);
     }
 
     void SceneDeferredRendering::ConfigureModels() {
@@ -142,6 +199,11 @@ namespace Sandbox {
 
         Model* vikingRoom = _modelManager.AddModelFromFile("viking room", "assets/models/viking_room.obj");
         vikingRoom->AddMaterial(materialLibrary.GetMaterialInstance("SingleColor"));
+        vikingRoom->AddMaterial(materialLibrary.GetMaterialInstance("Texture"));
+
+        Transform& vikingRoomTransform = vikingRoom->GetTransform();
+        vikingRoomTransform.SetRotation(glm::vec3(-90.0f, 0.0f, -135.0f));
+        vikingRoomTransform.SetScale(glm::vec3(3.5f, 3.5f, 3.5f));
     }
 
     void SceneDeferredRendering::ConstructFBO() {

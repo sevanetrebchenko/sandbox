@@ -4,6 +4,7 @@
 
 #include <sandbox_pch.h>
 #include <framework/shader.h>
+#include <framework/texture.h>
 
 namespace Sandbox {
 
@@ -16,9 +17,10 @@ namespace Sandbox {
                     glm::vec3,
                     glm::vec4,
                     glm::mat3,
-                    glm::mat4> UniformEntry;
+                    glm::mat4,
+                    std::pair<int, Texture*>> UniformEntry;
 
-            ShaderUniform(std::string uniformName, UniformEntry uniformData, bool useColorPicker = false);
+            ShaderUniform(std::string uniformName, UniformEntry uniformData);
             ShaderUniform(const ShaderUniform& other);
 
             void OnImGui();
@@ -28,6 +30,8 @@ namespace Sandbox {
 
             void SetSliderRange(float min, float max);
             void UseColorPicker(bool colorPicker);
+
+            [[nodiscard]] const std::string& GetName() const;
 
         private:
             template <typename T1, typename T2, typename ...T3>
