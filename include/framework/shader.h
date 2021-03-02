@@ -2,7 +2,7 @@
 #ifndef SANDBOX_SHADER_H
 #define SANDBOX_SHADER_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 #include <framework/directory_utils.h>
 
 namespace Sandbox {

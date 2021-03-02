@@ -2,7 +2,7 @@
 #ifndef SANDBOX_BUFFER_H
 #define SANDBOX_BUFFER_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 #include <framework/shader_data_types.h>
 #include <framework/texture.h>
 

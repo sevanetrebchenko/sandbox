@@ -2,7 +2,7 @@
 #ifndef SANDBOX_WINDOW_H
 #define SANDBOX_WINDOW_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 
 namespace Sandbox {
 

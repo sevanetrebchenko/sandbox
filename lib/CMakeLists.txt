@@ -24,3 +24,7 @@ include(imgui_setup IMGUI_SETUP_RESULT)
 message(STATUS "Building STB.")
 add_subdirectory(stb)
 
+# Build TinyOBJLoader
+message(STATUS "Building TinyOBJLoader.")
+add_subdirectory(tinyobj)
+

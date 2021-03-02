@@ -2,7 +2,7 @@
 #ifndef SANDBOX_CAMERA_H
 #define SANDBOX_CAMERA_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 
 namespace Sandbox {
 

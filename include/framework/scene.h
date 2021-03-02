@@ -2,9 +2,10 @@
 #ifndef SANDBOX_SCENE_H
 #define SANDBOX_SCENE_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 #include <framework/camera.h>
 #include <framework/window.h>
+#include <framework/model_manager.h>
 
 namespace Sandbox {
 
@@ -33,8 +34,10 @@ namespace Sandbox {
 
             virtual void OnShutdown() = 0;
 
-            Window* _window;
+            // Data provided to derived scenes by default.
+            Window _window;
             Camera _camera;
+            ModelManager _modelManager;
 
         private:
             void ProcessInput();

@@ -2,7 +2,7 @@
 #ifndef SANDBOX_IMGUI_LOG_H
 #define SANDBOX_IMGUI_LOG_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 
 namespace Sandbox {
 

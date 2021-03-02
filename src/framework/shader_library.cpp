@@ -27,9 +27,9 @@ namespace Sandbox {
     }
 
     void ShaderLibrary::RecompileAllModified() {
-//        for (IReloadable* target : _recompileTargets) {
-//            target->RecompileIfModified();
-//        }
+        for (IReloadable* target : _recompileTargets) {
+            target->RecompileIfModified();
+        }
     }
 
     void ShaderLibrary::RecompileAll() {

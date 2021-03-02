@@ -2,7 +2,7 @@
 #ifndef SANDBOX_TEXTURE_H
 #define SANDBOX_TEXTURE_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 
 namespace Sandbox {
 

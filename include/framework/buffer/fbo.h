@@ -2,7 +2,7 @@
 #ifndef SANDBOX_FBO_H
 #define SANDBOX_FBO_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 #include <framework/buffer/rbo.h>
 #include <framework/texture.h>
 
@@ -34,6 +34,9 @@ namespace Sandbox {
             RenderBufferObject* GetDepthBuffer() const;
 
             bool CheckStatus() const;
+
+            [[nodiscard]] unsigned GetWidth() const;
+            [[nodiscard]] unsigned GetHeight() const;
 
         private:
             unsigned _contentWidth;

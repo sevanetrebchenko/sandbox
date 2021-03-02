@@ -116,6 +116,14 @@ namespace Sandbox {
         return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
     }
 
+    unsigned FrameBufferObject::GetWidth() const {
+        return _contentWidth;
+    }
+
+    unsigned FrameBufferObject::GetHeight() const {
+        return _contentHeight;
+    }
+
     void CopyDepthBuffer(FrameBufferObject* source, FrameBufferObject* destination) {
         // Keep track of the current bound framebuffer(s).
         GLint currentBoundReadFBO, currentBoundDrawFBO;

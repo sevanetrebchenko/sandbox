@@ -5,148 +5,134 @@
 
 namespace Sandbox {
 
-    OBJLoader::LoadingParameters::LoadingParameters(std::string filename, bool normalizePositions, bool normalizeScale) : filename(std::move(filename)),
-                                                                                                                          normalizePositions(normalizePositions),
-                                                                                                                          normalizeScale(normalizeScale)
-                                                                                                                          {
-    }
-
-    OBJLoader::OBJLoader() {
-
-    }
-
-    Mesh OBJLoader::LoadFromFile(std::string objFilePath, bool normalizePositions, bool normalizeScale) {
-        objFilePath = NativePathConverter::ConvertToNativeSeparators(objFilePath);
-
-        if (_loadedMeshes.find(objFilePath) != _loadedMeshes.end()) {
-            return _loadedMeshes[objFilePath]; // Make copy.
-        }
-
-        std::ifstream fileReader;
-
-        // Open the file.
-        fileReader.open(objFilePath);
-
-        if (fileReader.is_open()) {
-            // Successfully opened the file.
-            Mesh mesh(GL_TRIANGLES);
-            std::vector<glm::vec3> vertices;
-            std::vector<unsigned> indices;
-            glm::vec3 minimumVertex = glm::vec3(std::numeric_limits<float>::max());
-            glm::vec3 maximumVertex = glm::vec3(std::numeric_limits<float>::lowest());
-
-            glm::vec3 currentVertex;
-            std::vector<unsigned> currentFaceIndices;
-
-            std::string currentLine;
-
-            while (!fileReader.eof()) {
-                // Get the next full line.
-                std::string currentString;
-                std::getline(fileReader, currentString);
-
-                // Create a stream to parse each line into tokens.
-                std::stringstream stringParser(currentString);
-
-                // Get the first token (OBJ tag)
-                std::string token;
-                stringParser >> token;
-
-                if (token.size() == 1) {
-                    switch (token[0]) {
-                        // Vertex position (3D).
-                        case 'v':
-                            currentVertex = ReadVertexPosition(stringParser);
-                            MinMaxVertex(currentVertex, minimumVertex, maximumVertex);
-                            vertices.emplace_back();
-                            break;
-
-                        // Face.
-                        case 'f':
-                            // Get all face indices broken into triangles (in the case of more than 3 indices)
-                            currentFaceIndices = ReadFace(stringParser);
-
-                            // Append indices into mesh.
-                            for (int i = 0; i < currentFaceIndices.size(); i += 3) {
-                                // Track indices.
-                                indices.emplace_back(currentFaceIndices[i]);
-                                indices.emplace_back(currentFaceIndices[i + 1]);
-                                indices.emplace_back(currentFaceIndices[i + 2]);
-                            }
-                            break;
-
-                            // Group specifier.
-                        case 'g':
-                            break;
-                    }
-                } else if (token.size() == 2) {
-                    // Vertex attribute.
-                    if (token[0] == 'v') {
-                        switch (token[1]) {
-                            // Vertex normal (3D).
-                            case 'n':
-                                // Unimplemented (yet).
-                                break;
-
-                            // Texture coordinate (2D).
-                            case 't':
-                                // Unimplemented (yet).
-                                break;
-                        }
-                    }
-                } else {
-                    // Nothing yet.
-                }
-            }
-
-            // Get the center of the mesh.
-            glm::vec3 centerPosition = glm::vec3((minimumVertex + maximumVertex) / 2.0f);
-            glm::mat4 translationToZero = glm::translate(glm::mat4(1.0f), -centerPosition);
-
-            glm::vec3 boundingBoxDimensions = maximumVertex - minimumVertex;
-
-            // Scale the mesh to [-1 1] by the largest dimension to keep model aspect ratio.
-            float maxDimension = std::max(boundingBoxDimensions.x, std::max(boundingBoxDimensions.y, boundingBoxDimensions.z));
-            glm::mat4 uniformScale = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / maxDimension));
-
-            // Apply default transform to each vertex to scale to range [-1, 1] centered at (0, 0, 0) if the user wants a normalized mesh.
-            if (normalizePositions && normalizeScale) {
-                glm::mat4 transform = uniformScale * translationToZero;
-
-                for (glm::vec3& vertex : vertices) {
-                    vertex = transform * glm::vec4(vertex, 1.0f);
-                }
-            }
-            else {
-                // Normalize positions (transform the mesh to be centered at (0, 0, 0)).
-                if (normalizePositions) {
-                    for (glm::vec3& vertex : vertices) {
-                        vertex = translationToZero * glm::vec4(vertex, 1.0f);
-                    }
-                }
-                // Normalize scale (transform the mesh to span the range [-1, 1]).
-                if (normalizeScale) {
-                    glm::mat4 transform = glm::scale(glm::mat4(1.0f), glm::vec3(0.0001f));
-                    for (glm::vec3& vertex : vertices) {
-                        vertex = transform * glm::vec4(vertex, 1.0f);
-                    }
-                }
-            }
-
-            // ImGuiLog::GetInstance().LogTrace("Successfully loaded object: %s", objFilePath.c_str());
-
-            _loadedMeshes.emplace(objFilePath, mesh);
-            return mesh;
-        }
-        else {
-            // Could not open file.
-            throw std::runtime_error("Could not open .obj file: \"" + objFilePath + "\"");
-        }
-    }
-
-    Mesh OBJLoader::LoadFromFile(const OBJLoader::LoadingParameters &loadingParameters) {
-        return LoadFromFile(loadingParameters.filename, loadingParameters.normalizePositions, loadingParameters.normalizeScale);
-    }
+//    Mesh OBJLoader::LoadFromFile(std::string objFilePath, bool normalizePositions, bool normalizeScale) {
+//        objFilePath = NativePathConverter::ConvertToNativeSeparators(objFilePath);
+//
+//        if (_loadedMeshes.find(objFilePath) != _loadedMeshes.end()) {
+//            return _loadedMeshes[objFilePath]; // Make copy.
+//        }
+//
+//        std::ifstream fileReader;
+//
+//        // Open the file.
+//        fileReader.open(objFilePath);
+//
+//        if (fileReader.is_open()) {
+//            // Successfully opened the file.
+//            Mesh mesh(GL_TRIANGLES);
+//            std::vector<glm::vec3> vertices;
+//            std::vector<unsigned> indices;
+//            glm::vec3 minimumVertex = glm::vec3(std::numeric_limits<float>::max());
+//            glm::vec3 maximumVertex = glm::vec3(std::numeric_limits<float>::lowest());
+//
+//            glm::vec3 currentVertex;
+//            std::vector<unsigned> currentFaceIndices;
+//
+//            std::string currentLine;
+//
+//            while (!fileReader.eof()) {
+//                // Get the next full line.
+//                std::string currentString;
+//                std::getline(fileReader, currentString);
+//
+//                // Create a stream to parse each line into tokens.
+//                std::stringstream stringParser(currentString);
+//
+//                // Get the first token (OBJ tag)
+//                std::string token;
+//                stringParser >> token;
+//
+//                if (token.size() == 1) {
+//                    switch (token[0]) {
+//                        // Vertex position (3D).
+//                        case 'v':
+//                            currentVertex = ReadVertexPosition(stringParser);
+//                            MinMaxVertex(currentVertex, minimumVertex, maximumVertex);
+//                            vertices.emplace_back();
+//                            break;
+//
+//                        // Face.
+//                        case 'f':
+//                            // Get all face indices broken into triangles (in the case of more than 3 indices)
+//                            currentFaceIndices = ReadFace(stringParser);
+//
+//                            // Append indices into mesh.
+//                            for (int i = 0; i < currentFaceIndices.size(); i += 3) {
+//                                // Track indices.
+//                                indices.emplace_back(currentFaceIndices[i]);
+//                                indices.emplace_back(currentFaceIndices[i + 1]);
+//                                indices.emplace_back(currentFaceIndices[i + 2]);
+//                            }
+//                            break;
+//
+//                            // Group specifier.
+//                        case 'g':
+//                            break;
+//                    }
+//                } else if (token.size() == 2) {
+//                    // Vertex attribute.
+//                    if (token[0] == 'v') {
+//                        switch (token[1]) {
+//                            // Vertex normal (3D).
+//                            case 'n':
+//                                // Unimplemented (yet).
+//                                break;
+//
+//                            // Texture coordinate (2D).
+//                            case 't':
+//                                // Unimplemented (yet).
+//                                break;
+//                        }
+//                    }
+//                } else {
+//                    // Nothing yet.
+//                }
+//            }
+//
+//            // Get the center of the mesh.
+//            glm::vec3 centerPosition = glm::vec3((minimumVertex + maximumVertex) / 2.0f);
+//            glm::mat4 translationToZero = glm::translate(glm::mat4(1.0f), -centerPosition);
+//
+//            glm::vec3 boundingBoxDimensions = maximumVertex - minimumVertex;
+//
+//            // Scale the mesh to [-1 1] by the largest dimension to keep model aspect ratio.
+//            float maxDimension = std::max(boundingBoxDimensions.x, std::max(boundingBoxDimensions.y, boundingBoxDimensions.z));
+//            glm::mat4 uniformScale = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / maxDimension));
+//
+//            // Apply default transform to each vertex to scale to range [-1, 1] centered at (0, 0, 0) if the user wants a normalized mesh.
+//            if (normalizePositions && normalizeScale) {
+//                glm::mat4 transform = uniformScale * translationToZero;
+//
+//                for (glm::vec3& vertex : vertices) {
+//                    vertex = transform * glm::vec4(vertex, 1.0f);
+//                }
+//            }
+//            else {
+//                // Normalize positions (transform the mesh to be centered at (0, 0, 0)).
+//                if (normalizePositions) {
+//                    for (glm::vec3& vertex : vertices) {
+//                        vertex = translationToZero * glm::vec4(vertex, 1.0f);
+//                    }
+//                }
+//                // Normalize scale (transform the mesh to span the range [-1, 1]).
+//                if (normalizeScale) {
+//                    glm::mat4 transform = glm::scale(glm::mat4(1.0f), glm::vec3(0.0001f));
+//                    for (glm::vec3& vertex : vertices) {
+//                        vertex = transform * glm::vec4(vertex, 1.0f);
+//                    }
+//                }
+//            }
+//
+//            // ImGuiLog::GetInstance().LogTrace("Successfully loaded object: %s", objFilePath.c_str());
+//
+//            _loadedMeshes.emplace(objFilePath, mesh);
+//            return mesh;
+//        }
+//        else {
+//            // Could not open file.
+//            throw std::runtime_error("Could not open .obj file: \"" + objFilePath + "\"");
+//        }
+//    }
 
     glm::vec3 OBJLoader::ReadVertexPosition(std::stringstream &stringParser) const {
         std::string token;
@@ -261,6 +247,82 @@ namespace Sandbox {
         else if (vertex.z > maximum.z) {
             maximum.z = vertex.z;
         }
+    }
+
+    Mesh OBJLoader::LoadFromFile(const std::string &objFilePath) {
+        if (_loadedMeshes.find(objFilePath) != _loadedMeshes.end()) {
+            return _loadedMeshes[objFilePath]; // Make copy.
+        }
+
+        // Loading new mesh.
+        Mesh mesh(GL_TRIANGLES);
+        std::vector<glm::vec3> vertices;
+        std::vector<unsigned> indices;
+        std::unordered_map<glm::vec3, unsigned> uniqueVertices;
+        std::vector<glm::vec2> uv;
+
+        glm::vec3 minimum(std::numeric_limits<float>::max());
+        glm::vec3 maximum(std::numeric_limits<float>::lowest());
+
+        // Prepare tinyobj loading parameters.
+        tinyobj::attrib_t attributes; // Holds all positions, normals, and texture coordinates.
+        std::vector<tinyobj::shape_t> shapeData; // Holds all separate objects and their faces.
+        std::vector<tinyobj::material_t> materialData;
+        std::string warning;
+        std::string error;
+
+        // Triangulation enabled by default.
+        if (!tinyobj::LoadObj(&attributes, &shapeData, &materialData, &warning, &error, objFilePath.c_str())) {
+            throw std::runtime_error("Failed to load OBJ file: " + objFilePath + ". Provided information: " + warning + " (WARNING) " + error + "(ERROR)");
+        }
+
+        // Push shape data.
+        for (const tinyobj::shape_t& shape : shapeData) {
+            for (const tinyobj::index_t& index : shape.mesh.indices) {
+                int vertexBase = 3 * index.vertex_index;
+                glm::vec3 vertex(attributes.vertices[vertexBase + 0], attributes.vertices[vertexBase + 1], attributes.vertices[vertexBase + 2]);
+
+                int vertexNormalBase = 3 * index.normal_index;
+                glm::vec3 vertexNormal(attributes.normals[vertexNormalBase + 0], attributes.normals[vertexNormalBase + 1], attributes.normals[vertexNormalBase + 2]);
+
+                int textureCoordinateBase = 2 * index.texcoord_index;
+                glm::vec2 textureCoordinate(attributes.texcoords[textureCoordinateBase + 0], attributes.texcoords[textureCoordinateBase + 1]);
+
+                int vertexColorBase = vertexBase;
+                glm::vec3 vertexColor(attributes.colors[vertexColorBase + 0], attributes.colors[vertexColorBase + 1], attributes.colors[vertexColorBase + 2]);
+
+                // Found unique vertex.
+                if (uniqueVertices.count(vertex) == 0) {
+                    uniqueVertices[vertex] = vertices.size();
+                    vertices.push_back(vertex);
+                    MinMaxVertex(vertex, minimum, maximum);
+
+                    uv.push_back(textureCoordinate);
+                }
+
+                // In case of duplicate vertex, push back index instead.
+                indices.push_back(uniqueVertices[vertex]);
+            }
+        }
+
+        // Center model at (0, 0, 0)
+        glm::vec3 centerPosition = glm::vec3((minimum + maximum) / 2.0f);
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), -centerPosition);
+
+        for (glm::vec3& vertex : vertices) {
+            vertex = transform * glm::vec4(vertex, 1.0f);
+        }
+
+        mesh.SetVertices(vertices);
+        mesh.SetIndices(indices);
+        mesh.SetUV(uv);
+        mesh.RecalculateNormals();
+        _loadedMeshes[objFilePath] = mesh;
+        return mesh;
+    }
+
+    OBJLoader::OBJLoader() {
+
     }
 
 //    Mesh OBJLoader::LoadSphere() {

@@ -2,7 +2,7 @@
 #ifndef SANDBOX_UBO_H
 #define SANDBOX_UBO_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 #include <framework/shader.h>
 #include <framework/buffer/buffer.h>
 #include <framework/shader_uniform.h>

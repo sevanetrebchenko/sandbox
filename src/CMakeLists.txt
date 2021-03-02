@@ -2,6 +2,10 @@
 # PROJECT FILES
 set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/main.cpp"
+        "${PROJECT_SOURCE_DIR}/src/sandbox_pch.cpp"
+
+        # Scenes
+        "${PROJECT_SOURCE_DIR}/src/scenes/deferred_rendering.cpp"
 
         # Buffer
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"
@@ -18,6 +22,11 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/directory_utils.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/imgui_log.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/mesh.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/model.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/model_manager.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/material.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/material_library.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/model_manager.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/object_loader.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/scene.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/shader.cpp"
@@ -32,7 +41,7 @@ set(CORE_SOURCE_FILES
 add_executable(Sandbox ${CORE_SOURCE_FILES})
 
 target_include_directories(Sandbox PUBLIC "${PROJECT_SOURCE_DIR}/include/")
-target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/sandbox.h")
+target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/sandbox_pch.h")
 
 # DEPENDENCIES
 # Link OpenGL
@@ -58,6 +67,10 @@ target_link_libraries(Sandbox glm)
 # STB.
 message(STATUS "Linking STB to Sandbox project.")
 target_link_libraries(Sandbox stb)
+
+# TinyObjLoader.
+message(STATUS "Linking TinyObjLoader to Sandbox project.")
+target_link_libraries(Sandbox tinyobjloader)
 
 # ImGui.
 message(STATUS "Linking ImGui to Sandbox project.")

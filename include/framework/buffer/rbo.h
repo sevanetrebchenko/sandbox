@@ -2,7 +2,7 @@
 #ifndef SANDBOX_RBO_H
 #define SANDBOX_RBO_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 
 namespace Sandbox {
 

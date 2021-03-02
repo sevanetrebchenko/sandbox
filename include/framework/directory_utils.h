@@ -2,7 +2,7 @@
 #ifndef SANDBOX_DIRECTORY_UTILS_H
 #define SANDBOX_DIRECTORY_UTILS_H
 
-#include <sandbox.h>
+#include <sandbox_pch.h>
 
 namespace Sandbox {
 

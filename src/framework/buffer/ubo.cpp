@@ -186,13 +186,14 @@ namespace Sandbox {
         // Allocate space for the new block within the buffer.
         Bind();
         glBufferData(GL_UNIFORM_BUFFER, _totalBufferSize, nullptr, GL_STATIC_DRAW);
-        Unbind();
 
         // BindForReadWrite entire range of buffer to binding point 0.
         unsigned bindingPoint = uniformBlock.GetBindingPoint();
         unsigned bufferOffset = uniformBlock.GetBufferOffset();
         unsigned blockSize = uniformBlock.GetBlockDataSize();
         glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, _bufferID, bufferOffset, blockSize);
+
+        Unbind();
 
         _bufferBlocks.emplace(uniformBlock.GetBindingPoint(), std::move(uniformBlock));
     }
