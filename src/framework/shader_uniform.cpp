@@ -1,13 +1,11 @@
 
 #include <framework/shader_uniform.h>
-#include <framework/texture.h>
-
-#define SUPPORTED_UNIFORM_TYPES bool, int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, std::pair<int, Texture*>
+#define SUPPORTED_UNIFORM_TYPES bool, int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, TextureSampler
 
 namespace Sandbox {
 
     ShaderUniform::ShaderUniform(std::string uniformName, ShaderUniform::UniformEntry uniformData) : _uniformName(std::move(uniformName)),
-                                                                                                     _uniformData(uniformData),
+                                                                                                     _uniformData(std::move(uniformData)),
                                                                                                      _uniformImGuiLabel(std::string("##" + _uniformName)),
                                                                                                      _useColorPicker(false),
                                                                                                      _minSliderRange(0.0f),

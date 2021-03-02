@@ -3,13 +3,15 @@
 #define SANDBOX_SHADER_UNIFORM_H
 
 #include <sandbox_pch.h>
-#include <framework/shader.h>
 #include <framework/texture.h>
+#include <framework/shader.h>
 
 namespace Sandbox {
 
     class ShaderUniform {
         public:
+            typedef std::pair<Texture*, int> TextureSampler;
+
             typedef std::variant<bool,
                     int,
                     float,
@@ -18,7 +20,7 @@ namespace Sandbox {
                     glm::vec4,
                     glm::mat3,
                     glm::mat4,
-                    std::pair<int, Texture*>> UniformEntry;
+                    TextureSampler> UniformEntry;
 
             ShaderUniform(std::string uniformName, UniformEntry uniformData);
             ShaderUniform(const ShaderUniform& other);
@@ -62,6 +64,5 @@ namespace Sandbox {
 }
 
 #include <framework/shader_uniform.tpp>
-
 
 #endif //SANDBOX_SHADER_UNIFORM_H

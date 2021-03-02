@@ -4,6 +4,7 @@
 
 #include <framework/texture.h>
 #include <framework/backend.h>
+#include <framework/shader_uniform.h>
 
 namespace Sandbox {
 
@@ -54,11 +55,11 @@ namespace Sandbox {
         else if constexpr (std::is_same_v<DataType, glm::mat4>) {
             glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(value));
         }
-        // Texture
-        else if constexpr (std::is_same_v<DataType, std::pair<int, Texture*>>) {
-            std::pair<int, Texture*> data = static_cast<std::pair<int, Texture*>>(value);
-            int textureSamplerID = data.first;
-            Texture* texture = data.second;
+        // Texture sampler
+        else if constexpr (std::is_same_v<DataType, ShaderUniform::TextureSampler>) {
+            ShaderUniform::TextureSampler data = static_cast<ShaderUniform::TextureSampler>(value);
+            Texture* texture = data.first;
+            int textureSamplerID = data.second;
 
             glActiveTexture(GL_TEXTURE0 + textureSamplerID);
             glUniform1i(uniformLocation, textureSamplerID);

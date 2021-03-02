@@ -189,7 +189,7 @@ namespace Sandbox {
         // Textured material.
         Shader* textureShader = shaderLibrary.GetShader("Texture");
         Material* textureMaterial = new Material("Texture", textureShader, {
-            { "modelTexture", std::make_pair(0, textureLibrary.GetTexture("viking room")) }
+            { "modelTexture", ShaderUniform::TextureSampler(textureLibrary.GetTexture("viking room"), 0) }
         });
         materialLibrary.AddMaterial(textureMaterial);
     }

@@ -72,8 +72,8 @@ namespace Sandbox {
         Bind();
 
         // Set texture wrapping parameters to GL_CLAMP_TO_EDGE
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         // Set texture filtering parameters to GL_LINEAR.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -83,9 +83,9 @@ namespace Sandbox {
 
         // Load in texture data.
         int width, height, channels;
-        unsigned char *data = stbi_load(NativePathConverter::ConvertToNativeSeparators(textureName).c_str(), &width, &height, &channels, 0);
+        stbi_uc* data = stbi_load(NativePathConverter::ConvertToNativeSeparators(textureName).c_str(), &width, &height, &channels, STBI_rgb_alpha);
         if (data) {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
             GLenum errorCode = glGetError();
             if (errorCode != GL_NO_ERROR) {
