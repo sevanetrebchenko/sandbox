@@ -101,7 +101,7 @@ namespace Sandbox {
                 }
             }
         }
-        // Unsupported: mat3, mat4, Texture
+        // Unsupported: mat3, mat4, TextureSampler
     }
 
 }

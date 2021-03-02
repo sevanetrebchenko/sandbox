@@ -10,8 +10,6 @@ namespace Sandbox {
 
     class ShaderUniform {
         public:
-            typedef std::pair<Texture*, int> TextureSampler;
-
             typedef std::variant<bool,
                     int,
                     float,
@@ -66,3 +64,4 @@ namespace Sandbox {
 #include <framework/shader_uniform.tpp>
 
 #endif //SANDBOX_SHADER_UNIFORM_H
+

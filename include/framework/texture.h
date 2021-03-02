@@ -43,6 +43,8 @@ namespace Sandbox {
             GLuint _attachmentLocation;
     };
 
+    typedef std::pair<Texture*, int> TextureSampler;
+
 }
 
 #endif //SANDBOX_TEXTURE_H
