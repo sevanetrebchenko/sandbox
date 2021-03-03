@@ -28,6 +28,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/material_library.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/model_manager.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/object_loader.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/primitive_loader.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/scene.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/shader.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/shader_data_types.cpp"

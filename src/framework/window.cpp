@@ -62,8 +62,8 @@ namespace Sandbox {
 
         // OpenGL properties.
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
-        Backend::Core::EnableFlag(GL_CULL_FACE);
-        Backend::Core::CullFace(GL_BACK);
+//        Backend::Core::EnableFlag(GL_CULL_FACE);
+//        Backend::Core::CullFace(GL_BACK);
 
         ImGuiLog& log = ImGuiLog::GetInstance();
         log.LogTrace("Vendor: %s", (const char*)glGetString(GL_VENDOR));

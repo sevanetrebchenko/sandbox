@@ -32,7 +32,11 @@ namespace Sandbox {
             void ConfigureModels();
             void ConstructFBO();
 
+            void RenderWithShader(Shader* shaderProgram);
+            void RenderFSQ();
+
             FrameBufferObject _fbo;
+            Mesh _fsq;
     };
 
 }

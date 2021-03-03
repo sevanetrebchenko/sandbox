@@ -5,13 +5,15 @@
 #include <framework/material_library.h>
 #include <framework/shader_library.h>
 #include <framework/texture_library.h>
+#include <framework/primitive_loader.h>
 #include <framework/imgui_log.h>
 
 namespace Sandbox {
 
     SceneDeferredRendering::SceneDeferredRendering(int width, int height) : Scene("Deferred Rendering", width, height),
-                                                                            _fbo(2560, 1440) {
-
+                                                                            _fbo(2560, 1440),
+                                                                            _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)) {
+        _fsq.Complete();
     }
 
     SceneDeferredRendering::~SceneDeferredRendering() {
@@ -51,63 +53,20 @@ namespace Sandbox {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
 
         _fbo.BindForReadWrite();
+        _fbo.DrawBuffers(0, 1);
         Backend::Core::SetViewport(0, 0, _fbo.GetWidth(), _fbo.GetHeight()); // Set viewport.
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-//        Shader* singleColorShader = shaderLibrary.GetShader("SingleColor");
-//        singleColorShader->Bind();
-//        singleColorShader->SetUniform("cameraTransform", _camera.GetMatrix());
-//
-//        for (Model* model : _modelManager.GetModels()) {
-//            Transform& transform = model->GetTransform();
-//            Mesh& mesh = model->GetMesh();
-//            Material* material = model->GetMaterial(singleColorShader);
-//
-//            // Pre render stage.
-//            if (material) {
-//                const glm::mat4& modelTransform = transform.GetMatrix();
-//                singleColorShader->SetUniform("modelTransform", modelTransform);
-//                singleColorShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
-//
-//                // Bind all related uniforms with this shader.
-//                material->Bind(singleColorShader);
-//            }
-//
-//            // Render stage.
-//            mesh.Bind();
-//            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
-//            mesh.Unbind();
-//
-//            // Post render stage.
-//        }
-
         Shader* textureShader = shaderLibrary.GetShader("Texture");
-        textureShader->Bind();
-        textureShader->SetUniform("cameraTransform", _camera.GetMatrix());
+        RenderWithShader(textureShader);
+        textureShader->Unbind();
 
-        for (Model* model : _modelManager.GetModels()) {
-            Transform& transform = model->GetTransform();
-            Mesh& mesh = model->GetMesh();
-            Material* material = model->GetMaterial(textureShader);
-
-            // Pre render stage.
-            if (material) {
-                const glm::mat4& modelTransform = transform.GetMatrix();
-                textureShader->SetUniform("modelTransform", modelTransform);
-                textureShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
-
-                // Bind all related uniforms with this shader.
-                material->Bind(textureShader);
-            }
-
-            // Render stage.
-            mesh.Bind();
-            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
-            mesh.Unbind();
-
-            // Post render stage.
-        }
+        _fbo.DrawBuffers(1, 1);
+        Shader* asciiShader = shaderLibrary.GetShader("Ascii");
+        asciiShader->Bind();
+        Backend::Rendering::BindTextureWithSampler(asciiShader, _fbo.GetNamedRenderTarget("regularOutput"), "inputTexture", 0);
+        RenderFSQ();
+        asciiShader->Unbind();
 
         _fbo.Unbind();
 
@@ -142,7 +101,8 @@ namespace Sandbox {
             ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
             ImGui::SetCursorPosY(ImGui::GetItemRectSize().y + (ImGui::GetWindowSize().y - ImGui::GetItemRectSize().y - imageSize.y) * 0.5f);
 
-            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("output")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("regularOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("asciiOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
         }
 
         ImGui::End();
@@ -165,6 +125,7 @@ namespace Sandbox {
 
         shaderLibrary.AddShader("SingleColor", { "assets/shaders/color.vert", "assets/shaders/color.frag" });
         shaderLibrary.AddShader("Texture", { "assets/shaders/texture.vert", "assets/shaders/texture.frag" });
+        shaderLibrary.AddShader("Ascii", { "assets/shaders/ascii.vert", "assets/shaders/ascii.frag" });
     }
 
     void SceneDeferredRendering::InitializeTextures() {
@@ -210,10 +171,17 @@ namespace Sandbox {
         _fbo.BindForReadWrite();
 
         // Output texture.
-        Texture* outputTexture = new Texture("output");
-        outputTexture->Bind();
-        outputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
-        _fbo.AttachRenderTarget(outputTexture);
+        Texture* regularOutputTexture = new Texture("regularOutput");
+        regularOutputTexture->Bind();
+        regularOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        regularOutputTexture->Unbind();
+        _fbo.AttachRenderTarget(regularOutputTexture);
+
+        Texture* asciiOutputTexture = new Texture("asciiOutput");
+        asciiOutputTexture->Bind();
+        asciiOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        asciiOutputTexture->Unbind();
+        _fbo.AttachRenderTarget(asciiOutputTexture);
 
         _fbo.DrawBuffers();
 
@@ -228,6 +196,40 @@ namespace Sandbox {
         }
 
         _fbo.Unbind();
+    }
+
+    void SceneDeferredRendering::RenderWithShader(Shader *shaderProgram) {
+        shaderProgram->Bind();
+        shaderProgram->SetUniform("cameraTransform", _camera.GetMatrix());
+
+        for (Model* model : _modelManager.GetModels()) {
+            Transform& transform = model->GetTransform();
+            Mesh& mesh = model->GetMesh();
+            Material* material = model->GetMaterial(shaderProgram);
+
+            // Pre render stage.
+            if (material) {
+                const glm::mat4& modelTransform = transform.GetMatrix();
+                shaderProgram->SetUniform("modelTransform", modelTransform);
+                shaderProgram->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+
+                // Bind all related uniforms with this shader.
+                material->Bind(shaderProgram);
+            }
+
+            // Render stage.
+            mesh.Bind();
+            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
+            mesh.Unbind();
+
+            // Post render stage.
+        }
+    }
+
+    void SceneDeferredRendering::RenderFSQ() {
+        _fsq.Bind();
+        Backend::Rendering::DrawIndexed(_fsq.GetVAO(), _fsq.GetRenderingPrimitive());
+        _fsq.Unbind();
     }
 
 }
