@@ -9,7 +9,9 @@ namespace Sandbox {
                                                             _currentFrameTime(0),
                                                             _previousFrameTime(0),
                                                             _dt(0),
-                                                            _sceneName(std::move(name))
+                                                            _sceneName(std::move(name)),
+                                                            _imGuiIniName(""),
+                                                            _imGuiLogName("")
                                                             {
         glfwSetWindowUserPointer(_window.GetNativeWindow(), reinterpret_cast<void *>(&_camera)); // Allow access to camera through GLFW callbacks.
     }
@@ -29,6 +31,7 @@ namespace Sandbox {
             OnRender();
             OnPostRender();
 
+            OnImGuiMenu();
             OnImGui();
 
             EndFrame();
@@ -191,6 +194,16 @@ namespace Sandbox {
             _imGuiLogName = path + sceneNameLowercase + "_log.txt";
             log.LogTrace("Creating new ImGui log in location (%s).", _imGuiLogName.c_str());
         }
+    }
+
+    void Scene::OnImGuiMenu() {
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                ImGui::EndMenu();
+            }
+        }
+        ImGui::EndMainMenuBar();
     }
 
 }

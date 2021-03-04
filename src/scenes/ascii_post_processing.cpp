@@ -88,21 +88,28 @@ namespace Sandbox {
             ImGui::Text("Render time:");
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         }
-
         ImGui::End();
 
-        // Draw the final output from the hybrid rendering pipeline.
-        if (ImGui::Begin("Framebuffer", nullptr, ImGuiWindowFlags_NoScrollbar)) {
+        // Draw the scene framebuffer without any post processing.
+        if (ImGui::Begin("Scene Framebuffer")) {
             // Ensure proper scene image scaling.
             float maxWidth = ImGui::GetWindowContentRegionWidth();
             float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
             ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
-            ImGui::SetCursorPosY(ImGui::GetItemRectSize().y + (ImGui::GetWindowSize().y - ImGui::GetItemRectSize().y - imageSize.y) * 0.5f);
 
             ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("regularOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+        }
+        ImGui::End();
+
+        // Draw the scene framebuffer with post processing.
+        if (ImGui::Begin("Post-Processing")) {
+            // Ensure proper scene image scaling.
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
+
             ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("asciiOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
         }
-
         ImGui::End();
 
         // ImGui log output.
@@ -111,6 +118,7 @@ namespace Sandbox {
         // Materials.
         materialLibrary.OnImGui();
 
+        // Models.
         _modelManager.OnImGui();
     }
 

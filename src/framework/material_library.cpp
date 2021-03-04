@@ -10,7 +10,7 @@ namespace Sandbox {
     }
 
     void MaterialLibrary::OnImGui() {
-        if (ImGui::Begin("Material Manager", nullptr, ImGuiWindowFlags_None)) {
+        if (ImGui::Begin("Material Outliner", nullptr, ImGuiWindowFlags_None)) {
             for (const std::pair<std::string, Material*>& materialData : _materialList) {
                 if (ImGui::TreeNode(materialData.first.c_str())) {
                     materialData.second->OnImGui();

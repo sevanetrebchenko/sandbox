@@ -40,6 +40,8 @@ namespace Sandbox {
             ModelManager _modelManager;
 
         private:
+            void OnImGuiMenu();
+
             void BeginFrame();
             void EndFrame();
 

@@ -21,7 +21,7 @@ namespace Sandbox {
     }
 
     void ModelManager::OnImGui() {
-        if (ImGui::Begin("Model Manager", nullptr, ImGuiWindowFlags_None)) {
+        if (ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_None)) {
             for (Model* model : _modelList) {
                 if (ImGui::TreeNode(model->GetName().c_str())) {
                     DrawModelTransformImGui(model);
