@@ -1,18 +1,21 @@
 
 #include <framework/scene.h>
+#include <framework/imgui_log.h>
 
 namespace Sandbox {
 
-    Scene::Scene(const std::string& name, int width, int height) : _window( { name, width, height } ),
-                                                                   _camera((float)width, (float)height),
-                                                                   _currentFrameTime(0),
-                                                                   _previousFrameTime(0),
-                                                                   _dt(0)
-                                                                   {
+    Scene::Scene(std::string name, int width, int height) : _window( { "Sandbox", width, height } ),
+                                                            _camera((float)width, (float)height),
+                                                            _currentFrameTime(0),
+                                                            _previousFrameTime(0),
+                                                            _dt(0),
+                                                            _sceneName(std::move(name))
+                                                            {
         glfwSetWindowUserPointer(_window.GetNativeWindow(), reinterpret_cast<void *>(&_camera)); // Allow access to camera through GLFW callbacks.
     }
 
     void Scene::Init() {
+        LoadImGuiLayout();
         OnInit();
     }
 
@@ -35,6 +38,14 @@ namespace Sandbox {
 
     void Scene::Shutdown() {
         OnShutdown();
+
+        // Save ImGui settings.
+        ImGuiLog::GetInstance().LogTrace("Saving ImGui settings to: %s", _imGuiIniName.c_str());
+        ImGui::SaveIniSettingsToDisk(_imGuiIniName.c_str());
+
+        ImGuiLog& log = ImGuiLog::GetInstance();
+        log.LogTrace("Saving ImGui log to: %s", _imGuiLogName.c_str());
+        log.WriteToFile(_imGuiLogName);
     }
 
     Scene::~Scene() {
@@ -58,13 +69,13 @@ namespace Sandbox {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+        // Save ImGui .ini settings.
         ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
+        if (io.WantSaveIniSettings) {
+            ImGui::SaveIniSettingsToDisk(_imGuiIniName.c_str());
+
+            // Manually change flag.
+            io.WantSaveIniSettings = false;
         }
 
         _window.SwapBuffers();
@@ -102,6 +113,83 @@ namespace Sandbox {
 
         if (glfwGetKey(_window.GetNativeWindow(), GLFW_KEY_Q) == GLFW_PRESS) {
             _camera.SetEyePosition(cameraPosition - cameraSpeed * cameraUpVector * _dt);
+        }
+    }
+
+    void Scene::SpecifySceneDataLocation(const std::string &dataDirectory) {
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuiLog& log = ImGuiLog::GetInstance();
+
+        // Convert name to lowercase.
+        std::stringstream stringbuilder;
+        for (char character : _sceneName) {
+            // Convert spaces to underscores.
+            if (character == ' ') {
+                stringbuilder << '_';
+            }
+            else {
+                stringbuilder << static_cast<char>(std::tolower(character));
+            }
+        }
+        std::string sceneNameLowercase = stringbuilder.str();
+
+        bool foundIni = false;
+        bool foundTxt = false;
+
+        // Check if directory contains .ini file. If so, use that instead.
+        std::vector<std::string> filesInDirectory = DirectoryReader::GetFiles(dataDirectory);
+        for (std::string& file : filesInDirectory) {
+            std::string assetExtension = DirectoryReader::GetAssetExtension(file);
+            std::string assetName = DirectoryReader::GetAssetName(file);
+
+            // Found file, use this file instead.
+            if (assetExtension == "ini") {
+                log.LogTrace("Found existing ImGui layout (%s).", file.c_str());
+
+                _imGuiIniName = file;
+                ImGui::LoadIniSettingsFromDisk(file.c_str());
+                foundIni = true;
+            }
+            else if (assetExtension == "txt" && assetName == sceneNameLowercase) {
+                log.LogTrace("Found existing ImGui log file (%s).", file.c_str());
+
+                _imGuiLogName = sceneNameLowercase + ".txt";
+                foundTxt = true;
+            }
+        }
+
+        if (foundIni && foundTxt) {
+            return;
+        }
+
+        // Create new files.
+        std::string path = NativePathConverter::ConvertToNativeSeparators(dataDirectory);
+        if (!path.empty()) {
+            // If the last character is not a native /, append it.
+            const char& lastChar = path.back();
+            char native;
+#ifdef _WIN32
+            native = '\\';
+#else
+            native = '/';
+#endif
+
+            if (lastChar != native) {
+                path += native;
+            }
+        }
+
+        if (!foundIni) {
+            _imGuiIniName = path + sceneNameLowercase + "_imgui.ini"; // .ini path needs to be available for the duration of program lifetime.
+            log.LogTrace("Creating new ImGui layout in location (%s).", _imGuiIniName.c_str());
+        }
+
+        // Enable manual Imgui .ini save settings.
+        io.IniFilename = nullptr;
+
+        if (!foundTxt) {
+            _imGuiLogName = path + sceneNameLowercase + "_log.txt";
+            log.LogTrace("Creating new ImGui log in location (%s).", _imGuiLogName.c_str());
         }
     }
 

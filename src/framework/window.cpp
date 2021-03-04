@@ -157,6 +157,10 @@ namespace Sandbox {
         return _height;
     }
 
+    const std::string &Window::GetName() const {
+        return _name;
+    }
+
     void Window::PollEvents() {
         glfwPollEvents();
     }

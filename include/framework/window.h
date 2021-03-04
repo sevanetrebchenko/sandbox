@@ -19,6 +19,7 @@ namespace Sandbox {
 
             [[nodiscard]] int GetWidth() const;
             [[nodiscard]] int GetHeight() const;
+            [[nodiscard]] const std::string& GetName() const;
 
         private:
             void InitializeGLFW();

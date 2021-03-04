@@ -23,6 +23,11 @@ void main() {
 
     float gray = 0.3 * col.r + 0.59 * col.g + 0.11 * col.b;
 
+    if (col.r < 0.05f && col.g < 0.05f && col.g < 0.05f) {
+        col = vec3(1.0f);
+    }
+
+
     int n =  4096;                // .
     if (gray > 0.2) n = 65600;    // :
     if (gray > 0.3) n = 332772;   // *

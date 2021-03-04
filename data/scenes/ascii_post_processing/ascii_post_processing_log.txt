@@ -1,0 +1,12 @@
+[TRACE] Vendor: NVIDIA Corporation
+[TRACE] Renderer: GeForce RTX 2070 SUPER/PCIe/SSE2
+[TRACE] OpenGL Version: 4.6.0 NVIDIA 460.89
+[TRACE] Found existing ImGui layout (data\scenes\ascii_post_processing\ascii_post_processing_imgui.ini).
+[TRACE] Creating new ImGui log in location (data\scenes\ascii_post_processing\ascii_post_processing_log.txt).
+[TRACE] Creating new model: viking room from .obj file: assets\models\viking_room.obj
+[TRACE] Finished loading model: viking room.
+[ERROR] Shader recompilation failed: Shader: Ascii failed to compile FRAGMENT component (assets\shaders\ascii.frag). Provided error information: 0(12) : error C0000: syntax error, unexpected reserved word "return", expecting ')' at token "return"
+0(9) : error C1110: function "character" has no return statement
+
+[TRACE] Saving ImGui settings to: data\scenes\ascii_post_processing\ascii_post_processing_imgui.ini
+[TRACE] Saving ImGui log to: data\scenes\ascii_post_processing\ascii_post_processing_log.txt

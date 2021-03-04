@@ -1,16 +1,17 @@
 
-#ifndef SANDBOX_DEFERRED_RENDERING_H
-#define SANDBOX_DEFERRED_RENDERING_H
+#ifndef SANDBOX_ASCII_POST_PROCESSING_H
+#define SANDBOX_ASCII_POST_PROCESSING_H
 
 #include <framework/scene.h>
 #include <framework/buffer/fbo.h>
+#include <framework/mesh.h>
 
 namespace Sandbox {
 
-    class SceneDeferredRendering : public Scene {
+    class SceneAsciiPostProcessing : public Scene {
         public:
-            SceneDeferredRendering(int width, int height);
-            ~SceneDeferredRendering() override;
+            SceneAsciiPostProcessing(int width, int height);
+            ~SceneAsciiPostProcessing() override;
 
         protected:
             void OnInit() override;
@@ -35,10 +36,12 @@ namespace Sandbox {
             void ConstructFBO();
 
             void RenderWithShader(Shader* shaderProgram);
+            void RenderFSQ();
 
             FrameBufferObject _fbo;
+            Mesh _fsq;
     };
 
 }
 
-#endif //SANDBOX_DEFERRED_RENDERING_H
+#endif //SANDBOX_ASCII_POST_PROCESSING_H

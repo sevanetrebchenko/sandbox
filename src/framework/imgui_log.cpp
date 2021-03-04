@@ -180,4 +180,34 @@ namespace Sandbox {
         ImGui::TextUnformatted(message.c_str());
     }
 
+    void ImGuiLog::WriteToFile(const std::string &outputFile) const {
+        std::ofstream fileStream;
+        fileStream.open(outputFile.c_str());
+
+        if (fileStream.is_open()) {
+            // Message severities.
+            const std::string trace = "[TRACE] ";
+            const std::string error = "[ERROR] ";
+
+            for (const std::pair<bool, std::string>& logData : _logMessages) {
+                bool isError = logData.first;
+                std::string logMessage = logData.second;
+
+                if (isError) {
+                    logMessage.insert(0, error);
+                }
+                else {
+                    logMessage.insert(0, trace);
+                }
+
+                fileStream << logMessage << std::endl;
+            }
+
+            fileStream.close();
+        }
+        else {
+            std::cerr << "Failed to open ImGui log file at location: " << outputFile << std::endl;
+        }
+    }
+
 }

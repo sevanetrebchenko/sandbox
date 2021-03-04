@@ -1,24 +1,24 @@
 
-#include <scenes/deferred_rendering.h>
-#include <framework/imgui_log.h>
-#include <framework/backend.h>
-#include <framework/material_library.h>
+#include <scenes/ascii_post_processing.h>
+#include <framework/primitive_loader.h>
 #include <framework/shader_library.h>
 #include <framework/texture_library.h>
-#include <framework/primitive_loader.h>
+#include <framework/material_library.h>
 #include <framework/imgui_log.h>
 
 namespace Sandbox {
 
-    SceneDeferredRendering::SceneDeferredRendering(int width, int height) : Scene("Deferred Rendering", width, height),
-                                                                            _fbo(2560, 1440) {
+    SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
+                                                                                _fbo(2560, 1440),
+                                                                                _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)) {
+        _fsq.Complete();
     }
 
-    SceneDeferredRendering::~SceneDeferredRendering() {
+    SceneAsciiPostProcessing::~SceneAsciiPostProcessing() {
 
     }
 
-    void SceneDeferredRendering::OnInit() {
+    void SceneAsciiPostProcessing::OnInit() {
         InitializeShaders();
         InitializeTextures();
         InitializeMaterials();
@@ -27,7 +27,7 @@ namespace Sandbox {
         ConfigureModels();
     }
 
-    void SceneDeferredRendering::OnUpdate(float dt) {
+    void SceneAsciiPostProcessing::OnUpdate(float dt) {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
         ImGuiLog& log = ImGuiLog::GetInstance();
 
@@ -42,34 +42,40 @@ namespace Sandbox {
         _modelManager.Update(dt);
     }
 
-    void SceneDeferredRendering::OnPreRender() {
+    void SceneAsciiPostProcessing::OnPreRender() {
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void SceneDeferredRendering::OnRender() {
+    void SceneAsciiPostProcessing::OnRender() {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
 
         _fbo.BindForReadWrite();
-
+        _fbo.DrawBuffers(0, 1);
         Backend::Core::SetViewport(0, 0, _fbo.GetWidth(), _fbo.GetHeight()); // Set viewport.
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         Shader* textureShader = shaderLibrary.GetShader("Texture");
         RenderWithShader(textureShader);
         textureShader->Unbind();
+
+        _fbo.DrawBuffers(1, 1);
+        Shader* asciiShader = shaderLibrary.GetShader("Ascii");
+        asciiShader->Bind();
+        Backend::Rendering::BindTextureWithSampler(asciiShader, _fbo.GetNamedRenderTarget("regularOutput"), "inputTexture", 0);
+        RenderFSQ();
+        asciiShader->Unbind();
 
         _fbo.Unbind();
 
         Backend::Core::SetViewport(0, 0, _window.GetWidth(), _window.GetHeight()); // Restore viewport.
     }
 
-    void SceneDeferredRendering::OnPostRender() {
+    void SceneAsciiPostProcessing::OnPostRender() {
 
     }
 
-    void SceneDeferredRendering::OnImGui() {
+    void SceneAsciiPostProcessing::OnImGui() {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
         ImGuiLog& log = ImGuiLog::GetInstance();
@@ -93,7 +99,8 @@ namespace Sandbox {
             ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
             ImGui::SetCursorPosY(ImGui::GetItemRectSize().y + (ImGui::GetWindowSize().y - ImGui::GetItemRectSize().y - imageSize.y) * 0.5f);
 
-            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("output")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("regularOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("asciiOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
         }
 
         ImGui::End();
@@ -107,24 +114,25 @@ namespace Sandbox {
         _modelManager.OnImGui();
     }
 
-    void SceneDeferredRendering::OnShutdown() {
+    void SceneAsciiPostProcessing::OnShutdown() {
 
     }
 
-    void SceneDeferredRendering::InitializeShaders() {
+    void SceneAsciiPostProcessing::InitializeShaders() {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
 
         shaderLibrary.AddShader("SingleColor", { "assets/shaders/color.vert", "assets/shaders/color.frag" });
         shaderLibrary.AddShader("Texture", { "assets/shaders/texture.vert", "assets/shaders/texture.frag" });
+        shaderLibrary.AddShader("Ascii", { "assets/shaders/ascii.vert", "assets/shaders/ascii.frag" });
     }
 
-    void SceneDeferredRendering::InitializeTextures() {
+    void SceneAsciiPostProcessing::InitializeTextures() {
         TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
 
         textureLibrary.AddTexture("viking room", "assets/textures/viking_room.png");
     }
 
-    void SceneDeferredRendering::InitializeMaterials() {
+    void SceneAsciiPostProcessing::InitializeMaterials() {
         ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
         TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
@@ -132,7 +140,7 @@ namespace Sandbox {
         // Single color material.
         Shader* singleColorShader = shaderLibrary.GetShader("SingleColor");
         Material* singleColorMaterial = new Material("SingleColor", singleColorShader, {
-            { "surfaceColor", glm::vec3(1.0f) }
+                { "surfaceColor", glm::vec3(1.0f) }
         });
         singleColorMaterial->GetUniform("surfaceColor")->UseColorPicker(true);
         materialLibrary.AddMaterial(singleColorMaterial);
@@ -140,12 +148,12 @@ namespace Sandbox {
         // Textured material.
         Shader* textureShader = shaderLibrary.GetShader("Texture");
         Material* textureMaterial = new Material("Texture", textureShader, {
-            { "modelTexture", TextureSampler(textureLibrary.GetTexture("viking room"), 0) }
+                { "modelTexture", TextureSampler(textureLibrary.GetTexture("viking room"), 0) }
         });
         materialLibrary.AddMaterial(textureMaterial);
     }
 
-    void SceneDeferredRendering::ConfigureModels() {
+    void SceneAsciiPostProcessing::ConfigureModels() {
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
 
         Model* vikingRoom = _modelManager.AddModelFromFile("viking room", "assets/models/viking_room.obj");
@@ -157,15 +165,21 @@ namespace Sandbox {
         vikingRoomTransform.SetScale(glm::vec3(3.5f, 3.5f, 3.5f));
     }
 
-    void SceneDeferredRendering::ConstructFBO() {
+    void SceneAsciiPostProcessing::ConstructFBO() {
         _fbo.BindForReadWrite();
 
         // Output texture.
-        Texture* outputTexture = new Texture("output");
-        outputTexture->Bind();
-        outputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
-        outputTexture->Unbind();
-        _fbo.AttachRenderTarget(outputTexture);
+        Texture* regularOutputTexture = new Texture("regularOutput");
+        regularOutputTexture->Bind();
+        regularOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        regularOutputTexture->Unbind();
+        _fbo.AttachRenderTarget(regularOutputTexture);
+
+        Texture* asciiOutputTexture = new Texture("asciiOutput");
+        asciiOutputTexture->Bind();
+        asciiOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        asciiOutputTexture->Unbind();
+        _fbo.AttachRenderTarget(asciiOutputTexture);
 
         _fbo.DrawBuffers();
 
@@ -182,7 +196,7 @@ namespace Sandbox {
         _fbo.Unbind();
     }
 
-    void SceneDeferredRendering::RenderWithShader(Shader *shaderProgram) {
+    void SceneAsciiPostProcessing::RenderWithShader(Shader *shaderProgram) {
         shaderProgram->Bind();
         shaderProgram->SetUniform("cameraTransform", _camera.GetMatrix());
 
@@ -210,8 +224,13 @@ namespace Sandbox {
         }
     }
 
-    void SceneDeferredRendering::LoadImGuiLayout() {
-        SpecifySceneDataLocation("include/scenes/deferred_rendering");
+    void SceneAsciiPostProcessing::RenderFSQ() {
+        _fsq.Bind();
+        Backend::Rendering::DrawIndexed(_fsq.GetVAO(), _fsq.GetRenderingPrimitive());
+        _fsq.Unbind();
     }
 
+    void SceneAsciiPostProcessing::LoadImGuiLayout() {
+        SpecifySceneDataLocation("data/scenes/ascii_post_processing");
+    }
 }

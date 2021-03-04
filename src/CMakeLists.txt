@@ -6,6 +6,7 @@ set(CORE_SOURCE_FILES
 
         # Scenes
         "${PROJECT_SOURCE_DIR}/src/scenes/deferred_rendering.cpp"
+        "${PROJECT_SOURCE_DIR}/src/scenes/ascii_post_processing.cpp"
 
         # Buffer
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"

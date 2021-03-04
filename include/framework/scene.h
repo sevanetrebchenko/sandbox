@@ -11,7 +11,7 @@ namespace Sandbox {
 
     class Scene {
         public:
-            Scene(const std::string& name, int width, int height);
+            Scene(std::string name, int width, int height);
             virtual ~Scene();
 
             void Init();
@@ -21,8 +21,6 @@ namespace Sandbox {
         protected:
             virtual void OnInit() = 0;
 
-            void BeginFrame();
-
             virtual void OnUpdate(float dt) = 0;
 
             virtual void OnPreRender() = 0;
@@ -30,9 +28,11 @@ namespace Sandbox {
             virtual void OnPostRender() = 0;
             virtual void OnImGui() = 0;
 
-            void EndFrame();
-
             virtual void OnShutdown() = 0;
+
+            // Specify ImGui .ini file to read ImGui layout from. Called once before init.
+            virtual void LoadImGuiLayout() = 0;
+            void SpecifySceneDataLocation(const std::string& dataDirectory);
 
             // Data provided to derived scenes by default.
             Window _window;
@@ -40,8 +40,14 @@ namespace Sandbox {
             ModelManager _modelManager;
 
         private:
+            void BeginFrame();
+            void EndFrame();
+
             void ProcessInput();
 
+            std::string _sceneName;
+            std::string _imGuiIniName;
+            std::string _imGuiLogName;
             float _dt;
             float _currentFrameTime;
             float _previousFrameTime;

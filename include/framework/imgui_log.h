@@ -15,6 +15,8 @@ namespace Sandbox {
             void LogTrace(const char* formatString, ...);
             void LogError(const char* formatString, ...);
 
+            void WriteToFile(const std::string& outputFile) const;
+
         private:
             ImGuiLog();
             ~ImGuiLog();
