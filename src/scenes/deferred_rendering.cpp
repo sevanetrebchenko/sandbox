@@ -12,6 +12,7 @@ namespace Sandbox {
 
     SceneDeferredRendering::SceneDeferredRendering(int width, int height) : Scene("Deferred Rendering", width, height),
                                                                             _fbo(2560, 1440) {
+        _dataDirectory = "data/scenes/deferred_rendering";
     }
 
     SceneDeferredRendering::~SceneDeferredRendering() {
@@ -208,10 +209,6 @@ namespace Sandbox {
 
             // Post render stage.
         }
-    }
-
-    void SceneDeferredRendering::LoadImGuiLayout() {
-        SpecifySceneDataLocation("include/scenes/deferred_rendering");
     }
 
 }

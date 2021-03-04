@@ -37,6 +37,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stb_image.h>
+#include <stb_image_write.h>
 
 #include <tiny_obj_loader.h>
 

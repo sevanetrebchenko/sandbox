@@ -9,15 +9,13 @@ namespace Sandbox {
                                                             _currentFrameTime(0),
                                                             _previousFrameTime(0),
                                                             _dt(0),
-                                                            _sceneName(std::move(name)),
-                                                            _imGuiIniName(""),
-                                                            _imGuiLogName("")
+                                                            _sceneName(std::move(name))
                                                             {
         glfwSetWindowUserPointer(_window.GetNativeWindow(), reinterpret_cast<void *>(&_camera)); // Allow access to camera through GLFW callbacks.
     }
 
     void Scene::Init() {
-        LoadImGuiLayout();
+        LoadSceneData();
         OnInit();
     }
 
@@ -119,7 +117,7 @@ namespace Sandbox {
         }
     }
 
-    void Scene::SpecifySceneDataLocation(const std::string &dataDirectory) {
+    void Scene::LoadSceneData() {
         ImGuiIO& io = ImGui::GetIO();
         ImGuiLog& log = ImGuiLog::GetInstance();
 
@@ -136,11 +134,27 @@ namespace Sandbox {
         }
         std::string sceneNameLowercase = stringbuilder.str();
 
+        _dataDirectory = NativePathConverter::ConvertToNativeSeparators(_dataDirectory);
+        if (!_dataDirectory.empty()) {
+            // If the last character is not a native /, append it.
+            const char& lastChar = _dataDirectory.back();
+            char native;
+#ifdef _WIN32
+            native = '\\';
+#else
+            native = '/';
+#endif
+
+            if (lastChar != native) {
+                _dataDirectory += native;
+            }
+        }
+
         bool foundIni = false;
         bool foundTxt = false;
 
         // Check if directory contains .ini file. If so, use that instead.
-        std::vector<std::string> filesInDirectory = DirectoryReader::GetFiles(dataDirectory);
+        std::vector<std::string> filesInDirectory = DirectoryReader::GetFiles(_dataDirectory);
         for (std::string& file : filesInDirectory) {
             std::string assetExtension = DirectoryReader::GetAssetExtension(file);
             std::string assetName = DirectoryReader::GetAssetName(file);
@@ -166,24 +180,8 @@ namespace Sandbox {
         }
 
         // Create new files.
-        std::string path = NativePathConverter::ConvertToNativeSeparators(dataDirectory);
-        if (!path.empty()) {
-            // If the last character is not a native /, append it.
-            const char& lastChar = path.back();
-            char native;
-#ifdef _WIN32
-            native = '\\';
-#else
-            native = '/';
-#endif
-
-            if (lastChar != native) {
-                path += native;
-            }
-        }
-
         if (!foundIni) {
-            _imGuiIniName = path + sceneNameLowercase + "_imgui.ini"; // .ini path needs to be available for the duration of program lifetime.
+            _imGuiIniName = _dataDirectory + sceneNameLowercase + "_imgui.ini"; // .ini path needs to be available for the duration of program lifetime.
             log.LogTrace("Creating new ImGui layout in location (%s).", _imGuiIniName.c_str());
         }
 
@@ -191,7 +189,7 @@ namespace Sandbox {
         io.IniFilename = nullptr;
 
         if (!foundTxt) {
-            _imGuiLogName = path + sceneNameLowercase + "_log.txt";
+            _imGuiLogName = _dataDirectory + sceneNameLowercase + "_log.txt";
             log.LogTrace("Creating new ImGui log in location (%s).", _imGuiLogName.c_str());
         }
     }

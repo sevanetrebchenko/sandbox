@@ -51,10 +51,10 @@ namespace Sandbox {
 
         switch (_attachmentType) {
             case COLOR:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, contentWidth, contentHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, contentWidth, contentHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                 break;
             case DEPTH:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, contentWidth, contentHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, contentWidth, contentHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
                 break;
             case UNKNOWN:
                 throw std::runtime_error("Usage of attachment type UNKNOWN is reserved.");
@@ -122,5 +122,19 @@ namespace Sandbox {
         }
 
         return _attachmentType;
+    }
+
+    void Texture::WriteDataToDirectory(const std::string &directory) const {
+        unsigned char* textureData = new unsigned char[_contentWidth * _contentHeight * 4];
+
+        // Get texture data to store inside textureData.
+        Bind();
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+        Unbind();
+
+        stbi_flip_vertically_on_write(true);
+        stbi_write_png((directory + _name + ".png").c_str(), _contentWidth, _contentHeight, 4, textureData, 0);
+
+        delete[] textureData;
     }
 }

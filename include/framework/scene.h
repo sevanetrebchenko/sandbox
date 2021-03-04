@@ -30,16 +30,15 @@ namespace Sandbox {
 
             virtual void OnShutdown() = 0;
 
-            // Specify ImGui .ini file to read ImGui layout from. Called once before init.
-            virtual void LoadImGuiLayout() = 0;
-            void SpecifySceneDataLocation(const std::string& dataDirectory);
-
             // Data provided to derived scenes by default.
             Window _window;
             Camera _camera;
             ModelManager _modelManager;
+            std::string _dataDirectory;
 
         private:
+            void LoadSceneData();
+
             void OnImGuiMenu();
 
             void BeginFrame();

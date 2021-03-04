@@ -124,6 +124,15 @@ namespace Sandbox {
         return _contentHeight;
     }
 
+    void FrameBufferObject::SaveRenderTargetsToDirectory(const std::string &directoryPath) const {
+        for (const auto& renderTarget : _renderTargets) {
+            std::string name = renderTarget.first;
+            Texture* texture = renderTarget.second;
+
+            texture->WriteDataToDirectory(directoryPath);
+        }
+    }
+
     void CopyDepthBuffer(FrameBufferObject* source, FrameBufferObject* destination) {
         // Keep track of the current bound framebuffer(s).
         GLint currentBoundReadFBO, currentBoundDrawFBO;

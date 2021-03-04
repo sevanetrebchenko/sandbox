@@ -34,6 +34,7 @@ namespace Sandbox {
             RenderBufferObject* GetDepthBuffer() const;
 
             bool CheckStatus() const;
+            void SaveRenderTargetsToDirectory(const std::string& directoryPath) const;
 
             [[nodiscard]] unsigned GetWidth() const;
             [[nodiscard]] unsigned GetHeight() const;

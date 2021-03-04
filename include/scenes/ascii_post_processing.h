@@ -26,8 +26,6 @@ namespace Sandbox {
 
             void OnShutdown() override;
 
-            void LoadImGuiLayout() override;
-
         private:
             void InitializeShaders();
             void InitializeTextures();
