@@ -1,5 +1,6 @@
 
 #include <framework/buffer/fbo.h>
+#include <framework/directory_utils.h>
 
 namespace Sandbox {
 
@@ -125,11 +126,13 @@ namespace Sandbox {
     }
 
     void FrameBufferObject::SaveRenderTargetsToDirectory(const std::string &directoryPath) const {
+        std::string appendedDirectory = NativePathConverter::ConvertToNativeSeparators(directoryPath + "screenshots/");
+
         for (const auto& renderTarget : _renderTargets) {
             std::string name = renderTarget.first;
             Texture* texture = renderTarget.second;
 
-            texture->WriteDataToDirectory(directoryPath);
+            texture->WriteDataToDirectory(appendedDirectory);
         }
     }
 

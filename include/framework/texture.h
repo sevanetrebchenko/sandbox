@@ -35,6 +35,8 @@ namespace Sandbox {
             [[nodiscard]] AttachmentType GetAttachmentType() const;
 
         private:
+            void WriteData(const std::string& filepath, GLenum format, GLenum type, int channels) const;
+
             int _contentWidth;
             int _contentHeight;
 

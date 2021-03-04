@@ -11,7 +11,7 @@ namespace Sandbox {
     SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
                                                                                 _fbo(2560, 1440),
                                                                                 _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)) {
-        _dataDirectory = "data/scenes/ascii_post_processing";
+        _dataDirectory = "data/scenes/ascii_post_processing/";
         _fsq.Complete();
     }
 

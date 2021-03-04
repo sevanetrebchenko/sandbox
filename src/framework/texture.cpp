@@ -125,16 +125,55 @@ namespace Sandbox {
     }
 
     void Texture::WriteDataToDirectory(const std::string &directory) const {
-        unsigned char* textureData = new unsigned char[_contentWidth * _contentHeight * 4];
+        ImGuiLog& log = ImGuiLog::GetInstance();
 
-        // Get texture data to store inside textureData.
+        // Make sure directory exists.
+        if (!std::filesystem::is_directory(directory)) {
+            log.LogTrace("Creating new directory under: %s", directory.c_str());
+            std::filesystem::create_directory(directory);
+        }
+
+        // Convert texture name to be directory friendly.
+        std::stringstream stringbuilder;
+        for (char character : _name) {
+            // Convert spaces to underscores.
+            if (character == ' ') {
+                stringbuilder << '_';
+            }
+            else {
+                stringbuilder << static_cast<char>(std::tolower(character));
+            }
+        }
+
+        std::string filepath = directory + stringbuilder.str() + ".png";
+
+        switch (_attachmentType) {
+            case COLOR:
+                WriteData(filepath, GL_RGBA, GL_UNSIGNED_BYTE, 4);
+                log.LogTrace("Saving RGBA image file: \"%s\" under location: %s", _name.c_str(), filepath.c_str());
+                break;
+            case DEPTH:
+                WriteData(filepath, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 1);
+                log.LogTrace("Saving DEPTH image file: \"%s\" under location: %s", _name.c_str(), filepath.c_str());
+                break;
+            case UNKNOWN:
+                log.LogError("Attempting to write screenshot of existing texture. No image data generated.");
+                break;
+        }
+    }
+
+    void Texture::WriteData(const std::string& filepath, GLenum format, GLenum type, int channels) const {
+        unsigned char* textureData = new unsigned char[_contentWidth * _contentHeight * channels];
+
+        // Get texture data to store inside textureData array.
         Bind();
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+        glGetTexImage(GL_TEXTURE_2D, 0, format, type, textureData);
         Unbind();
 
         stbi_flip_vertically_on_write(true);
-        stbi_write_png((directory + _name + ".png").c_str(), _contentWidth, _contentHeight, 4, textureData, 0);
+        stbi_write_png(filepath.c_str(), _contentWidth, _contentHeight, channels, textureData, 0);
 
         delete[] textureData;
     }
+
 }

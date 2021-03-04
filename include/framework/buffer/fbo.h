@@ -34,6 +34,8 @@ namespace Sandbox {
             RenderBufferObject* GetDepthBuffer() const;
 
             bool CheckStatus() const;
+
+            // Expects directory path with appended separator (/).
             void SaveRenderTargetsToDirectory(const std::string& directoryPath) const;
 
             [[nodiscard]] unsigned GetWidth() const;
