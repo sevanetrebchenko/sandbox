@@ -4,7 +4,9 @@
 
 #include <framework/scene.h>
 #include <framework/buffer/fbo.h>
+#include <framework/buffer/ubo.h>
 #include <framework/mesh.h>
+#include <scenes/ascii_post_processing/ascii_character_map.h>
 
 namespace Sandbox {
 
@@ -33,10 +35,14 @@ namespace Sandbox {
             void ConfigureModels();
             void ConstructFBO();
 
+            void ConstructAsciiMaps();
+
             void RenderWithShader(Shader* shaderProgram);
             void RenderFSQ();
 
             FrameBufferObject _fbo;
+            UniformBufferObject _ubo;
+            AsciiCharacterMap _characterMap;
             Mesh _fsq;
     };
 

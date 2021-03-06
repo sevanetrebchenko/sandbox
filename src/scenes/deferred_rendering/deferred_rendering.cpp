@@ -1,5 +1,5 @@
 
-#include <scenes/deferred_rendering.h>
+#include <scenes/deferred_rendering/deferred_rendering.h>
 #include <framework/imgui_log.h>
 #include <framework/backend.h>
 #include <framework/material_library.h>

@@ -6,8 +6,8 @@ namespace Sandbox {
 
     enum class ShaderDataType {
         NONE,
-        BOOL, INT, FLOAT,
-        VEC2, VEC3, VEC4,
+        BOOL, INT, UINT, FLOAT,
+        VEC2, IVEC2, VEC3, UVEC3, VEC4, UVEC4,
         MAT4,
     };
 

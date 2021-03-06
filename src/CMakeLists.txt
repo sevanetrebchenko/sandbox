@@ -5,8 +5,11 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/sandbox_pch.cpp"
 
         # Scenes
-        "${PROJECT_SOURCE_DIR}/src/scenes/deferred_rendering.cpp"
-        "${PROJECT_SOURCE_DIR}/src/scenes/ascii_post_processing.cpp"
+        "scenes/deferred_rendering/deferred_rendering.cpp"
+        "scenes/ascii_post_processing/ascii_post_processing.cpp"
+        "scenes/ascii_post_processing/character_bitmap.cpp"
+        "scenes/ascii_post_processing/ascii_character_map.cpp"
+        "scenes/ascii_post_processing/ascii_character_map_manager.cpp"
 
         # Buffer
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"

@@ -8,12 +8,16 @@ namespace Sandbox {
             case ShaderDataType::BOOL:
                 return 1;
             case ShaderDataType::INT:
+            case ShaderDataType::UINT:
             case ShaderDataType::FLOAT:
                 return 4;
             case ShaderDataType::VEC2:
+            case ShaderDataType::IVEC2:
                 return 8;
             case ShaderDataType::VEC3:
+            case ShaderDataType::UVEC3:
             case ShaderDataType::VEC4:
+            case ShaderDataType::UVEC4:
             case ShaderDataType::MAT4:
                 return 16;
             default:
@@ -51,7 +55,6 @@ namespace Sandbox {
     void UniformBlockLayout::SetBufferElements(const std::vector<UniformBufferElement> &bufferElements) {
         // Construct indices.
         _elementLayout = bufferElements;
-        unsigned index = 0;
         unsigned currentOffset = 0;
 
         unsigned structElementCounter = 0;
@@ -67,18 +70,22 @@ namespace Sandbox {
                 // Size of N (4).
                 case ShaderDataType::BOOL:
                 case ShaderDataType::INT:
+                case ShaderDataType::UINT:
                 case ShaderDataType::FLOAT:
                     elementAlignment = 4;
                     totalElementSize = UniformBufferElement::UBOShaderDataTypeSize(ShaderDataType::FLOAT);
                     break;
                     // Size of 2N (8).
                 case ShaderDataType::VEC2:
+                case ShaderDataType::IVEC2:
                     elementAlignment = 8;
                     totalElementSize = UniformBufferElement::UBOShaderDataTypeSize(ShaderDataType::VEC2);
                     break;
                     // Size of 4N (16).
                 case ShaderDataType::VEC3:
+                case ShaderDataType::UVEC3:
                 case ShaderDataType::VEC4:
+                case ShaderDataType::UVEC4:
                     elementAlignment = 16;
                     totalElementSize = UniformBufferElement::UBOShaderDataTypeSize(ShaderDataType::VEC4);
                     break;
@@ -111,8 +118,6 @@ namespace Sandbox {
 
             // Add the element size to the offset.
             currentOffset += totalElementSize;
-
-            ++index;
         }
 
         _stride = currentOffset;
@@ -179,9 +184,10 @@ namespace Sandbox {
     }
 
     void UniformBufferObject::AddUniformBlock(UniformBlock uniformBlock) {
-        // TODO support multiple blocks in the same buffer
         // Calculate new UBO size.
-        _totalBufferSize = uniformBlock.GetBlockDataSize();
+        unsigned blockOffset = _totalBufferSize;
+        _totalBufferSize += uniformBlock.GetBlockDataSize();
+        uniformBlock._bufferOffset = blockOffset;
 
         // Allocate space for the new block within the buffer.
         Bind();

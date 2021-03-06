@@ -1,5 +1,6 @@
 
-#include <scenes/ascii_post_processing.h>
+#include <scenes/ascii_post_processing/ascii_post_processing.h>
+#include <scenes/ascii_post_processing/ascii_character_map_manager.h>
 #include <framework/primitive_loader.h>
 #include <framework/shader_library.h>
 #include <framework/texture_library.h>
@@ -10,7 +11,8 @@ namespace Sandbox {
 
     SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
                                                                                 _fbo(2560, 1440),
-                                                                                _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)) {
+                                                                                _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)),
+                                                                                _characterMap(5, 5) {
         _dataDirectory = "data/scenes/ascii_post_processing/";
         _fsq.Complete();
     }
@@ -26,6 +28,8 @@ namespace Sandbox {
 
         ConstructFBO();
         ConfigureModels();
+
+        ConstructAsciiMaps();
     }
 
     void SceneAsciiPostProcessing::OnUpdate(float dt) {
@@ -41,6 +45,8 @@ namespace Sandbox {
         }
 
         _modelManager.Update(dt);
+
+        _characterMap.UpdateData(&_ubo);
     }
 
     void SceneAsciiPostProcessing::OnPreRender() {
@@ -243,6 +249,48 @@ namespace Sandbox {
         _fsq.Bind();
         Backend::Rendering::DrawIndexed(_fsq.GetVAO(), _fsq.GetRenderingPrimitive());
         _fsq.Unbind();
+    }
+
+    void SceneAsciiPostProcessing::ConstructAsciiMaps() {
+        // .
+        CharacterBitmap period(5, 5);
+        period.SetBit(12);
+        _characterMap.AddCharacter(period);
+
+        // :
+        CharacterBitmap semicolon(5, 5);
+        semicolon.SetBit(6);
+        semicolon.SetBit(16);
+        _characterMap.AddCharacter(semicolon);
+
+        // *
+        CharacterBitmap asterisk(5, 5);
+        asterisk.SetBit(2);
+        asterisk.SetBit(5);
+        asterisk.SetBit(6);
+        asterisk.SetBit(7);
+        asterisk.SetBit(8);
+        asterisk.SetBit(9);
+        asterisk.SetBit(12);
+        asterisk.SetBit(16);
+        asterisk.SetBit(18);
+        _characterMap.AddCharacter(asterisk);
+
+        // o
+        CharacterBitmap o(5, 5);
+        o.SetBit(1);
+        o.SetBit(2);
+        o.SetBit(3);
+        o.SetBit(5);
+        o.SetBit(9);
+        o.SetBit(10);
+        o.SetBit(14);
+        o.SetBit(15);
+        o.SetBit(19);
+        o.SetBit(21);
+        o.SetBit(22);
+        o.SetBit(23);
+        _characterMap.AddCharacter(o);
     }
 
 }

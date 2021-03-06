@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <set>
+#include <array>
 #include <string>
 #include <queue>
 #include <stdexcept>
