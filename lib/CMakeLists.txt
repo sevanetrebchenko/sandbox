@@ -28,3 +28,9 @@ add_subdirectory(stb)
 message(STATUS "Building TinyOBJLoader.")
 add_subdirectory(tinyobj)
 
+# Build JSON
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+message(STATUS "Building JSON.")
+add_subdirectory(nlohmann_json)
+
+

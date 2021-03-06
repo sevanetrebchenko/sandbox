@@ -1,0 +1,23 @@
+wsjcpp_version: "v0.1.1"
+cmake_minimum_required: "3.0"
+cmake_cxx_standard: "11"
+name: "nlohmann/nlohmann_json"
+version: "v3.9.1"
+description: "JSON for Modern C++"
+issues: "https://github.com/nlohmann/nlohmann_json/issues"
+keywords:
+  - "c++"
+  - "nlohmann_json"
+
+repositories:
+  - type: main
+    url: "https://github.com/nlohmann/nlohmann_json"
+
+authors:
+  - name: "Niels Lohmann"
+    email: "mail@nlohmann.me"
+
+distribution:
+  - source-file: "single_include/nlohmann/nlohmann_json.hpp"
+    target-file: "nlohmann_json.hpp"
+    type: "source-code"

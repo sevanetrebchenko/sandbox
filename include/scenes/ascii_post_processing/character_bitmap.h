@@ -9,7 +9,9 @@ namespace Sandbox {
 
     class CharacterBitmap {
         public:
-            CharacterBitmap(int characterWidth, int characterHeight);
+            CharacterBitmap(std::string name, unsigned characterWidth, unsigned characterHeight);
+            CharacterBitmap(const CharacterBitmap& other);
+            CharacterBitmap(CharacterBitmap&&) noexcept;
             ~CharacterBitmap();
 
             [[nodiscard]] bool IsDirty() const;
@@ -25,14 +27,18 @@ namespace Sandbox {
 
         private:
             friend class AsciiCharacterMap;
+            friend class nlohmann::adl_serializer<Sandbox::CharacterBitmap>;
             void Clean();
 
             bool _isDirty;
             unsigned _characterWidth;
             unsigned _characterHeight;
+            std::string _name;
             std::vector<unsigned> _bitmap;
     };
 
 }
+
+#include <framework/serialization/character_bitmap_serialization.tpp>
 
 #endif //SANDBOX_CHARACTER_BITMAP_H

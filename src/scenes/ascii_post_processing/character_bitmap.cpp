@@ -3,18 +3,35 @@
 
 namespace Sandbox {
 
-    CharacterBitmap::CharacterBitmap(int characterWidth, int characterHeight) : _isDirty(true),
-                                                                                _characterWidth(characterWidth),
-                                                                                _characterHeight(characterHeight)
-                                                                                {
+    CharacterBitmap::CharacterBitmap(std::string name, unsigned characterWidth, unsigned characterHeight) : _isDirty(true),
+                                                                                                            _characterWidth(characterWidth),
+                                                                                                            _characterHeight(characterHeight),
+                                                                                                            _name(std::move(name))
+                                                                                                            {
         // Allocate bitmap memory.
-        int numDesiredBits = characterWidth * characterHeight;
+        unsigned numDesiredBits = characterWidth * characterHeight;
         if (numDesiredBits > MAX_NUM_BITMAPS * 32) { // 32 bits in an unsigned int.
             throw std::out_of_range("Character size is too big.");
         }
 
-        int size = (numDesiredBits / 32) + (bool)(numDesiredBits % 32);
+        unsigned size = (numDesiredBits / 32) + (bool)(numDesiredBits % 32);
         _bitmap.resize(size);
+    }
+
+    CharacterBitmap::CharacterBitmap(const CharacterBitmap &other) : _isDirty(other._isDirty),
+                                                                     _characterWidth(other._characterWidth),
+                                                                     _characterHeight(other._characterHeight),
+                                                                     _name(other._name),
+                                                                     _bitmap(other._bitmap)
+                                                                     {
+    }
+
+    CharacterBitmap::CharacterBitmap(CharacterBitmap&& other) noexcept : _isDirty(other._isDirty),
+                                                                         _characterWidth(other._characterWidth),
+                                                                         _characterHeight(other._characterHeight),
+                                                                         _name(std::move(other._name)),
+                                                                         _bitmap(std::move(other._bitmap))
+                                                                         {
     }
 
     CharacterBitmap::~CharacterBitmap() {

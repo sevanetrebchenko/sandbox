@@ -12,7 +12,7 @@ namespace Sandbox {
     SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
                                                                                 _fbo(2560, 1440),
                                                                                 _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)),
-                                                                                _characterMap(5, 5) {
+                                                                                _characterMap(10, 10) {
         _dataDirectory = "data/scenes/ascii_post_processing/";
         _fsq.Complete();
     }
@@ -253,18 +253,29 @@ namespace Sandbox {
 
     void SceneAsciiPostProcessing::ConstructAsciiMaps() {
         // .
-        CharacterBitmap period(5, 5);
-        period.SetBit(12);
-        _characterMap.AddCharacter(period);
+
+//        json j = period;
+//        std::ofstream o("period.json");
+//        o << std::setw(4) << j << std::endl;
+
+        // read a JSON file
+        std::ifstream i("period.json");
+        if (i.is_open()) {
+            json j;
+            i >> j;
+            CharacterBitmap period = j;
+
+            _characterMap.AddCharacter(period);
+        }
 
         // :
-        CharacterBitmap semicolon(5, 5);
+        CharacterBitmap semicolon(10, 10);
         semicolon.SetBit(6);
         semicolon.SetBit(16);
         _characterMap.AddCharacter(semicolon);
 
         // *
-        CharacterBitmap asterisk(5, 5);
+        CharacterBitmap asterisk(10, 10);
         asterisk.SetBit(2);
         asterisk.SetBit(5);
         asterisk.SetBit(6);
@@ -277,20 +288,20 @@ namespace Sandbox {
         _characterMap.AddCharacter(asterisk);
 
         // o
-        CharacterBitmap o(5, 5);
-        o.SetBit(1);
-        o.SetBit(2);
-        o.SetBit(3);
-        o.SetBit(5);
-        o.SetBit(9);
-        o.SetBit(10);
-        o.SetBit(14);
-        o.SetBit(15);
-        o.SetBit(19);
-        o.SetBit(21);
-        o.SetBit(22);
-        o.SetBit(23);
-        _characterMap.AddCharacter(o);
+//        CharacterBitmap o(10, 10);
+//        o.SetBit(1);
+//        o.SetBit(2);
+//        o.SetBit(3);
+//        o.SetBit(5);
+//        o.SetBit(9);
+//        o.SetBit(10);
+//        o.SetBit(14);
+//        o.SetBit(15);
+//        o.SetBit(19);
+//        o.SetBit(21);
+//        o.SetBit(22);
+//        o.SetBit(23);
+//        _characterMap.AddCharacter(o);
     }
 
 }

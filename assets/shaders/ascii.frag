@@ -74,5 +74,5 @@ void main() {
     vec3 bitmapResult = vec3(Bitmap(index, coordinate));
 
     fragColor = vec4(textureColor * bitmapResult, 1.0);
-//    fragColor = vec4(textureColor, 1.0);
+    fragColor = vec4(textureColor, 1.0);
 }

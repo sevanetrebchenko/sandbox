@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <array>
+#include <bitset>
 #include <string>
 #include <queue>
 #include <stdexcept>
@@ -45,5 +46,7 @@
 #include <imgui.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
+
+#include <nlohmann/json.hpp>
 
 #endif //SANDBOX_SANDBOX_PCH_H
