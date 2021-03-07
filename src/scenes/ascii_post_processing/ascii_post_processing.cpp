@@ -9,9 +9,9 @@
 namespace Sandbox {
 
     SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
-                                                                                _fbo(2560, 1440),
+                                                                                _fbo(1280, 760),
                                                                                 _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)),
-                                                                                _characterMap(&_ubo, "data/scenes/ascii_post_processing/fontsheets/ascii5x5.txt") {
+                                                                                _characterMap(&_ubo, "data/scenes/ascii_post_processing/fontsheets/ascii9x9.txt") {
         _dataDirectory = "data/scenes/ascii_post_processing/";
         _fsq.Complete();
     }
@@ -69,6 +69,7 @@ namespace Sandbox {
         Shader* asciiShader = shaderLibrary.GetShader("Ascii");
         asciiShader->Bind();
         Backend::Rendering::BindTextureWithSampler(asciiShader, _fbo.GetNamedRenderTarget("regularOutput"), "inputTexture", 0);
+        asciiShader->SetUniform("resolution", glm::vec2(_fbo.GetWidth(), _fbo.GetHeight()));
         RenderFSQ();
         asciiShader->Unbind();
 
@@ -191,13 +192,13 @@ namespace Sandbox {
         // Output texture.
         Texture* regularOutputTexture = new Texture("regularOutput");
         regularOutputTexture->Bind();
-        regularOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        regularOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 1280, 760);
         regularOutputTexture->Unbind();
         _fbo.AttachRenderTarget(regularOutputTexture);
 
         Texture* asciiOutputTexture = new Texture("asciiOutput");
         asciiOutputTexture->Bind();
-        asciiOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        asciiOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 1280, 760);
         asciiOutputTexture->Unbind();
         _fbo.AttachRenderTarget(asciiOutputTexture);
 
@@ -206,7 +207,7 @@ namespace Sandbox {
         // Depth buffer (RBO).
         RenderBufferObject* depthBuffer = new RenderBufferObject();
         depthBuffer->Bind();
-        depthBuffer->ReserveData(2560, 1440);
+        depthBuffer->ReserveData(1280, 760);
         _fbo.AttachDepthBuffer(depthBuffer);
 
         if (!_fbo.CheckStatus()) {

@@ -37,7 +37,7 @@ namespace Sandbox {
             float characterCoverage = characterBitmap.GetCoverage();
             bool foundLocation = false;
 
-            log.LogTrace("Adding character bitmap with name: '%s' (Coverage: %i%).", characterBitmap.GetName().c_str(), (int)(characterCoverage * 100));
+            log.LogTrace("Adding character bitmap with name: '%s' (Covwderage: %i%).", characterBitmap.GetName().c_str(), (int)(characterCoverage * 100));
 
             for (auto characterIter = _fontsheet.cbegin(); characterIter != _fontsheet.cend(); ++characterIter) {
                 const CharacterBitmap& character = *characterIter;
@@ -159,8 +159,12 @@ namespace Sandbox {
 
                 // Name.
                 std::string name;
-                filestream >> name;
-                std::getline(filestream, storage); // Clear NL.
+                std::getline(filestream, name); // Clear NL.
+
+                // This prevents the file from having any spaces.
+                if (name.empty()) {
+                    break;
+                }
 
                 CharacterBitmap character(name, characterWidth, characterHeight);
 

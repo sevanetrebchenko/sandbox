@@ -5,6 +5,7 @@
 #define MAX_NUM_BITMAPS 32
 
 uniform sampler2D inputTexture;
+uniform vec2 resolution;
 
 // Bitmapped ascii character in GLSL.
 struct AsciiCharacter {
@@ -51,7 +52,7 @@ float Bitmap(int index, ivec2 normalizedPixelCoordinate) {
 
 void main() {
     vec2 pixel = gl_FragCoord.xy;
-    vec3 textureColor = texture(inputTexture, floor(pixel / (characterData.fontScale + 3)) * (characterData.fontScale + 3) / vec2(2560, 1440)).rgb;
+    vec3 textureColor = texture(inputTexture, floor(pixel / ((characterData.fontScale - 1) * 2)) * ((characterData.fontScale - 1) * 2) / resolution).rgb;
 
     float grayscaleColor = 0.3f * textureColor.r + 0.59f * textureColor.g + 0.11f * textureColor.b;
 
