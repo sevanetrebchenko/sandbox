@@ -2,7 +2,6 @@
 #ifndef SANDBOX_CHARACTER_BITMAP_SERIALIZATION_TPP
 #define SANDBOX_CHARACTER_BITMAP_SERIALIZATION_TPP
 
-#include <sandbox_pch.h>
 using json = nlohmann::json;
 
 namespace nlohmann {
@@ -20,9 +19,8 @@ namespace nlohmann {
         }
 
         static Sandbox::CharacterBitmap from_json(const json& j) {
-            Sandbox::CharacterBitmap bitmap(j["characterWidth"].get<unsigned>(), j["characterHeight"].get<unsigned>());
+            Sandbox::CharacterBitmap bitmap(j["name"].get<std::string>(), j["characterWidth"].get<unsigned>(), j["characterHeight"].get<unsigned>());
             bitmap._isDirty = j["isDirty"].get<bool>();
-            bitmap._name = j["name"].get<std::string>();
             bitmap._bitmap = j["bitmap"].get<std::vector<unsigned>>();
             return bitmap;
         }

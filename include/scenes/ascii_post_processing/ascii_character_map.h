@@ -12,6 +12,7 @@ namespace Sandbox {
     class AsciiCharacterMap {
         public:
             AsciiCharacterMap(unsigned characterWidth, unsigned characterHeight);
+            explicit AsciiCharacterMap(const std::string& fontsheetPath);
             ~AsciiCharacterMap();
 
             void UpdateData(UniformBufferObject* ubo);
@@ -20,6 +21,9 @@ namespace Sandbox {
             void AddCharacter(const CharacterBitmap& characterBitmap);
 
         private:
+            void ParseFont(const std::string& filepath);
+            void ConstructUniformBlock();
+
             unsigned _characterWidth;
             unsigned _characterHeight;
 

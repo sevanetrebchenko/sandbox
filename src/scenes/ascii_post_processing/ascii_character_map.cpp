@@ -7,26 +7,13 @@ namespace Sandbox {
                                                                                               _characterHeight(characterHeight),
                                                                                               _uniformBlock(UniformBlockLayout(2, MAX_NUM_BITMAPS / 4), 1),
                                                                                               _isDirty(true) {
-        // Construct block layout.
-        UniformBlockLayout* blockLayout = _uniformBlock.GetUniformBlockLayout();
+        ConstructUniformBlock();
+    }
 
-        std::vector<UniformBufferElement> elementList;
-
-        // Global data.
-        elementList.emplace_back(ShaderDataType::IVEC2, "fontScale");
-        elementList.emplace_back(ShaderDataType::UVEC3, "charactersInUse");
-
-        // Character data.
-        for (int character = 0; character < MAX_NUM_CHARACTERS; ++character) {
-            std::string characterString = "character" + std::to_string(character);
-            for (int bitmap = 0; bitmap < MAX_NUM_BITMAPS / 4; ++bitmap) {
-                std::string bitmapString = "bitmap" + std::to_string(bitmap);
-
-                elementList.emplace_back(ShaderDataType::UVEC4, characterString + bitmapString); // std140 rules - every element in an array has an alignment equal to a vec4.
-            }
-        }
-
-        blockLayout->SetBufferElements(elementList);
+    AsciiCharacterMap::AsciiCharacterMap(const std::string &filepath) : _uniformBlock(UniformBlockLayout(2, MAX_NUM_BITMAPS / 4), 1),
+                                                                        _isDirty(true) {
+        ParseFont(NativePathConverter::ConvertToNativeSeparators(filepath));
+        ConstructUniformBlock();
     }
 
     AsciiCharacterMap::~AsciiCharacterMap() {
@@ -116,6 +103,73 @@ namespace Sandbox {
         }
 
         ubo->Unbind();
+    }
+
+    void AsciiCharacterMap::ParseFont(const std::string &filepath) {
+        std::ifstream filestream;
+        filestream.open(filepath);
+
+        std::string storage;
+
+        if (filestream.is_open()) {
+            unsigned characterWidth;
+            unsigned characterHeight;
+            filestream >> characterWidth >> characterHeight;
+            _characterWidth = characterWidth;
+            _characterHeight = characterHeight;
+
+            std::getline(filestream, storage); // Clear NL.
+
+            while (!filestream.eof()) {
+                // Pattern goes as follows:
+                // Name
+                // Bit positions that need to be set.
+
+                // Name.
+                std::string name;
+                filestream >> name;
+                std::getline(filestream, storage); // Clear NL.
+
+                CharacterBitmap character(name, characterWidth, characterHeight);
+
+                // Bit positions that need to be set.
+                std::string bitPositions;
+                std::getline(filestream, bitPositions);
+
+                std::stringstream bitPositionParser(bitPositions);
+                while (!bitPositionParser.eof()) {
+                    unsigned bitPosition;
+                    bitPositionParser >> bitPosition;
+
+                    character.SetBit(bitPosition);
+                }
+
+                _fontsheet.push_back(character);
+            }
+        }
+    }
+
+    void AsciiCharacterMap::ConstructUniformBlock() {
+        // Construct block layout.
+        UniformBlockLayout* blockLayout = _uniformBlock.GetUniformBlockLayout();
+
+        std::vector<UniformBufferElement> elementList;
+
+        // Global data.
+        elementList.emplace_back(ShaderDataType::IVEC2, "fontScale");
+        elementList.emplace_back(ShaderDataType::UVEC3, "charactersInUse");
+
+        // Character data.
+        for (int character = 0; character < MAX_NUM_CHARACTERS; ++character) {
+            std::string characterString = "character" + std::to_string(character);
+            for (int bitmap = 0; bitmap < MAX_NUM_BITMAPS / 4; ++bitmap) {
+                std::string bitmapString = "bitmap" + std::to_string(bitmap);
+
+                elementList.emplace_back(ShaderDataType::UVEC4, characterString + bitmapString); // std140 rules - every element in an array has an alignment equal to a vec4.
+            }
+        }
+
+        blockLayout->SetBufferElements(elementList);
     }
 
 }

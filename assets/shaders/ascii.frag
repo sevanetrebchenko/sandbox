@@ -51,28 +51,35 @@ float Bitmap(int index, ivec2 normalizedPixelCoordinate) {
 
 void main() {
     vec2 pixel = gl_FragCoord.xy;
-    vec3 textureColor = texture(inputTexture, floor(pixel / ((characterData.fontScale - 1) * 2)) * ((characterData.fontScale - 1) * 2) / vec2(2560, 1440)).rgb;
+    vec3 textureColor = texture(inputTexture, floor(pixel / (characterData.fontScale + 3)) * (characterData.fontScale + 3) / vec2(2560, 1440)).rgb;
 
     float grayscaleColor = 0.3f * textureColor.r + 0.59f * textureColor.g + 0.11f * textureColor.b;
     uint numCharacters = characterData.charactersInUse.x;
 
-    float intensityStep = 1.0f / numCharacters;
-    float gray = intensityStep;
+    int index;
 
-    // Calculate index of character to use.
-    int index = 0;
+    if (numCharacters == 1) {
+        index = 0;
+    }
+    else {
+        float intensityStep = 1.0f / numCharacters;
+        float gray = intensityStep;
 
-    for (int i = 0; i < numCharacters; ++i) {
-        if (grayscaleColor < gray) {
-            break;
+        // Calculate index of character to use.
+        int index = 0;
+
+        for (int i = 0; i < numCharacters; ++i) {
+            if (grayscaleColor < gray) {
+                break;
+            }
+            ++index;
+            gray += intensityStep;
         }
-        ++index;
-        gray += intensityStep;
     }
 
     ivec2 coordinate = ivec2(floor(mod(pixel - 1.0f, characterData.fontScale + 3)) - 1);
     vec3 bitmapResult = vec3(Bitmap(index, coordinate));
 
     fragColor = vec4(textureColor * bitmapResult, 1.0);
-    fragColor = vec4(textureColor, 1.0);
+//    fragColor = vec4(textureColor, 1.0);
 }

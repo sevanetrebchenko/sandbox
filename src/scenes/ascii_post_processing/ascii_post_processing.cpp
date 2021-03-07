@@ -1,6 +1,5 @@
 
 #include <scenes/ascii_post_processing/ascii_post_processing.h>
-#include <scenes/ascii_post_processing/ascii_character_map_manager.h>
 #include <framework/primitive_loader.h>
 #include <framework/shader_library.h>
 #include <framework/texture_library.h>
@@ -12,7 +11,7 @@ namespace Sandbox {
     SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
                                                                                 _fbo(2560, 1440),
                                                                                 _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)),
-                                                                                _characterMap(10, 10) {
+                                                                                _characterMap("data/scenes/ascii_post_processing/fontsheets/ascii5x5.txt") {
         _dataDirectory = "data/scenes/ascii_post_processing/";
         _fsq.Complete();
     }
@@ -252,56 +251,59 @@ namespace Sandbox {
     }
 
     void SceneAsciiPostProcessing::ConstructAsciiMaps() {
-        // .
-
-//        json j = period;
-//        std::ofstream o("period.json");
-//        o << std::setw(4) << j << std::endl;
-
-        // read a JSON file
-        std::ifstream i("period.json");
-        if (i.is_open()) {
-            json j;
-            i >> j;
-            CharacterBitmap period = j;
-
-            _characterMap.AddCharacter(period);
-        }
-
-        // :
-        CharacterBitmap semicolon(10, 10);
-        semicolon.SetBit(6);
-        semicolon.SetBit(16);
-        _characterMap.AddCharacter(semicolon);
-
-        // *
-        CharacterBitmap asterisk(10, 10);
-        asterisk.SetBit(2);
-        asterisk.SetBit(5);
-        asterisk.SetBit(6);
-        asterisk.SetBit(7);
-        asterisk.SetBit(8);
-        asterisk.SetBit(9);
-        asterisk.SetBit(12);
-        asterisk.SetBit(16);
-        asterisk.SetBit(18);
-        _characterMap.AddCharacter(asterisk);
-
-        // o
-//        CharacterBitmap o(10, 10);
-//        o.SetBit(1);
-//        o.SetBit(2);
-//        o.SetBit(3);
-//        o.SetBit(5);
-//        o.SetBit(9);
-//        o.SetBit(10);
-//        o.SetBit(14);
-//        o.SetBit(15);
-//        o.SetBit(19);
-//        o.SetBit(21);
-//        o.SetBit(22);
-//        o.SetBit(23);
-//        _characterMap.AddCharacter(o);
+//
+//        // .
+//
+////        json j = period;
+////        std::ofstream o("period.json");
+////        o << std::setw(4) << j << std::endl;
+//
+//        // read a JSON file
+//        std::ifstream i("period.json");
+//        if (i.is_open()) {
+//            json j;
+//            i >> j;
+//            CharacterBitmap period = j;
+//
+//            _characterMap.AddCharacter(period);
+//        }
+//
+//        // :
+//        CharacterBitmap semicolon("semicolon", 10, 10);
+//        semicolon.SetBit(6);
+//        semicolon.SetBit(16);
+//
+//        json j = semicolon;
+//
+//        // *
+//        CharacterBitmap asterisk("asterisk", 10, 10);
+//        asterisk.SetBit(2);
+//        asterisk.SetBit(5);
+//        asterisk.SetBit(6);
+//        asterisk.SetBit(7);
+//        asterisk.SetBit(8);
+//        asterisk.SetBit(9);
+//        asterisk.SetBit(12);
+//        asterisk.SetBit(16);
+//        asterisk.SetBit(18);
+//
+////        _characterMap.AddCharacter(asterisk);
+//
+//        // o
+////        CharacterBitmap o(10, 10);
+////        o.SetBit(1);
+////        o.SetBit(2);
+////        o.SetBit(3);
+////        o.SetBit(5);
+////        o.SetBit(9);
+////        o.SetBit(10);
+////        o.SetBit(14);
+////        o.SetBit(15);
+////        o.SetBit(19);
+////        o.SetBit(21);
+////        o.SetBit(22);
+////        o.SetBit(23);
+////        _characterMap.AddCharacter(o);
     }
 
 }

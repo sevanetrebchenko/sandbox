@@ -4,6 +4,7 @@
 namespace Sandbox {
 
     CharacterBitmap::CharacterBitmap(std::string name, unsigned characterWidth, unsigned characterHeight) : _isDirty(true),
+                                                                                                            _numSetBits(0),
                                                                                                             _characterWidth(characterWidth),
                                                                                                             _characterHeight(characterHeight),
                                                                                                             _name(std::move(name))
@@ -42,8 +43,13 @@ namespace Sandbox {
         unsigned elementPosition = position / 32;
         unsigned bitPosition = position % 32;
 
-        if (elementPosition >= _bitmap.size()) {
+        if (elementPosition >= _bitmap.size() * 32) {
             throw std::out_of_range("Bit position out of range of character size (SetBit).");
+        }
+
+        // If bit is already set, don't update numSetBits.
+        if (!TestBit(bitPosition)) {
+            ++_numSetBits;
         }
 
         _bitmap[elementPosition] |= (1 << bitPosition);
@@ -54,8 +60,15 @@ namespace Sandbox {
         unsigned elementPosition = position / 32;
         unsigned bitPosition = position % 32;
 
-        if (elementPosition >= _bitmap.size()) {
+        if (elementPosition >= _bitmap.size() * 32) {
             throw std::out_of_range("Bit position out of range of character size (ToggleBit).");
+        }
+
+        if (TestBit(bitPosition)) {
+            --_numSetBits;
+        }
+        else {
+            ++_numSetBits;
         }
 
         _bitmap[elementPosition] ^= (1 << bitPosition);
@@ -66,8 +79,13 @@ namespace Sandbox {
         unsigned elementPosition = position / 32;
         unsigned bitPosition = position % 32;
 
-        if (elementPosition >= _bitmap.size()) {
+        if (elementPosition >= _bitmap.size() * 32) {
             throw std::out_of_range("Bit position out of range of character size (ClearBit).");
+        }
+
+        // If bit is not set, don't decrement numSetBits.
+        if (TestBit(bitPosition)) {
+            --_numSetBits;
         }
 
         _bitmap[elementPosition] &= ~(1 << bitPosition);
@@ -79,7 +97,7 @@ namespace Sandbox {
     }
 
     unsigned CharacterBitmap::GetValueAtIndex(unsigned index) const {
-        if (index >= _bitmap.size()) {
+        if (index >= _bitmap.size() * 32) {
             throw std::out_of_range("Bit position out of range of character size (GetBitsAtIndex).");
         }
 
@@ -100,6 +118,22 @@ namespace Sandbox {
 
     unsigned CharacterBitmap::GetHeight() const {
         return _characterHeight;
+    }
+
+    float CharacterBitmap::GetCoverage() const {
+        float bitAddition = 1.0f / (float)(_characterWidth * _characterHeight);
+        return bitAddition * (float)_numSetBits;
+    }
+
+    bool CharacterBitmap::TestBit(unsigned int position) const {
+        unsigned elementPosition = position / 32;
+        unsigned bitPosition = position % 32;
+
+        if (elementPosition >= _bitmap.size() * 32) {
+            throw std::out_of_range("Bit position out of range of character size (ClearBit).");
+        }
+
+        return _bitmap[elementPosition] & (1 << (bitPosition));
     }
 
 }

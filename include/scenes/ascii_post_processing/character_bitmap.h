@@ -24,13 +24,17 @@ namespace Sandbox {
             [[nodiscard]] unsigned GetValueAtIndex(unsigned index) const;
             [[nodiscard]] unsigned GetWidth() const;
             [[nodiscard]] unsigned GetHeight() const;
+            [[nodiscard]] float GetCoverage() const;
 
         private:
             friend class AsciiCharacterMap;
             friend class nlohmann::adl_serializer<Sandbox::CharacterBitmap>;
+
+            [[nodiscard]] bool TestBit(unsigned bitPosition) const;
             void Clean();
 
             bool _isDirty;
+            unsigned _numSetBits;
             unsigned _characterWidth;
             unsigned _characterHeight;
             std::string _name;
