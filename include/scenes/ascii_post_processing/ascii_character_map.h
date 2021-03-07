@@ -11,13 +11,12 @@ namespace Sandbox {
 
     class AsciiCharacterMap {
         public:
-            AsciiCharacterMap(unsigned characterWidth, unsigned characterHeight);
-            explicit AsciiCharacterMap(const std::string& fontsheetPath);
+            AsciiCharacterMap(UniformBufferObject* ubo, unsigned characterWidth, unsigned characterHeight);
+            AsciiCharacterMap(UniformBufferObject* ubo, const std::string& fontsheetPath);
             ~AsciiCharacterMap();
 
-            void UpdateData(UniformBufferObject* ubo);
+            void UpdateData();
 
-            // Characters must be added IN ORDER from darkest to lightest.
             void AddCharacter(const CharacterBitmap& characterBitmap);
 
         private:
@@ -29,6 +28,7 @@ namespace Sandbox {
 
             bool _isDirty;
             std::vector<CharacterBitmap> _fontsheet;
+            UniformBufferObject* _ubo;
             UniformBlock _uniformBlock;
     };
 

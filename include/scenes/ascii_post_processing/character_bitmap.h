@@ -12,6 +12,7 @@ namespace Sandbox {
             CharacterBitmap(std::string name, unsigned characterWidth, unsigned characterHeight);
             CharacterBitmap(const CharacterBitmap& other);
             CharacterBitmap(CharacterBitmap&&) noexcept;
+            CharacterBitmap& operator=(const CharacterBitmap& other);
             ~CharacterBitmap();
 
             [[nodiscard]] bool IsDirty() const;
@@ -25,6 +26,7 @@ namespace Sandbox {
             [[nodiscard]] unsigned GetWidth() const;
             [[nodiscard]] unsigned GetHeight() const;
             [[nodiscard]] float GetCoverage() const;
+            [[nodiscard]] const std::string& GetName() const;
 
         private:
             friend class AsciiCharacterMap;

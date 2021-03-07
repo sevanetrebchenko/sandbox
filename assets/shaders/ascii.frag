@@ -14,7 +14,7 @@ struct AsciiCharacter {
 // Font sheet.
 layout (std140, binding = 1) uniform ASCIIData {
     ivec2 fontScale;
-    uvec3 charactersInUse;
+    uint charactersInUse;
     AsciiCharacter fontsheet[MAX_NUM_CHARACTERS];
 } characterData;
 
@@ -54,32 +54,37 @@ void main() {
     vec3 textureColor = texture(inputTexture, floor(pixel / (characterData.fontScale + 3)) * (characterData.fontScale + 3) / vec2(2560, 1440)).rgb;
 
     float grayscaleColor = 0.3f * textureColor.r + 0.59f * textureColor.g + 0.11f * textureColor.b;
-    uint numCharacters = characterData.charactersInUse.x;
 
     int index;
 
-    if (numCharacters == 1) {
+    if (characterData.charactersInUse == 0) {
+        discard;
+    }
+
+    // Use the first index if there is only one character provided.
+    if (characterData.charactersInUse == 1) {
         index = 0;
     }
+    // Determine which character to use based on grayscale brightness.
     else {
-        float intensityStep = 1.0f / numCharacters;
+        float intensityStep = 1.0f / characterData.charactersInUse;
         float gray = intensityStep;
 
-        // Calculate index of character to use.
-        int index = 0;
+        index = 0;
 
-        for (int i = 0; i < numCharacters; ++i) {
+        // Calculate index of character to use.
+        for (int i = 0; i < characterData.charactersInUse; ++i) {
             if (grayscaleColor < gray) {
                 break;
             }
+
             ++index;
             gray += intensityStep;
         }
     }
 
-    ivec2 coordinate = ivec2(floor(mod(pixel - 1.0f, characterData.fontScale + 3)) - 1);
-    vec3 bitmapResult = vec3(Bitmap(index, coordinate));
+    ivec2 normalizedPixelCoordinate = ivec2(floor(mod(pixel - 1.0f, characterData.fontScale + 3)) - 1);
+    vec3 bitmapResult = vec3(Bitmap(index, normalizedPixelCoordinate));
 
     fragColor = vec4(textureColor * bitmapResult, 1.0);
-//    fragColor = vec4(textureColor, 1.0);
 }

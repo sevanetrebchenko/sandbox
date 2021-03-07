@@ -23,7 +23,8 @@ namespace Sandbox {
                                                                      _characterWidth(other._characterWidth),
                                                                      _characterHeight(other._characterHeight),
                                                                      _name(other._name),
-                                                                     _bitmap(other._bitmap)
+                                                                     _bitmap(other._bitmap),
+                                                                     _numSetBits(0)
                                                                      {
     }
 
@@ -31,8 +32,24 @@ namespace Sandbox {
                                                                          _characterWidth(other._characterWidth),
                                                                          _characterHeight(other._characterHeight),
                                                                          _name(std::move(other._name)),
-                                                                         _bitmap(std::move(other._bitmap))
+                                                                         _bitmap(std::move(other._bitmap)),
+                                                                         _numSetBits(0)
                                                                          {
+    }
+
+    CharacterBitmap &CharacterBitmap::operator=(const CharacterBitmap &other) {
+        if (this == &other) {
+            return *this;
+        }
+
+        _characterWidth = other._characterWidth;
+        _characterHeight = other._characterHeight;
+        _numSetBits = other._numSetBits;
+        _name = other._name;
+        _bitmap = other._bitmap;
+        _isDirty = other._isDirty;
+
+        return *this;
     }
 
     CharacterBitmap::~CharacterBitmap() {
@@ -65,7 +82,9 @@ namespace Sandbox {
         }
 
         if (TestBit(bitPosition)) {
-            --_numSetBits;
+            if (_numSetBits > 0) {
+                --_numSetBits;
+            }
         }
         else {
             ++_numSetBits;
@@ -85,7 +104,9 @@ namespace Sandbox {
 
         // If bit is not set, don't decrement numSetBits.
         if (TestBit(bitPosition)) {
-            --_numSetBits;
+            if (_numSetBits > 0) {
+                --_numSetBits;
+            }
         }
 
         _bitmap[elementPosition] &= ~(1 << bitPosition);
@@ -123,6 +144,10 @@ namespace Sandbox {
     float CharacterBitmap::GetCoverage() const {
         float bitAddition = 1.0f / (float)(_characterWidth * _characterHeight);
         return bitAddition * (float)_numSetBits;
+    }
+
+    const std::string &CharacterBitmap::GetName() const {
+        return _name;
     }
 
     bool CharacterBitmap::TestBit(unsigned int position) const {

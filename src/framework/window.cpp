@@ -21,15 +21,6 @@ namespace Sandbox {
 
         // Initialize ImGui.
         InitializeImGui();
-
-        int size = 9;
-        for (int i = size * size - 1; i >= 0; --i) {
-            std::cout << std::setw(2) << i << " ";
-
-            if (i % size == 0) {
-                std::cout << std::endl;
-            }
-        }
     }
 
     Window::~Window() {

@@ -11,7 +11,7 @@ namespace Sandbox {
     SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
                                                                                 _fbo(2560, 1440),
                                                                                 _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)),
-                                                                                _characterMap("data/scenes/ascii_post_processing/fontsheets/ascii5x5.txt") {
+                                                                                _characterMap(&_ubo, "data/scenes/ascii_post_processing/fontsheets/ascii5x5.txt") {
         _dataDirectory = "data/scenes/ascii_post_processing/";
         _fsq.Complete();
     }
@@ -45,7 +45,7 @@ namespace Sandbox {
 
         _modelManager.Update(dt);
 
-        _characterMap.UpdateData(&_ubo);
+        _characterMap.UpdateData();
     }
 
     void SceneAsciiPostProcessing::OnPreRender() {
