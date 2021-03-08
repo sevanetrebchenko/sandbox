@@ -14,7 +14,7 @@ namespace Sandbox {
             ~ModelManager();
 
             void OnImGui();
-            void Update(float dt);
+            void Update();
 
             Model* AddModelFromFile(std::string modelName, std::string filepath);
 

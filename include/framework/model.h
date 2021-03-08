@@ -16,7 +16,7 @@ namespace Sandbox {
             Model(std::string name, const Transform& transform);
             ~Model();
 
-            void Update(float dt);
+            void Update();
 
             [[nodiscard]] const std::string& GetName() const;
             [[nodiscard]] Mesh& GetMesh();

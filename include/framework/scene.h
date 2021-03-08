@@ -35,7 +35,7 @@ namespace Sandbox {
             Window _window;
             Camera _camera;
             ModelManager _modelManager;
-//            LightingManager _lightingManager;
+            LightingManager _lightingManager;
             std::string _dataDirectory;
 
         private:
@@ -44,6 +44,7 @@ namespace Sandbox {
             void OnImGuiMenu();
 
             void BeginFrame();
+            void Update(float dt);
             void EndFrame();
 
             void ProcessInput();

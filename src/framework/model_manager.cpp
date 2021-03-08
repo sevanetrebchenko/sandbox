@@ -14,9 +14,9 @@ namespace Sandbox {
         }
     }
 
-    void ModelManager::Update(float dt) {
+    void ModelManager::Update() {
         for (Model* model : _modelList) {
-            model->Update(dt);
+            model->Update();
         }
     }
 

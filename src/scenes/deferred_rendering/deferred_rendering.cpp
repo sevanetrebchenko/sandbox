@@ -39,8 +39,6 @@ namespace Sandbox {
         catch (std::runtime_error& err) {
             log.LogError("Shader recompilation failed: %s", err.what());
         }
-
-        _modelManager.Update(dt);
     }
 
     void SceneDeferredRendering::OnPreRender() {

@@ -23,6 +23,7 @@ namespace Sandbox {
         do {
             BeginFrame();
 
+            Update(_dt);
             OnUpdate(_dt);
 
             OnPreRender();
@@ -64,6 +65,11 @@ namespace Sandbox {
         _previousFrameTime = _currentFrameTime;
 
         ProcessInput();
+    }
+
+    void Scene::Update(float dt) {
+        _modelManager.Update();
+        _lightingManager.Update();
     }
 
     void Scene::EndFrame() {
