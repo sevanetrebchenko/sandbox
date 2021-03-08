@@ -4,6 +4,8 @@
 
 #include <framework/scene.h>
 #include <framework/buffer/fbo.h>
+#include <framework/buffer/ubo.h>
+#include <framework/lighting_manager.h>
 
 namespace Sandbox {
 

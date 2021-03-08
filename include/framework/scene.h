@@ -6,6 +6,7 @@
 #include <framework/camera.h>
 #include <framework/window.h>
 #include <framework/model_manager.h>
+#include <framework/lighting_manager.h>
 
 namespace Sandbox {
 
@@ -34,6 +35,7 @@ namespace Sandbox {
             Window _window;
             Camera _camera;
             ModelManager _modelManager;
+//            LightingManager _lightingManager;
             std::string _dataDirectory;
 
         private:

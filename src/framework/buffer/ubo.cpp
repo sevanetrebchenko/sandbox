@@ -46,7 +46,8 @@ namespace Sandbox {
 
 
     UniformBlockLayout::UniformBlockLayout(unsigned numInitialElements, unsigned numElementsInIntermediateBlock) : _initialOffsetInElements(numInitialElements),
-                                                                                                                   _intermediateOffsetInElements(numElementsInIntermediateBlock) {
+                                                                                                                   _intermediateOffsetInElements(numElementsInIntermediateBlock),
+                                                                                                                   _stride(0) {
     }
 
     UniformBlockLayout::~UniformBlockLayout() {
@@ -123,7 +124,7 @@ namespace Sandbox {
         _stride = currentOffset;
     }
 
-    std::vector<UniformBufferElement> &UniformBlockLayout::GetBufferElements() {
+    const std::vector<UniformBufferElement> &UniformBlockLayout::GetBufferElements() const {
         return _elementLayout;
     }
 
@@ -135,40 +136,42 @@ namespace Sandbox {
         return _intermediateOffsetInElements;
     }
 
+    unsigned UniformBlockLayout::GetStride() const {
+        return _stride;
+    }
 
 
     UniformBlock::UniformBlock(const UniformBlockLayout& uniformBlockLayout, unsigned bindingPoint) : _blockLayout(uniformBlockLayout),
                                                                                                       _bindingPoint(bindingPoint)
     {
-        unsigned currentAlignment = (_bufferOffset + _blockLayout.GetStride()) % 16;
-        if (currentAlignment != 0) {
-            _blockPadding = 16 - currentAlignment;
-        }
-        else {
-            _blockPadding = 0;
-        }
     }
 
     unsigned UniformBlock::GetBindingPoint() const {
         return _bindingPoint;
     }
 
-    unsigned UniformBlock::GetBufferOffset() const {
-        return _bufferOffset;
-    }
-
     unsigned UniformBlock::GetBlockDataSize() const {
-        return _blockLayout.GetStride() + _blockPadding;
+        return _blockLayout.GetStride();
     }
 
-    UniformBlockLayout* UniformBlock::GetUniformBlockLayout() {
-        return &_blockLayout;
+    UniformBlockLayout& UniformBlock::GetUniformBlockLayout() {
+        return _blockLayout;
     }
 
 
 
-    UniformBufferObject::UniformBufferObject() : _totalBufferSize(0) {
+    UniformBufferObject::UniformBufferObject(const UniformBlock& uniformBlock) : _uniformBlock(uniformBlock) {
         glGenBuffers(1, &_bufferID);
+
+        // Allocate space for the new block within the buffer.
+        Bind();
+        unsigned bindingPoint = uniformBlock.GetBindingPoint();
+        unsigned blockSize = uniformBlock.GetBlockDataSize();
+
+        glBufferData(GL_UNIFORM_BUFFER, blockSize, nullptr, GL_STATIC_DRAW);
+        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, _bufferID, 0, blockSize);
+
+        Unbind();
     }
 
     UniformBufferObject::~UniformBufferObject() {
@@ -183,35 +186,8 @@ namespace Sandbox {
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    void UniformBufferObject::AddUniformBlock(UniformBlock uniformBlock) {
-        // Calculate new UBO size.
-        unsigned blockOffset = _totalBufferSize;
-        _totalBufferSize += uniformBlock.GetBlockDataSize();
-        uniformBlock._bufferOffset = blockOffset;
-
-        // Allocate space for the new block within the buffer.
-        Bind();
-        glBufferData(GL_UNIFORM_BUFFER, _totalBufferSize, nullptr, GL_STATIC_DRAW);
-
-        // BindForReadWrite entire range of buffer to binding point 0.
-        unsigned bindingPoint = uniformBlock.GetBindingPoint();
-        unsigned bufferOffset = uniformBlock.GetBufferOffset();
-        unsigned blockSize = uniformBlock.GetBlockDataSize();
-        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, _bufferID, bufferOffset, blockSize);
-
-        Unbind();
-
-        _bufferBlocks.emplace(uniformBlock.GetBindingPoint(), std::move(uniformBlock));
-    }
-
-    UniformBlock *UniformBufferObject::GetUniformBlock(unsigned int bindingPoint) {
-        auto uniformBlockIter = _bufferBlocks.find(bindingPoint);
-
-        if (uniformBlockIter != _bufferBlocks.end()) {
-            return &uniformBlockIter->second;
-        }
-
-        return nullptr;
+    UniformBlock& UniformBufferObject::GetUniformBlock() {
+        return _uniformBlock;
     }
 
     void UniformBufferObject::SetSubData(unsigned int elementOffset, unsigned int elementSize, const void *data) const {

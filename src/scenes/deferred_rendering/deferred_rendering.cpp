@@ -79,7 +79,7 @@ namespace Sandbox {
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
         // Framework overview.
-        if (ImGui::Begin("Overview", nullptr)) {
+        if (ImGui::Begin("Overview")) {
             ImGui::Text("Render time:");
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         }
@@ -87,7 +87,7 @@ namespace Sandbox {
         ImGui::End();
 
         // Draw the final output from the hybrid rendering pipeline.
-        if (ImGui::Begin("Framebuffer", nullptr, ImGuiWindowFlags_NoScrollbar)) {
+        if (ImGui::Begin("Framebuffer")) {
             // Ensure proper scene image scaling.
             float maxWidth = ImGui::GetWindowContentRegionWidth();
             float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
@@ -97,6 +97,20 @@ namespace Sandbox {
             ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("output")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
         }
 
+        ImGui::End();
+
+        // Draw individual deferred rendering textures.
+        if (ImGui::Begin("Debug Textures")) {
+            // Ensure proper scene image scaling.
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
+            ImGui::SetCursorPosY(ImGui::GetItemRectSize().y + (ImGui::GetWindowSize().y - ImGui::GetItemRectSize().y - imageSize.y) * 0.5f);
+
+            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("position")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("depth")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+        }
         ImGui::End();
 
         // ImGui log output.
@@ -117,6 +131,8 @@ namespace Sandbox {
 
         shaderLibrary.AddShader("SingleColor", { "assets/shaders/color.vert", "assets/shaders/color.frag" });
         shaderLibrary.AddShader("Texture", { "assets/shaders/texture.vert", "assets/shaders/texture.frag" });
+//        shaderLibrary.AddShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
+//        shaderLibrary.AddShader("PhongShading", { "assets/shaders/phong_shading.vert", "assets/shaders/phong_shading.frag" });
     }
 
     void SceneDeferredRendering::InitializeTextures() {
@@ -144,22 +160,49 @@ namespace Sandbox {
             { "modelTexture", TextureSampler(textureLibrary.GetTexture("viking room"), 0) }
         });
         materialLibrary.AddMaterial(textureMaterial);
+
+        // Phong shading material.
+        Shader* phongShader = shaderLibrary.GetShader("PhongShading");
+        Material* phongMaterial = new Material("PhongShading", phongShader, {
+            { "ambientCoefficient", glm::vec3(0.5f) },
+            { "diffuseCoefficient", glm::vec3(0.5f) },
+            { "specularCoefficient", glm::vec3(1.0f) },
+            { "specularExponent", 30.0f }
+        });
+        materialLibrary.AddMaterial(phongMaterial);
     }
 
     void SceneDeferredRendering::ConfigureModels() {
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
 
-        Model* vikingRoom = _modelManager.AddModelFromFile("viking room", "assets/models/viking_room.obj");
-        vikingRoom->AddMaterial(materialLibrary.GetMaterialInstance("SingleColor"));
-        vikingRoom->AddMaterial(materialLibrary.GetMaterialInstance("Texture"));
+        Model* bunny = _modelManager.AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
+        bunny->AddMaterial(materialLibrary.GetMaterialInstance("PhongShading"));
 
-        Transform& vikingRoomTransform = vikingRoom->GetTransform();
-        vikingRoomTransform.SetRotation(glm::vec3(-90.0f, 0.0f, -135.0f));
-        vikingRoomTransform.SetScale(glm::vec3(3.5f, 3.5f, 3.5f));
+//        Model* vikingRoom = _modelManager.AddModelFromFile("viking room", "assets/models/viking_room.obj");
+//        vikingRoom->AddMaterial(materialLibrary.GetMaterialInstance("SingleColor"));
+//        vikingRoom->AddMaterial(materialLibrary.GetMaterialInstance("Texture"));
+//
+//        Transform& vikingRoomTransform = vikingRoom->GetTransform();
+//        vikingRoomTransform.SetRotation(glm::vec3(-90.0f, 0.0f, -135.0f));
+//        vikingRoomTransform.SetScale(glm::vec3(3.5f, 3.5f, 3.5f));
     }
 
     void SceneDeferredRendering::ConstructFBO() {
         _fbo.BindForReadWrite();
+
+        // Position.
+        Texture* positionTexture = new Texture("position");
+        positionTexture->Bind();
+        positionTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        positionTexture->Unbind();
+        _fbo.AttachRenderTarget(positionTexture);
+
+        // Depth buffer.
+        Texture* depthTexture = new Texture("depth");
+        depthTexture->Bind();
+        depthTexture->ReserveData(Texture::AttachmentType::DEPTH, 2560, 1440);
+        depthTexture->Unbind();
+        _fbo.AttachRenderTarget(depthTexture);
 
         // Output texture.
         Texture* outputTexture = new Texture("output");
@@ -170,11 +213,11 @@ namespace Sandbox {
 
         _fbo.DrawBuffers();
 
-        // Depth buffer (RBO).
-        RenderBufferObject* depthBuffer = new RenderBufferObject();
-        depthBuffer->Bind();
-        depthBuffer->ReserveData(2560, 1440);
-        _fbo.AttachDepthBuffer(depthBuffer);
+//        // Depth buffer (RBO).
+//        RenderBufferObject* depthBuffer = new RenderBufferObject();
+//        depthBuffer->Bind();
+//        depthBuffer->ReserveData(2560, 1440);
+//        _fbo.AttachDepthBuffer(depthBuffer);
 
         if (!_fbo.CheckStatus()) {
             throw std::runtime_error("Custom FBO is not complete.");

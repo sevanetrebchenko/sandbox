@@ -65,6 +65,10 @@ namespace Sandbox {
             throw std::runtime_error("Failed to load OBJ file: " + objFilePath + ". Provided information: " + warning + " (WARNING) " + error + "(ERROR)");
         }
 
+        bool hasVertexNormals = !attributes.normals.empty();
+        bool hasTextureCoordinates = !attributes.texcoords.empty();
+        bool hasVertexColors = !attributes.colors.empty();
+
         // Push shape data.
         for (const tinyobj::shape_t& shape : shapeData) {
             for (const tinyobj::index_t& index : shape.mesh.indices) {
@@ -72,13 +76,22 @@ namespace Sandbox {
                 glm::vec3 vertex(attributes.vertices[vertexBase + 0], attributes.vertices[vertexBase + 1], attributes.vertices[vertexBase + 2]);
 
                 int vertexNormalBase = 3 * index.normal_index;
-                glm::vec3 vertexNormal(attributes.normals[vertexNormalBase + 0], attributes.normals[vertexNormalBase + 1], attributes.normals[vertexNormalBase + 2]);
+                glm::vec3 vertexNormal;
+                if (hasVertexNormals) {
+                    vertexNormal = glm::vec3(attributes.normals[vertexNormalBase + 0], attributes.normals[vertexNormalBase + 1], attributes.normals[vertexNormalBase + 2]);
+                }
 
                 int textureCoordinateBase = 2 * index.texcoord_index;
-                glm::vec2 textureCoordinate(attributes.texcoords[textureCoordinateBase + 0], attributes.texcoords[textureCoordinateBase + 1]);
+                glm::vec2 textureCoordinate;
+                if (hasTextureCoordinates) {
+                    textureCoordinate = glm::vec2(attributes.texcoords[textureCoordinateBase + 0], attributes.texcoords[textureCoordinateBase + 1]);
+                }
 
                 int vertexColorBase = vertexBase;
-                glm::vec3 vertexColor(attributes.colors[vertexColorBase + 0], attributes.colors[vertexColorBase + 1], attributes.colors[vertexColorBase + 2]);
+                glm::vec3 vertexColor;
+                if (hasVertexColors) {
+                    vertexColor = glm::vec3(attributes.colors[vertexColorBase + 0], attributes.colors[vertexColorBase + 1], attributes.colors[vertexColorBase + 2]);
+                }
 
                 // Found unique vertex.
                 if (uniqueVertices.count(vertex) == 0) {
@@ -86,7 +99,9 @@ namespace Sandbox {
                     vertices.push_back(vertex);
                     MinMaxVertex(vertex, minimum, maximum);
 
-                    uv.push_back(textureCoordinate);
+                    if (hasTextureCoordinates) {
+                        uv.push_back(textureCoordinate);
+                    }
                 }
 
                 // In case of duplicate vertex, push back index instead.

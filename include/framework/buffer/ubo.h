@@ -25,20 +25,22 @@ namespace Sandbox {
     };
 
 
-    class UniformBlockLayout : public BufferLayout {
+    class UniformBlockLayout {
         public:
             UniformBlockLayout(unsigned numInitialElements, unsigned numElementsInIntermediateBlock);
             ~UniformBlockLayout();
 
             void SetBufferElements(const std::vector<UniformBufferElement>& bufferElements);
-            [[nodiscard]] std::vector<UniformBufferElement>& GetBufferElements();
+            [[nodiscard]] const std::vector<UniformBufferElement>& GetBufferElements() const;
 
             [[nodiscard]] unsigned GetInitialOffsetInElements() const;
             [[nodiscard]] unsigned GetIntermediateOffsetInElements() const;
+            [[nodiscard]] unsigned GetStride() const;
 
         private:
             std::vector<UniformBufferElement> _elementLayout;
 
+            unsigned _stride;
             unsigned _initialOffsetInElements;
             unsigned _intermediateOffsetInElements;
     };
@@ -49,36 +51,30 @@ namespace Sandbox {
             UniformBlock(const UniformBlockLayout& uniformBlockLayout, unsigned bindingPoint);
 
             [[nodiscard]] unsigned GetBindingPoint() const;
-            [[nodiscard]] unsigned GetBufferOffset() const;
             [[nodiscard]] unsigned GetBlockDataSize() const;
-            [[nodiscard]] UniformBlockLayout* GetUniformBlockLayout();
+            [[nodiscard]] UniformBlockLayout& GetUniformBlockLayout();
 
         private:
             friend class UniformBufferObject;
 
             UniformBlockLayout _blockLayout;
             unsigned _bindingPoint;
-            unsigned _bufferOffset;
-            unsigned _blockPadding;
     };
 
 
     class UniformBufferObject {
         public:
-            UniformBufferObject();
+            explicit UniformBufferObject(const UniformBlock& uniformBlock);
             ~UniformBufferObject();
 
             void Bind() const;
             void Unbind() const;
 
-            void AddUniformBlock(UniformBlock uniformBlock);
-            UniformBlock* GetUniformBlock(unsigned bindingPoint);
-
+            UniformBlock& GetUniformBlock();
             void SetSubData(unsigned elementOffset, unsigned elementSize, const void* data) const;
 
         private:
-            std::unordered_map<unsigned, UniformBlock> _bufferBlocks;
-            unsigned _totalBufferSize;
+            UniformBlock _uniformBlock;
             unsigned _bufferID;
     };
 

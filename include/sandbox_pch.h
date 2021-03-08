@@ -12,6 +12,7 @@
 #include <bitset>
 #include <string>
 #include <queue>
+#include <list>
 #include <stdexcept>
 #include <utility>
 #include <atomic>
