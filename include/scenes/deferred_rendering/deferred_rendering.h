@@ -31,10 +31,13 @@ namespace Sandbox {
             void InitializeShaders();
             void InitializeTextures();
             void InitializeMaterials();
+            void ConfigureLights();
             void ConfigureModels();
             void ConstructFBO();
 
-            void RenderWithShader(Shader* shaderProgram);
+            void GeometryPass();
+            void RenderOutputScene();
+            void RenderDepthBuffer();
 
             FrameBufferObject _fbo;
     };

@@ -6,6 +6,43 @@
 
 namespace Sandbox {
 
+    template <typename T>
+    void ShaderUniform::SetData(const T &data) {
+        SetDataHelper<T, SUPPORTED_UNIFORM_TYPES>(data);
+    }
+
+    template<typename Type, typename T1, typename... T2>
+    void ShaderUniform::SetDataHelper(const Type &data) {
+        if constexpr (std::is_same_v<Type, T1>) {
+            TrySetData(data);
+        }
+        else {
+            SetDataHelper<Type, T2...>(data);
+        }
+    }
+
+    template <typename Type, typename T1>
+    void ShaderUniform::SetDataHelper(const Type& data) {
+        if constexpr (std::is_same_v<Type, T1>) {
+            TrySetData(data);
+        }
+        else {
+            throw std::runtime_error("Unknown data type provided into ShaderUniform::SetData.");
+        }
+    }
+
+    template<typename T>
+    void ShaderUniform::TrySetData(const T &data) {
+        try {
+            std::get<T>(_uniformData); // If this line passes, data in underlying variant is of the correct type.
+            _uniformData = data;
+        }
+        catch (std::bad_variant_access& accessException) {
+            // Since constructor ensures data has been set before this point, this is an error.
+            throw std::runtime_error("Data type of underlying ShaderUniform does not match provided data to ShaderUniform::SetData.");
+        }
+    }
+
     template<typename T1, typename T2, typename... T3>
     void ShaderUniform::BindHelper(Shader *shaderProgram) const {
         try {

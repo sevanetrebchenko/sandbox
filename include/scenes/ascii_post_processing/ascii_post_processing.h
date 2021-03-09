@@ -37,13 +37,8 @@ namespace Sandbox {
 
             void ConstructAsciiMaps();
 
-            void RenderWithShader(Shader* shaderProgram);
-            void RenderFSQ();
-
             FrameBufferObject _fbo;
-            UniformBufferObject _ubo;
             AsciiCharacterMap _characterMap;
-            Mesh _fsq;
     };
 
 }

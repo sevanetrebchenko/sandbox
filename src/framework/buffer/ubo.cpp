@@ -45,15 +45,18 @@ namespace Sandbox {
 
 
 
-    UniformBlockLayout::UniformBlockLayout(unsigned numInitialElements, unsigned numElementsInIntermediateBlock) : _initialOffsetInElements(numInitialElements),
-                                                                                                                   _intermediateOffsetInElements(numElementsInIntermediateBlock),
-                                                                                                                   _stride(0) {
+    UniformBlockLayout::UniformBlockLayout() : _initialOffsetInElements(0u),
+                                               _intermediateOffsetInElements(0u),
+                                               _stride(0) {
     }
 
     UniformBlockLayout::~UniformBlockLayout() {
     }
 
-    void UniformBlockLayout::SetBufferElements(const std::vector<UniformBufferElement> &bufferElements) {
+    void UniformBlockLayout::SetBufferElements(unsigned numInitialElements, unsigned numElementsInIntermediateBlock, const std::vector<UniformBufferElement> &bufferElements) {
+        _initialOffsetInElements = numInitialElements;
+        _intermediateOffsetInElements = numElementsInIntermediateBlock;
+
         // Construct indices.
         _elementLayout = bufferElements;
         unsigned currentOffset = 0;
@@ -140,8 +143,13 @@ namespace Sandbox {
         return _stride;
     }
 
+    void UniformBlockLayout::SetBufferElements(unsigned int numInitialElements, unsigned int numElementsInIntermediateBlock, const std::initializer_list<UniformBufferElement> &bufferElements) {
+        std::vector<UniformBufferElement> elements = bufferElements;
+        SetBufferElements(numInitialElements, numElementsInIntermediateBlock, elements);
+    }
 
-    UniformBlock::UniformBlock(const UniformBlockLayout& uniformBlockLayout, unsigned bindingPoint) : _blockLayout(uniformBlockLayout),
+
+    UniformBlock::UniformBlock(unsigned bindingPoint, const UniformBlockLayout& uniformBlockLayout) : _blockLayout(uniformBlockLayout),
                                                                                                       _bindingPoint(bindingPoint)
     {
     }
@@ -158,20 +166,13 @@ namespace Sandbox {
         return _blockLayout;
     }
 
+    UniformBlock::UniformBlock(UniformBlock &&other) noexcept : _bindingPoint(other._bindingPoint),
+                                                                _blockLayout(other._blockLayout) {
+    }
 
 
-    UniformBufferObject::UniformBufferObject(const UniformBlock& uniformBlock) : _uniformBlock(uniformBlock) {
+    UniformBufferObject::UniformBufferObject() : _uniformBlock(nullptr) {
         glGenBuffers(1, &_bufferID);
-
-        // Allocate space for the new block within the buffer.
-        Bind();
-        unsigned bindingPoint = uniformBlock.GetBindingPoint();
-        unsigned blockSize = uniformBlock.GetBlockDataSize();
-
-        glBufferData(GL_UNIFORM_BUFFER, blockSize, nullptr, GL_STATIC_DRAW);
-        glBindBufferRange(GL_UNIFORM_BUFFER, bindingPoint, _bufferID, 0, blockSize);
-
-        Unbind();
     }
 
     UniformBufferObject::~UniformBufferObject() {
@@ -187,11 +188,24 @@ namespace Sandbox {
     }
 
     UniformBlock& UniformBufferObject::GetUniformBlock() {
-        return _uniformBlock;
+        return *_uniformBlock;
     }
 
     void UniformBufferObject::SetSubData(unsigned int elementOffset, unsigned int elementSize, const void *data) const {
         glBufferSubData(GL_UNIFORM_BUFFER, elementOffset, elementSize, data);
+    }
+
+    void UniformBufferObject::SetUniformBlock(UniformBlock &uniformBlock) {
+        _uniformBlock = new UniformBlock(std::move(uniformBlock));
+
+        // Allocate space for the new block within the buffer.
+        Bind();
+        unsigned bindingPoint = _uniformBlock->GetBindingPoint();
+        unsigned blockSize = _uniformBlock->GetBlockDataSize();
+        glBufferData(GL_UNIFORM_BUFFER, blockSize, nullptr, GL_STATIC_DRAW);
+        Unbind();
+
+        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, _bufferID);
     }
 
 }

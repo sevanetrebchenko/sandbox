@@ -27,8 +27,8 @@ namespace Sandbox {
         _materialList.emplace(material->GetName(), material);
     }
 
-    void MaterialLibrary::AddMaterial(const std::string& name, Shader *shaderProgram, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms) {
-        _materialList.emplace( name, new Material(name, shaderProgram, uniforms));
+    void MaterialLibrary::AddMaterial(const std::string& name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms) {
+        _materialList.emplace( name, new Material(name, uniforms));
     }
 
     Material *MaterialLibrary::GetMaterial(const std::string &materialName) {

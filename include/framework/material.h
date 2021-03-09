@@ -10,8 +10,7 @@ namespace Sandbox {
 
     class Material {
         public:
-            Material(std::string name, Shader* shaderProgram, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms);
-            explicit Material(std::string name);
+            Material(std::string name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms);
             ~Material();
 
             Material(const Material& other);
@@ -23,10 +22,6 @@ namespace Sandbox {
             void Unbind() const;
 
             void Clear();
-
-            void SetShader(Shader* shaderProgram);
-            Shader* GetShader() const;
-
             const std::string& GetName() const;
 
             void SetUniform(const std::string& uniformName, ShaderUniform::UniformEntry uniformData);
@@ -34,8 +29,6 @@ namespace Sandbox {
 
         private:
             std::string _name;
-
-            Shader* _shaderProgram;
             std::unordered_map<std::string, ShaderUniform*> _uniforms;
     };
 

@@ -10,10 +10,8 @@ namespace Sandbox {
 
     SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
                                                                                 _fbo(1280, 760),
-                                                                                _fsq(PrimitiveLoader::GetInstance().LoadPrimitive(PrimitiveLoader::PrimitiveType::PLANE)),
-                                                                                _characterMap(&_ubo, "data/scenes/ascii_post_processing/fontsheets/ascii9x9.txt") {
+                                                                                _characterMap("data/scenes/ascii_post_processing/fontsheets/ascii9x9.txt") {
         _dataDirectory = "data/scenes/ascii_post_processing/";
-        _fsq.Complete();
     }
 
     SceneAsciiPostProcessing::~SceneAsciiPostProcessing() {
@@ -43,8 +41,6 @@ namespace Sandbox {
             log.LogError("Shader recompilation failed: %s", err.what());
         }
 
-        _modelManager.Update(dt);
-
         _characterMap.UpdateData();
     }
 
@@ -61,16 +57,43 @@ namespace Sandbox {
         Backend::Core::SetViewport(0, 0, _fbo.GetWidth(), _fbo.GetHeight()); // Set viewport.
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         Shader* textureShader = shaderLibrary.GetShader("Texture");
-        RenderWithShader(textureShader);
+        textureShader->Bind();
+        textureShader->SetUniform("cameraTransform", _camera.GetMatrix());
+
+        for (Model* model : _modelManager.GetModels()) {
+            Transform& transform = model->GetTransform();
+            Mesh& mesh = model->GetMesh();
+            Material* material = model->GetMaterial("Texture");
+
+            // Pre render stage.
+            if (material) {
+                const glm::mat4& modelTransform = transform.GetMatrix();
+                textureShader->SetUniform("modelTransform", modelTransform);
+                textureShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+
+                // Bind all related uniforms with this shader.
+                material->Bind(textureShader);
+            }
+
+            // Render stage.
+            mesh.Bind();
+            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
+            mesh.Unbind();
+
+            // Post render stage.
+        }
         textureShader->Unbind();
 
         _fbo.DrawBuffers(1, 1);
         Shader* asciiShader = shaderLibrary.GetShader("Ascii");
+
         asciiShader->Bind();
+        asciiShader->SetUniform("cameraTransform", _camera.GetMatrix());
         Backend::Rendering::BindTextureWithSampler(asciiShader, _fbo.GetNamedRenderTarget("regularOutput"), "inputTexture", 0);
         asciiShader->SetUniform("resolution", glm::vec2(_fbo.GetWidth(), _fbo.GetHeight()));
-        RenderFSQ();
+        Backend::Rendering::DrawFSQ();
         asciiShader->Unbind();
 
         _fbo.Unbind();
@@ -159,16 +182,14 @@ namespace Sandbox {
         TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
 
         // Single color material.
-        Shader* singleColorShader = shaderLibrary.GetShader("SingleColor");
-        Material* singleColorMaterial = new Material("SingleColor", singleColorShader, {
+        Material* singleColorMaterial = new Material("SingleColor", {
                 { "surfaceColor", glm::vec3(1.0f) }
         });
         singleColorMaterial->GetUniform("surfaceColor")->UseColorPicker(true);
         materialLibrary.AddMaterial(singleColorMaterial);
 
         // Textured material.
-        Shader* textureShader = shaderLibrary.GetShader("Texture");
-        Material* textureMaterial = new Material("Texture", textureShader, {
+        Material* textureMaterial = new Material("Texture", {
                 { "modelTexture", TextureSampler(textureLibrary.GetTexture("viking room"), 0) }
         });
         materialLibrary.AddMaterial(textureMaterial);
@@ -215,40 +236,6 @@ namespace Sandbox {
         }
 
         _fbo.Unbind();
-    }
-
-    void SceneAsciiPostProcessing::RenderWithShader(Shader *shaderProgram) {
-        shaderProgram->Bind();
-        shaderProgram->SetUniform("cameraTransform", _camera.GetMatrix());
-
-        for (Model* model : _modelManager.GetModels()) {
-            Transform& transform = model->GetTransform();
-            Mesh& mesh = model->GetMesh();
-            Material* material = model->GetMaterial(shaderProgram);
-
-            // Pre render stage.
-            if (material) {
-                const glm::mat4& modelTransform = transform.GetMatrix();
-                shaderProgram->SetUniform("modelTransform", modelTransform);
-                shaderProgram->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
-
-                // Bind all related uniforms with this shader.
-                material->Bind(shaderProgram);
-            }
-
-            // Render stage.
-            mesh.Bind();
-            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
-            mesh.Unbind();
-
-            // Post render stage.
-        }
-    }
-
-    void SceneAsciiPostProcessing::RenderFSQ() {
-        _fsq.Bind();
-        Backend::Rendering::DrawIndexed(_fsq.GetVAO(), _fsq.GetRenderingPrimitive());
-        _fsq.Unbind();
     }
 
     void SceneAsciiPostProcessing::ConstructAsciiMaps() {

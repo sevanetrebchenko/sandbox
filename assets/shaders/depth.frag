@@ -3,11 +3,11 @@
 
 in vec2 textureCoordinates;
 
-layout (binding = 0) uniform sampler2D inputTexture; // Explicit binding.
+uniform sampler2D inputTexture; // Explicit binding.
 uniform float cameraNearPlane;
 uniform float cameraFarPlane;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 float LinearizeDepth(float depth) {
     return (2.0 * cameraNearPlane) / (cameraFarPlane + cameraNearPlane - depth * (cameraFarPlane - cameraNearPlane));

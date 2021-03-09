@@ -27,10 +27,11 @@ namespace Sandbox {
 
     class UniformBlockLayout {
         public:
-            UniformBlockLayout(unsigned numInitialElements, unsigned numElementsInIntermediateBlock);
+            UniformBlockLayout();
             ~UniformBlockLayout();
 
-            void SetBufferElements(const std::vector<UniformBufferElement>& bufferElements);
+            void SetBufferElements(unsigned numInitialElements, unsigned numElementsInIntermediateBlock, const std::vector<UniformBufferElement>& bufferElements);
+            void SetBufferElements(unsigned numInitialElements, unsigned numElementsInIntermediateBlock, const std::initializer_list<UniformBufferElement>& bufferElements);
             [[nodiscard]] const std::vector<UniformBufferElement>& GetBufferElements() const;
 
             [[nodiscard]] unsigned GetInitialOffsetInElements() const;
@@ -48,7 +49,8 @@ namespace Sandbox {
 
     class UniformBlock {
         public:
-            UniformBlock(const UniformBlockLayout& uniformBlockLayout, unsigned bindingPoint);
+            UniformBlock(unsigned bindingPoint, const UniformBlockLayout& uniformBlockLayout);
+            UniformBlock(UniformBlock&& other) noexcept;
 
             [[nodiscard]] unsigned GetBindingPoint() const;
             [[nodiscard]] unsigned GetBlockDataSize() const;
@@ -64,17 +66,18 @@ namespace Sandbox {
 
     class UniformBufferObject {
         public:
-            explicit UniformBufferObject(const UniformBlock& uniformBlock);
+            UniformBufferObject();
             ~UniformBufferObject();
 
             void Bind() const;
             void Unbind() const;
 
+            void SetUniformBlock(UniformBlock& uniformBlock);
             UniformBlock& GetUniformBlock();
             void SetSubData(unsigned elementOffset, unsigned elementSize, const void* data) const;
 
         private:
-            UniformBlock _uniformBlock;
+            UniformBlock* _uniformBlock;
             unsigned _bufferID;
     };
 

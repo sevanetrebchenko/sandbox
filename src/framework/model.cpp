@@ -1,6 +1,5 @@
 
 #include <framework/model.h>
-#include <framework/imgui_log.h>
 
 namespace Sandbox {
 
@@ -32,11 +31,11 @@ namespace Sandbox {
         return _transform;
     }
 
-    Material* Model::GetMaterial(Shader* shaderProgram) {
-        auto materialIter = _materialMapping.find(shaderProgram);
-
-        if (materialIter != _materialMapping.end()) {
-            return materialIter->second;
+    Material* Model::GetMaterial(const std::string &name) {
+        for (Material* material : _materialList) {
+            if (material->GetName() == name) {
+                return material;
+            }
         }
 
         return nullptr;
@@ -52,15 +51,7 @@ namespace Sandbox {
     }
 
     void Model::AddMaterial(Material* material) {
-        Shader* shader = material->GetShader();
-
-        if (shader) {
-            _materialMapping[shader] = material;
-            _materialList.emplace_back(material);
-        }
-        else {
-            ImGuiLog::GetInstance().LogError("Failed to attach material: %s to model: %s (material does not have a valid shader program).", material->GetName().c_str(), _name.c_str());
-        }
+        _materialList.emplace_back(material);
     }
 
 }

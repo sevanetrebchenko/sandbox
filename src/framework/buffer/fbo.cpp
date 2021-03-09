@@ -15,7 +15,7 @@ namespace Sandbox {
     FrameBufferObject::~FrameBufferObject() {
         BindForReadWrite();
 
-        for (auto& objectPair : _renderTargets) {
+        for (auto& objectPair : _renderTargetsMap) {
             delete objectPair.second;
         }
 
@@ -47,7 +47,7 @@ namespace Sandbox {
         }
         else {
             // Draw to a subset of buffers.
-            std::vector<GLuint> subDrawBuffers(_drawBuffers.begin() + startingRenderTargetID, _drawBuffers.begin() + startingRenderTargetID + numRenderTargets);
+            std::vector<GLenum> subDrawBuffers(_drawBuffers.begin() + startingRenderTargetID, _drawBuffers.begin() + startingRenderTargetID + numRenderTargets);
             glDrawBuffers(numRenderTargets, subDrawBuffers.data());
         }
     }
@@ -63,7 +63,7 @@ namespace Sandbox {
 
     void FrameBufferObject::AttachRenderTarget(Texture* renderTarget) {
         if (renderTarget) {
-            GLuint attachment;
+            GLenum attachment;
 
             switch (renderTarget->GetAttachmentType()) {
                 case Texture::AttachmentType::COLOR:
@@ -79,7 +79,8 @@ namespace Sandbox {
 
             glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, renderTarget->ID(), 0);
 
-            _renderTargets.emplace(renderTarget->GetName(), renderTarget);
+            _renderTargetsMap.emplace(renderTarget->GetName(), renderTarget);
+            _renderTargetsList.emplace_back(renderTarget);
             _drawBuffers.emplace_back(attachment);
             renderTarget->SetAttachmentLocation(_currentColorAttachmentID);
 
@@ -100,9 +101,9 @@ namespace Sandbox {
     }
 
     Texture *FrameBufferObject::GetNamedRenderTarget(const std::string &textureBufferName) const {
-        auto textureBufferIter = _renderTargets.find(textureBufferName);
+        auto textureBufferIter = _renderTargetsMap.find(textureBufferName);
 
-        if (textureBufferIter != _renderTargets.end()) {
+        if (textureBufferIter != _renderTargetsMap.end()) {
             return textureBufferIter->second;
         }
 
@@ -128,7 +129,7 @@ namespace Sandbox {
     void FrameBufferObject::SaveRenderTargetsToDirectory(const std::string &directoryPath) const {
         std::string appendedDirectory = NativePathConverter::ConvertToNativeSeparators(directoryPath + "screenshots/");
 
-        for (const auto& renderTarget : _renderTargets) {
+        for (const auto& renderTarget : _renderTargetsMap) {
             std::string name = renderTarget.first;
             Texture* texture = renderTarget.second;
 

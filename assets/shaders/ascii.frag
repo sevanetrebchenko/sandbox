@@ -13,7 +13,7 @@ struct AsciiCharacter {
 };
 
 // Font sheet.
-layout (std140, binding = 1) uniform ASCIIData {
+layout (std140, binding = 2) uniform ASCIIData {
     ivec2 fontScale;
     uint charactersInUse;
     AsciiCharacter fontsheet[MAX_NUM_CHARACTERS];

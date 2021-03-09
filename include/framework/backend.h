@@ -18,11 +18,14 @@ namespace Sandbox {
 
             void CullFace(GLuint face);
 
+            void WriteDepth(bool mask);
+
             void ClearColor(float r, float g, float b, float a);
             void ClearFlag(GLuint flags);
         }
 
         namespace Rendering {
+            void DrawFSQ();
             void DrawIndexed(const VertexArrayObject* vao, GLuint renderingPrimitive);
 
             void ActivateTextureSampler(int samplerID);

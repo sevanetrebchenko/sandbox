@@ -21,7 +21,7 @@ namespace Sandbox {
             [[nodiscard]] const std::string& GetName() const;
             [[nodiscard]] Mesh& GetMesh();
             [[nodiscard]] Transform& GetTransform();
-            [[nodiscard]] Material* GetMaterial(Shader* shaderProgram);
+            [[nodiscard]] Material* GetMaterial(const std::string& materialName);
             [[nodiscard]] const std::vector<Material*>& GetMaterialsList() const;
 
             void SetMesh(const Mesh& mesh);
@@ -29,7 +29,6 @@ namespace Sandbox {
 
         private:
             std::string _name;
-            std::unordered_map<Shader*, Material*> _materialMapping;
             std::vector<Material*> _materialList;
             Mesh _mesh;
             Transform _transform;

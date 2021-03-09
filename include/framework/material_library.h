@@ -15,7 +15,7 @@ namespace Sandbox {
             void OnImGui();
 
             void AddMaterial(Material* material);
-            void AddMaterial(const std::string& name, Shader* shaderProgram, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms);
+            void AddMaterial(const std::string& name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms);
 
             Material* GetMaterial(const std::string& materialName);
             Material* GetMaterialInstance(const std::string& materialName);

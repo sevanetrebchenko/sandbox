@@ -4,25 +4,18 @@
 
 namespace Sandbox {
 
-    AsciiCharacterMap::AsciiCharacterMap(UniformBufferObject* ubo, unsigned characterWidth, unsigned characterHeight) : _characterWidth(characterWidth),
-                                                                                                                        _characterHeight(characterHeight),
-                                                                                                                        _uniformBlock(UniformBlockLayout(2, MAX_NUM_BITMAPS / 4), 1),
-                                                                                                                        _ubo(ubo),
-                                                                                                                        _isDirty(true) {
+    AsciiCharacterMap::AsciiCharacterMap(unsigned characterWidth, unsigned characterHeight) : _characterWidth(characterWidth),
+                                                                                              _characterHeight(characterHeight),
+                                                                                              _isDirty(true) {
         ConstructUniformBlock();
-        _ubo->AddUniformBlock(_uniformBlock);
     }
 
-    AsciiCharacterMap::AsciiCharacterMap(UniformBufferObject* ubo, const std::string &filepath) : _uniformBlock(UniformBlockLayout(2, MAX_NUM_BITMAPS / 4), 1),
-                                                                                                  _ubo(ubo),
-                                                                                                  _isDirty(true) {
+    AsciiCharacterMap::AsciiCharacterMap(const std::string &filepath) : _isDirty(true) {
         ParseFont(NativePathConverter::ConvertToNativeSeparators(filepath));
         ConstructUniformBlock();
-        _ubo->AddUniformBlock(_uniformBlock);
     }
 
     AsciiCharacterMap::~AsciiCharacterMap() {
-        _ubo = nullptr;
     }
 
     void AsciiCharacterMap::AddCharacter(const CharacterBitmap &characterBitmap) {
@@ -68,54 +61,54 @@ namespace Sandbox {
     void AsciiCharacterMap::UpdateData() {
         if (_isDirty) {
             // Set UBO data.
-            _ubo->Bind();
+            _characterUBO.Bind();
 
-            UniformBlockLayout* characterBufferLayout = _uniformBlock.GetUniformBlockLayout();
-            std::vector<UniformBufferElement>& characterBufferElements = characterBufferLayout->GetBufferElements();
+            UniformBlockLayout& characterBufferLayout = _characterUBO.GetUniformBlock().GetUniformBlockLayout();
+            const std::vector<UniformBufferElement>& characterBufferElements = characterBufferLayout.GetBufferElements();
 
             // fontScale
             {
-                UniformBufferElement& fontHorizontalScale = characterBufferElements[0];
+                const UniformBufferElement& fontHorizontalScale = characterBufferElements[0];
                 unsigned elementOffset = fontHorizontalScale.GetBufferOffset();
                 unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(fontHorizontalScale.GetShaderDataType());
 
                 glm::ivec2 fontScale(_characterWidth, _characterHeight);
 
-                _ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&fontScale));
+                _characterUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&fontScale));
             }
 
             // charactersInUse
             {
-                UniformBufferElement& charactersInUse = characterBufferElements[1];
+                const UniformBufferElement& charactersInUse = characterBufferElements[1];
                 unsigned elementOffset = charactersInUse.GetBufferOffset();
                 unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(charactersInUse.GetShaderDataType());
                 unsigned data = _fontsheet.size();
-                _ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&data));
+                _characterUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&data));
             }
 
-            unsigned offset = characterBufferLayout->GetInitialOffsetInElements();
+            unsigned offset = characterBufferLayout.GetInitialOffsetInElements();
 
             for (int i = 0; i < _fontsheet.size(); ++i) {
                 CharacterBitmap& characterBitmap = _fontsheet[i];
 
                 if (characterBitmap.IsDirty()) {
-                    unsigned bufferElementIndex = offset + characterBufferLayout->GetIntermediateOffsetInElements() * i;
+                    unsigned bufferElementIndex = offset + characterBufferLayout.GetIntermediateOffsetInElements() * i;
 
                     unsigned numEvenDivisions = characterBitmap.GetNumIndices() / 4;
                     unsigned numRemaining = characterBitmap.GetNumIndices() % 4;
 
                     for (int j = 0; j < numEvenDivisions; j += 4) {
-                        UniformBufferElement& element = characterBufferElements[bufferElementIndex++];
+                        const UniformBufferElement& element = characterBufferElements[bufferElementIndex++];
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
 
                         glm::uvec4 data (characterBitmap.GetValueAtIndex(j), characterBitmap.GetValueAtIndex(j + 1), characterBitmap.GetValueAtIndex(j + 2), characterBitmap.GetValueAtIndex(j + 3));
-                        _ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&data));
+                        _characterUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&data));
                     }
 
                     if (numRemaining) {
                         // Fill last element (remaining number of indices).
-                        UniformBufferElement& element = characterBufferElements[bufferElementIndex];
+                        const UniformBufferElement& element = characterBufferElements[bufferElementIndex];
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
 
@@ -125,14 +118,14 @@ namespace Sandbox {
                             data[j] = characterBitmap.GetValueAtIndex(numEvenDivisions * 4 + j); // Guaranteed to be less than a full step.
                         }
 
-                        _ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&data));
+                        _characterUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&data));
                     }
 
                     characterBitmap.Clean();
                 }
             }
 
-            _ubo->Unbind();
+            _characterUBO.Unbind();
             _isDirty = false;
         }
     }
@@ -187,8 +180,6 @@ namespace Sandbox {
 
     void AsciiCharacterMap::ConstructUniformBlock() {
         // Construct block layout.
-        UniformBlockLayout* blockLayout = _uniformBlock.GetUniformBlockLayout();
-
         std::vector<UniformBufferElement> elementList;
 
         // Global data.
@@ -205,7 +196,11 @@ namespace Sandbox {
             }
         }
 
-        blockLayout->SetBufferElements(elementList);
+        UniformBlockLayout characterBlockLayout;
+        characterBlockLayout.SetBufferElements(2, MAX_NUM_BITMAPS / 4, elementList);
+
+        UniformBlock characterBlock(1, characterBlockLayout);
+        _characterUBO.SetUniformBlock(characterBlock);
     }
 
 }

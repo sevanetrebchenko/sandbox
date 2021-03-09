@@ -45,11 +45,12 @@ namespace Sandbox {
             unsigned _contentWidth;
             unsigned _contentHeight;
 
-            std::unordered_map<std::string, Texture*> _renderTargets;
+            std::unordered_map<std::string, Texture*> _renderTargetsMap;
+            std::vector<Texture*> _renderTargetsList;
             bool _hasDepthRenderTarget;
             RenderBufferObject* _depthBuffer;
 
-            std::vector<GLuint> _drawBuffers;
+            std::vector<GLenum> _drawBuffers;
 
             unsigned _currentColorAttachmentID;
             unsigned _bufferID;

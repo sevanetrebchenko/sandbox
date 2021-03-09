@@ -11,8 +11,8 @@ namespace Sandbox {
 
     class AsciiCharacterMap {
         public:
-            AsciiCharacterMap(UniformBufferObject* ubo, unsigned characterWidth, unsigned characterHeight);
-            AsciiCharacterMap(UniformBufferObject* ubo, const std::string& fontsheetPath);
+            explicit AsciiCharacterMap(const std::string& fontsheetPath);
+            AsciiCharacterMap(unsigned characterWidth, unsigned characterHeight);
             ~AsciiCharacterMap();
 
             void UpdateData();
@@ -28,8 +28,7 @@ namespace Sandbox {
 
             bool _isDirty;
             std::vector<CharacterBitmap> _fontsheet;
-            UniformBufferObject* _ubo;
-            UniformBlock _uniformBlock;
+            UniformBufferObject _characterUBO;
     };
 
 }

@@ -3,18 +3,13 @@
 
 namespace Sandbox {
 
-    Material::Material(std::string name, Shader* shaderProgram, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms) : _name(std::move(name)),
-                                                                                                                                                       _shaderProgram(shaderProgram) {
+    Material::Material(std::string name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms) : _name(std::move(name)) {
         for (const std::pair<std::string, ShaderUniform::UniformEntry>& uniformData : uniforms) {
             const std::string& uniformName = uniformData.first;
             const ShaderUniform::UniformEntry& uniform = uniformData.second;
 
             _uniforms.emplace(uniformName, new ShaderUniform(uniformName, uniform));
         }
-    }
-
-    Material::Material(std::string name) : _name(std::move(name)),
-                                           _shaderProgram(nullptr) {
     }
 
     Material::~Material() {
@@ -30,7 +25,6 @@ namespace Sandbox {
             _uniforms.emplace(uniformData);
         }
 
-        _shaderProgram = material._shaderProgram;
         return *this;
     }
 
@@ -45,28 +39,15 @@ namespace Sandbox {
     }
 
     void Material::Bind(Shader* shaderProgram) const {
-        // Only bind uniforms that are tied to this shader or if this shader is valid.
-        if (shaderProgram != _shaderProgram || !_shaderProgram) {
-            return;
-        }
-
         for (auto& uniformData : _uniforms) {
             uniformData.second->Bind(shaderProgram);
         }
     }
 
     void Material::Unbind() const {
-        for (auto& uniformData : _uniforms) {
+        for (auto &uniformData : _uniforms) {
             uniformData.second->Unbind();
         }
-    }
-
-    void Material::SetShader(Shader *shaderProgram) {
-        _shaderProgram = shaderProgram;
-    }
-
-    Shader *Material::GetShader() const {
-        return _shaderProgram;
     }
 
     const std::string &Material::GetName() const {
@@ -75,7 +56,6 @@ namespace Sandbox {
 
     Material::Material(const Material &other) {
         _name = other._name;
-        _shaderProgram = other._shaderProgram;
 
         for (const auto& uniformData : other._uniforms) {
             const std::string& uniformName = uniformData.first;

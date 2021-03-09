@@ -5,7 +5,16 @@
 namespace Sandbox {
 
     LightingManager::LightingManager() : _numActiveLights(0u),
-                                         _lightingUBO( { UniformBlockLayout(0, 5), 1 } ){
+                                         _lightingUBO(),
+                                         _isDirty(true) {
+        ConstructUniformBlock();
+    }
+
+    LightingManager::~LightingManager() {
+
+    }
+
+    void LightingManager::ConstructUniformBlock() {
         // Initialize UBO layout.
         // Layout for global data.
         std::vector<UniformBufferElement> elementList;
@@ -19,11 +28,11 @@ namespace Sandbox {
             elementList.emplace_back(UniformBufferElement { ShaderDataType::VEC3, "specularColor" });
         }
 
-        _lightingUBO.GetUniformBlock().GetUniformBlockLayout().SetBufferElements(elementList);
-    }
+        UniformBlockLayout lightingBlockLayout;
+        lightingBlockLayout.SetBufferElements(0, 5, elementList);
 
-    LightingManager::~LightingManager() {
-
+        UniformBlock lightingBlock(1, lightingBlockLayout);
+        _lightingUBO.SetUniformBlock(lightingBlock);
     }
 
     void LightingManager::OnImGui() {
@@ -165,7 +174,7 @@ namespace Sandbox {
     void LightingManager::AddLight(const Light& light) {
         _lights.push_back(light);
         ++_numActiveLights;
-        _isDirty;
+        _isDirty = true;
     }
 
 }
