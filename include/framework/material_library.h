@@ -2,15 +2,19 @@
 #ifndef SANDBOX_MATERIAL_LIBRARY_H
 #define SANDBOX_MATERIAL_LIBRARY_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/material.h>
 #include <framework/shader_uniform.h>
+#include <framework/singleton.h>
 
 namespace Sandbox {
 
-    class MaterialLibrary {
+    class MaterialLibrary : public Singleton<MaterialLibrary> {
         public:
-            static MaterialLibrary& GetInstance();
+            REGISTER_SINGLETON(MaterialLibrary);
+
+            void Initialize() override;
+            void Shutdown() override;
 
             void OnImGui();
 
@@ -20,11 +24,13 @@ namespace Sandbox {
             Material* GetMaterial(const std::string& materialName);
             Material* GetMaterialInstance(const std::string& materialName);
 
+            void Clear();
+
         private:
             MaterialLibrary();
-            ~MaterialLibrary();
+            ~MaterialLibrary() override;
 
-            std::unordered_map<std::string, Material*> _materialList;
+            std::unordered_map<std::string, Material*> materialList_;
     };
 
 }

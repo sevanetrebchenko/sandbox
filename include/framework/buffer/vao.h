@@ -2,7 +2,7 @@
 #ifndef SANDBOX_VAO_H
 #define SANDBOX_VAO_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/buffer/vbo.h>
 #include <framework/buffer/ebo.h>
 #include <framework/buffer/buffer.h>

@@ -6,11 +6,7 @@
 
 namespace Sandbox {
 
-    Window::Window(std::string name, int width, int height) : _window(nullptr),
-                                                              _name(std::move(name)),
-                                                              _width(width),
-                                                              _height(height)
-                                                              {
+    void Window::Initialize() {
         // Initialize GLFW.
         InitializeGLFW();
         CreateGLFWWindow();
@@ -23,9 +19,19 @@ namespace Sandbox {
         InitializeImGui();
     }
 
-    Window::~Window() {
+    void Window::Shutdown() {
         glfwDestroyWindow(_window);
         glfwTerminate();
+    }
+
+    Window::Window() : _window(nullptr),
+                       _name("Framework"),
+                       _width(1280),
+                       _height(720)
+                       {
+    }
+
+    Window::~Window() {
     }
 
     void Window::InitializeGLFW() {
@@ -62,13 +68,13 @@ namespace Sandbox {
 
         // OpenGL properties.
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
-//        Backend::Core::EnableFlag(GL_CULL_FACE);
-//        Backend::Core::CullFace(GL_BACK);
+//        Backend::Application::EnableFlag(GL_CULL_FACE);
+//        Backend::Application::CullFace(GL_BACK);
 
-        ImGuiLog& log = ImGuiLog::GetInstance();
-        log.LogTrace("Vendor: %s", (const char*)glGetString(GL_VENDOR));
-        log.LogTrace("Renderer: %s", (const char*)glGetString(GL_RENDERER));
-        log.LogTrace("OpenGL Version: %s", (const char*)glGetString(GL_VERSION));
+        ImGuiLog* log = Singleton<ImGuiLog>::GetInstance();
+        log->LogTrace("Vendor: %s", (const char*)glGetString(GL_VENDOR));
+        log->LogTrace("Renderer: %s", (const char*)glGetString(GL_RENDERER));
+        log->LogTrace("OpenGL Version: %s", (const char*)glGetString(GL_VERSION));
     }
 
     bool Window::IsActive() {
@@ -118,15 +124,15 @@ namespace Sandbox {
                 yaw += xoffset;
                 pitch += yoffset;
 
-                if(pitch > 89.0f)
+                if (pitch > 89.0f) {
                     pitch = 89.0f;
-                if(pitch < -89.0f)
-                    pitch = -89.0f;
+                }
 
-                glm::vec3 direction;
-                direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-                direction.y = sin(glm::radians(pitch));
-                direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+                if (pitch < -89.0f) {
+                    pitch = -89.0f;
+                }
+
+                glm::vec3 direction (cosf(glm::radians(yaw)) * cosf(glm::radians(pitch)), sinf(glm::radians(pitch)), sinf(glm::radians(yaw)) * cosf(glm::radians(pitch)));
                 camera->SetLookAtDirection(glm::normalize(direction));
             }
 

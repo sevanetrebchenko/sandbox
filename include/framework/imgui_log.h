@@ -2,24 +2,30 @@
 #ifndef SANDBOX_IMGUI_LOG_H
 #define SANDBOX_IMGUI_LOG_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
+#include <framework/singleton.h>
 
 namespace Sandbox {
 
-    class ImGuiLog {
+    class ImGuiLog : public Singleton<ImGuiLog> {
         public:
-            static ImGuiLog& GetInstance();
+            REGISTER_SINGLETON(ImGuiLog);
+
+            void Initialize() override;
+            void Shutdown() override;
 
             void OnImGui();
-            void ClearLog();
+
             void LogTrace(const char* formatString, ...);
             void LogError(const char* formatString, ...);
 
             void WriteToFile(const std::string& outputFile) const;
 
+            void ClearLog();
+
         private:
             ImGuiLog();
-            ~ImGuiLog();
+            ~ImGuiLog() override;
 
             void ProcessMessage(bool isErrorMessage, const char* formatString, va_list argsList);
 

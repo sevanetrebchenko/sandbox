@@ -2,7 +2,7 @@
 #ifndef SANDBOX_SHADER_H
 #define SANDBOX_SHADER_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/directory_utils.h>
 
 namespace Sandbox {
@@ -10,7 +10,7 @@ namespace Sandbox {
     class Shader : public IReloadable {
         public:
             Shader(std::string name, const std::initializer_list<std::string>& shaderComponentPaths);
-            ~Shader();
+            ~Shader() override;
 
             void Bind() const;
             void Unbind() const;

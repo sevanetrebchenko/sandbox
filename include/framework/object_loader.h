@@ -2,19 +2,25 @@
 #ifndef SANDBOX_OBJECT_LOADER_H
 #define SANDBOX_OBJECT_LOADER_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
+
 #include <framework/mesh.h>
+#include <framework/singleton.h>
 
 namespace Sandbox {
 
-    class OBJLoader {
+    class OBJLoader : public Singleton<OBJLoader> {
         public:
-            static OBJLoader& GetInstance();
+            REGISTER_SINGLETON(OBJLoader);
+
+            void Initialize() override;
+            void Shutdown() override;
+
             Mesh LoadFromFile(const std::string& objFilePath);
 
         private:
             OBJLoader();
-            ~OBJLoader();
+            ~OBJLoader() override;
 
             void MinMaxVertex(const glm::vec3& vertex, glm::vec3& minimum, glm::vec3& maximum) const;
             void TransformToOrigin(std::vector<glm::vec3>& vertices, const glm::vec3& minimum, const glm::vec3& maximum) const;

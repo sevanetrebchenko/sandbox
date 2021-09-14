@@ -3,15 +3,16 @@
 
 namespace Sandbox {
 
+    void OBJLoader::Initialize() {
+    }
+
+    void OBJLoader::Shutdown() {
+    }
+
     OBJLoader::OBJLoader() {
     }
 
     OBJLoader::~OBJLoader() {
-    }
-
-    OBJLoader &OBJLoader::GetInstance() {
-        static OBJLoader instance;
-        return instance;
     }
 
     void OBJLoader::MinMaxVertex(const glm::vec3 &vertex, glm::vec3 &minimum, glm::vec3 &maximum) const {

@@ -2,7 +2,7 @@
 #ifndef SANDBOX_MESH_H
 #define SANDBOX_MESH_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/buffer/vao.h>
 
 namespace Sandbox {

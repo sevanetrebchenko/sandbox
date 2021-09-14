@@ -2,7 +2,7 @@
 #ifndef SANDBOX_FBO_H
 #define SANDBOX_FBO_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/buffer/rbo.h>
 #include <framework/texture.h>
 

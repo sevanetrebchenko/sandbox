@@ -9,9 +9,9 @@
 
 namespace Sandbox {
 
-    class SceneDeferredRendering : public Scene {
+    class SceneDeferredRendering : public IScene {
         public:
-            SceneDeferredRendering(int width, int height);
+            SceneDeferredRendering();
             ~SceneDeferredRendering() override;
 
         protected:
@@ -29,7 +29,6 @@ namespace Sandbox {
 
         private:
             void InitializeShaders();
-            void InitializeTextures();
             void InitializeMaterials();
             void ConfigureLights();
             void ConfigureModels();

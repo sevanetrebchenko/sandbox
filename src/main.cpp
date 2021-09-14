@@ -3,19 +3,31 @@
 #include <scenes/deferred_rendering/deferred_rendering.h>
 #include <scenes/ascii_post_processing/ascii_post_processing.h>
 
-int main() {
+#include <framework/application.h>
 
-    Sandbox::Scene* scene = new Sandbox::SceneDeferredRendering(1920, 1080);
+using namespace Sandbox;
+
+int main() {
+    Application application;
+
+    // Register scenes.
+    SceneManager* sceneManager = application.GetSceneManager();
+    sceneManager->RegisterScene<SceneDeferredRendering>("Deferred Rendering", "data/scenes/deferred_rendering");
+    sceneManager->RegisterScene<SceneAsciiPostProcessing>("ASCII Post Processing", "data/scenes/ascii_post_processing");
+
+    // Startup scene.
+    sceneManager->SetStartupScene("Deferred Rendering");
+
     try {
-        scene->Init();
+        application.Initialize();
+        application.Run();
     }
-    catch (std::runtime_error& exception) {
-        std::cerr << exception.what() << std::endl;
+    catch (std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
         return 1;
     }
 
-    scene->Run();
-    scene->Shutdown();
+    application.Shutdown();
 
     return 0;
 }

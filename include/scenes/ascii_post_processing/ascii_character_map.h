@@ -2,7 +2,7 @@
 #ifndef SANDBOX_ASCII_CHARACTER_MAP_H
 #define SANDBOX_ASCII_CHARACTER_MAP_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <scenes/ascii_post_processing/character_bitmap.h>
 #include <framework/buffer/ubo.h>
 #include <scenes/ascii_post_processing/ascii_defines.h>

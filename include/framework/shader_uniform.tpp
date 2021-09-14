@@ -2,7 +2,7 @@
 #ifndef SANDBOX_SHADER_UNIFORM_TPP
 #define SANDBOX_SHADER_UNIFORM_TPP
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 
 namespace Sandbox {
 

@@ -2,26 +2,33 @@
 #ifndef SANDBOX_MODEL_MANAGER_H
 #define SANDBOX_MODEL_MANAGER_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
+
 #include <framework/model.h>
 #include <framework/object_loader.h>
 
 namespace Sandbox {
 
-    class ModelManager {
+    class ModelManager : public Singleton<ModelManager> {
         public:
-            ModelManager();
-            ~ModelManager();
+            REGISTER_SINGLETON(ModelManager);
+
+            void Initialize() override;
+            void Shutdown() override;
 
             void OnImGui();
-            void Update();
 
-            Model* AddModelFromFile(std::string modelName, std::string filepath);
+            Model* AddModelFromFile(const std::string& modelName, std::string filepath);
 
             [[nodiscard]] const std::vector<Model*>& GetModels() const;
             [[nodiscard]] Model* GetNamedModel(std::string modelName) const;
 
+            void Clear();
+
         private:
+            ModelManager();
+            ~ModelManager() override;
+
             void DrawModelTransformImGui(Model* model) const;
             void DrawModelMaterialImGui(Model* model) const;
 

@@ -10,18 +10,15 @@
 
 namespace Sandbox {
 
-    SceneDeferredRendering::SceneDeferredRendering(int width, int height) : Scene("Deferred Rendering", width, height),
-                                                                            _fbo(2560, 1440) {
-        _dataDirectory = "data/scenes/deferred_rendering";
+    SceneDeferredRendering::SceneDeferredRendering() : IScene(),
+                                                       _fbo(2560, 1440) {
     }
 
     SceneDeferredRendering::~SceneDeferredRendering() {
-
     }
 
     void SceneDeferredRendering::OnInit() {
         InitializeShaders();
-        InitializeTextures();
         InitializeMaterials();
 
         ConfigureLights();
@@ -30,15 +27,15 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::OnUpdate(float dt) {
-        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
-        ImGuiLog& log = ImGuiLog::GetInstance();
+        ShaderLibrary* shaderLibrary = Singleton<ShaderLibrary>::GetInstance();
+        ImGuiLog* log = Singleton<ImGuiLog>::GetInstance();
 
         // Recompile shaders.
         try {
-            shaderLibrary.RecompileAllModified();
+            shaderLibrary->RecompileAllModified();
         }
         catch (std::runtime_error& err) {
-            log.LogError("Shader recompilation failed: %s", err.what());
+            log->LogError("Shader recompilation failed: %s", err.what());
         }
     }
 
@@ -48,7 +45,7 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::OnRender() {
-        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
+        Window* window = Singleton<Window>::GetInstance();
 
         // Set viewport.
         _fbo.BindForReadWrite();
@@ -65,7 +62,7 @@ namespace Sandbox {
 
         // Restore viewport.
         _fbo.Unbind();
-        Backend::Core::SetViewport(0, 0, _window.GetWidth(), _window.GetHeight());
+        Backend::Core::SetViewport(0, 0, window->GetWidth(), window->GetHeight());
     }
 
     void SceneDeferredRendering::OnPostRender() {
@@ -73,26 +70,14 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::OnImGui() {
-        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
-        MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
-        ImGuiLog& log = ImGuiLog::GetInstance();
-
-        // Enable window docking.
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-
-        // Framework overview.
-        if (ImGui::Begin("Overview")) {
-            ImGui::Text("Render time:");
-            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        }
-
-        ImGui::End();
+        MaterialLibrary* materialLibrary = Singleton<MaterialLibrary>::GetInstance();
+        Window* window = Singleton<Window>::GetInstance();
 
         // Draw the final output from the hybrid rendering pipeline.
         if (ImGui::Begin("Framebuffer")) {
             // Ensure proper scene image scaling.
             float maxWidth = ImGui::GetWindowContentRegionWidth();
-            float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
+            float aspect = static_cast<float>(window->GetWidth()) / static_cast<float>(window->GetHeight());
             ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
             ImGui::SetCursorPosY(ImGui::GetItemRectSize().y + (ImGui::GetWindowSize().y - ImGui::GetItemRectSize().y - imageSize.y) * 0.5f);
 
@@ -105,7 +90,7 @@ namespace Sandbox {
         if (ImGui::Begin("Debug Textures")) {
             // Ensure proper scene image scaling.
             float maxWidth = ImGui::GetWindowContentRegionWidth();
-            float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
+            float aspect = static_cast<float>(window->GetWidth()) / static_cast<float>(window->GetHeight());
             ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
 
             ImGui::Text("Position (view space):");
@@ -133,14 +118,6 @@ namespace Sandbox {
             ImGui::Separator();
         }
         ImGui::End();
-
-        // ImGui log output.
-        log.OnImGui();
-
-        // Materials.
-        materialLibrary.OnImGui();
-
-        _modelManager.OnImGui();
     }
 
     void SceneDeferredRendering::OnShutdown() {
@@ -148,39 +125,33 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::InitializeShaders() {
-        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
+        ShaderLibrary* shaderLibrary = Singleton<ShaderLibrary>::GetInstance();
 
-        shaderLibrary.AddShader("SingleColor", { "assets/shaders/color.vert", "assets/shaders/color.frag" });
-        shaderLibrary.AddShader("Texture", { "assets/shaders/texture.vert", "assets/shaders/texture.frag" });
+        shaderLibrary->AddShader("SingleColor", { "assets/shaders/color.vert", "assets/shaders/color.frag" });
+        shaderLibrary->AddShader("Texture", { "assets/shaders/texture.vert", "assets/shaders/texture.frag" });
 
-        shaderLibrary.AddShader("Depth", { "assets/shaders/fsq.vert", "assets/shaders/depth.frag" });
-        shaderLibrary.AddShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
-        shaderLibrary.AddShader("DeferredPhongShading", { "assets/shaders/fsq.vert", "assets/shaders/deferred_phong_shading.frag" });
-        shaderLibrary.AddShader("GeometryPass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
-    }
-
-    void SceneDeferredRendering::InitializeTextures() {
-        TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
-
-        textureLibrary.AddTexture("viking room", "assets/textures/viking_room.png");
+        shaderLibrary->AddShader("Depth", { "assets/shaders/fsq.vert", "assets/shaders/depth.frag" });
+        shaderLibrary->AddShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
+        shaderLibrary->AddShader("DeferredPhongShading", { "assets/shaders/fsq.vert", "assets/shaders/deferred_phong_shading.frag" });
+        shaderLibrary->AddShader("GeometryPass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
     }
 
     void SceneDeferredRendering::InitializeMaterials() {
-        MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
-        TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
+        MaterialLibrary* materialLibrary = Singleton<MaterialLibrary>::GetInstance();
+        TextureLibrary* textureLibrary = Singleton<TextureLibrary>::GetInstance();
 
         // Single color material.
         Material* singleColorMaterial = new Material("SingleColor", {
             { "surfaceColor", glm::vec3(1.0f) }
         });
         singleColorMaterial->GetUniform("surfaceColor")->UseColorPicker(true);
-        materialLibrary.AddMaterial(singleColorMaterial);
+        materialLibrary->AddMaterial(singleColorMaterial);
 
         // Textured material.
         Material* textureMaterial = new Material("Texture", {
-            { "modelTexture", TextureSampler(textureLibrary.GetTexture("viking room"), 0) }
+            { "modelTexture", TextureSampler(textureLibrary->GetTexture("viking room"), 0) }
         });
-        materialLibrary.AddMaterial(textureMaterial);
+        materialLibrary->AddMaterial(textureMaterial);
 
         // Phong shading material.
         Material* phongMaterial = new Material("Phong", {
@@ -193,14 +164,15 @@ namespace Sandbox {
         phongMaterial->GetUniform("diffuseCoefficient")->UseColorPicker(true);
         phongMaterial->GetUniform("specularCoefficient")->UseColorPicker(true);
         phongMaterial->GetUniform("specularExponent")->SetSliderRange(0.0f, 100.0f);
-        materialLibrary.AddMaterial(phongMaterial);
+        materialLibrary->AddMaterial(phongMaterial);
     }
 
     void SceneDeferredRendering::ConfigureModels() {
-        MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
+        MaterialLibrary* materialLibrary = Singleton<MaterialLibrary>::GetInstance();
+        ModelManager* modelManager = Singleton<ModelManager>::GetInstance();
 
-        Model* bunny = _modelManager.AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
-        Material* bunnyMaterial = materialLibrary.GetMaterialInstance("Phong");
+        Model* bunny = modelManager->AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
+        Material* bunnyMaterial = materialLibrary->GetMaterialInstance("Phong");
         bunnyMaterial->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
         bunny->AddMaterial(bunnyMaterial);
     }
@@ -278,38 +250,41 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::ConfigureLights() {
+        LightingManager* lightingManager = Singleton<LightingManager>::GetInstance();
+
         Light one;
         Transform& oneTransform = one.GetTransform();
         oneTransform.SetPosition(glm::vec3(2.0f, 0.0f, 0.0f));
-        _lightingManager.AddLight(one);
+        lightingManager->AddLight(one);
 
         Light two;
         Transform& twoTransform = two.GetTransform();
         twoTransform.SetPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
-        _lightingManager.AddLight(two);
+        lightingManager->AddLight(two);
 
 
         Light three;
         Transform& threeTransform = three.GetTransform();
         threeTransform.SetPosition(glm::vec3(0.0f, 2.0f, 0.0f));
-        _lightingManager.AddLight(three);
+        lightingManager->AddLight(three);
     }
 
     void SceneDeferredRendering::GeometryPass() {
-        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
+        ShaderLibrary* shaderLibrary = Singleton<ShaderLibrary>::GetInstance();
+        ModelManager* modelManager = Singleton<ModelManager>::GetInstance();
 
         _fbo.DrawBuffers(0, 5);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
 
-        Shader* geometryShader = shaderLibrary.GetShader("GeometryPass");
+        Shader* geometryShader = shaderLibrary->GetShader("GeometryPass");
         geometryShader->Bind();
 
         // Set camera uniforms.
-        geometryShader->SetUniform("cameraTransform", _camera.GetMatrix());
-        geometryShader->SetUniform("viewTransform", _camera.GetViewMatrix());
+        geometryShader->SetUniform("cameraTransform", camera_.GetMatrix());
+        geometryShader->SetUniform("viewTransform", camera_.GetViewMatrix());
 
         // Render models to FBO attachments.
-        for (Model* model : _modelManager.GetModels()) {
+        for (Model* model : modelManager->GetModels()) {
             Transform& transform = model->GetTransform();
             Mesh& mesh = model->GetMesh();
             Material* material = model->GetMaterial("Phong");
@@ -335,21 +310,21 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::RenderOutputScene() {
-        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
+        ShaderLibrary* shaderLibrary = Singleton<ShaderLibrary>::GetInstance();
 
         // Render to 'output' texture.
         _fbo.DrawBuffers(5, 1);
-        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
+        //Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
 
-        Shader* deferredPhongShader = shaderLibrary.GetShader("DeferredPhongShading");
+        Shader* deferredPhongShader = shaderLibrary->GetShader("DeferredPhongShading");
         deferredPhongShader->Bind();
 
         // Set camera uniforms.
-        deferredPhongShader->SetUniform("cameraPosition", _camera.GetEyePosition());
-        deferredPhongShader->SetUniform("cameraTransform", _camera.GetMatrix());
-        deferredPhongShader->SetUniform("viewTransform", _camera.GetViewMatrix());
-        deferredPhongShader->SetUniform("cameraNearPlane", _camera.GetNearPlaneDistance());
-        deferredPhongShader->SetUniform("cameraFarPlane", _camera.GetFarPlaneDistance());
+        deferredPhongShader->SetUniform("cameraPosition", camera_.GetEyePosition());
+        deferredPhongShader->SetUniform("cameraTransform", camera_.GetMatrix());
+        deferredPhongShader->SetUniform("viewTransform", camera_.GetViewMatrix());
+        deferredPhongShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
+        deferredPhongShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
 
         // Bind geometry pass textures.
         Backend::Rendering::BindTextureWithSampler(deferredPhongShader, _fbo.GetNamedRenderTarget("position"), 0);
@@ -365,13 +340,13 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::RenderDepthBuffer() {
-        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
+        ShaderLibrary* shaderLibrary = Singleton<ShaderLibrary>::GetInstance();
 
         // Render to depth texturing using FSQ.
         _fbo.DrawBuffers(6, 1);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
 
-        Shader* depthShader = shaderLibrary.GetShader("Depth");
+        Shader* depthShader = shaderLibrary->GetShader("Depth");
         depthShader->Bind();
 
         // Uniforms.

@@ -2,7 +2,7 @@
 #ifndef SANDBOX_MATERIAL_H
 #define SANDBOX_MATERIAL_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/shader.h>
 #include <framework/shader_uniform.h>
 

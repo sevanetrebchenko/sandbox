@@ -2,15 +2,16 @@
 #ifndef SANDBOX_CAMERA_H
 #define SANDBOX_CAMERA_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 
 namespace Sandbox {
 
     class Camera {
         public:
             Camera(float width, float height);
-
             ~Camera();
+
+            void Default();
 
             [[nodiscard]] const glm::vec3& GetForwardVector() const;
             [[nodiscard]] const glm::vec3& GetUpVector() const;
@@ -55,6 +56,9 @@ namespace Sandbox {
 
             [[nodiscard]] float GetAspectRatio() const;
             void SetAspectRatio(float aspectRatio);
+
+            void SetWidth(float width);
+            void SetHeight(float height);
 
         private:
             void CalculateMatrix();

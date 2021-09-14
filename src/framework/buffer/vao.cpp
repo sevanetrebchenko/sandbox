@@ -18,11 +18,11 @@ namespace Sandbox {
         // VBOs/EBO get bound on initialization.
         glBindVertexArray(_bufferID);
 
-        for (VertexBufferObject* vbo : _vbos) {
-            if (vbo) {
-                vbo->Bind();
-            }
-        }
+//        for (VertexBufferObject* vbo : _vbos) {
+//            if (vbo) {
+//                vbo->Bind();
+//            }
+//        }
 
         if (_ebo) {
             _ebo->Bind();

@@ -3,15 +3,17 @@
 
 namespace Sandbox {
 
+    void MaterialLibrary::Initialize() {
 
-    MaterialLibrary &MaterialLibrary::GetInstance() {
-        static MaterialLibrary materialLibrary;
-        return materialLibrary;
+    }
+
+    void MaterialLibrary::Shutdown() {
+        Clear();
     }
 
     void MaterialLibrary::OnImGui() {
         if (ImGui::Begin("Material Outliner", nullptr, ImGuiWindowFlags_None)) {
-            for (const std::pair<std::string, Material*>& materialData : _materialList) {
+            for (const std::pair<const std::string, Material*>& materialData : materialList_) {
                 if (ImGui::TreeNode(materialData.first.c_str())) {
                     materialData.second->OnImGui();
 
@@ -24,17 +26,17 @@ namespace Sandbox {
     }
 
     void MaterialLibrary::AddMaterial(Material *material) {
-        _materialList.emplace(material->GetName(), material);
+        materialList_.emplace(material->GetName(), material);
     }
 
     void MaterialLibrary::AddMaterial(const std::string& name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms) {
-        _materialList.emplace( name, new Material(name, uniforms));
+        materialList_.emplace(name, new Material(name, uniforms));
     }
 
     Material *MaterialLibrary::GetMaterial(const std::string &materialName) {
-        auto materialIter = _materialList.find(materialName);
+        auto materialIter = materialList_.find(materialName);
 
-        if (materialIter != _materialList.end()) {
+        if (materialIter != materialList_.end()) {
             return materialIter->second;
         }
 
@@ -42,21 +44,28 @@ namespace Sandbox {
     }
 
     MaterialLibrary::MaterialLibrary() {
-
     }
 
     MaterialLibrary::~MaterialLibrary() {
-
     }
 
     Material *MaterialLibrary::GetMaterialInstance(const std::string &materialName) {
-        auto materialIter = _materialList.find(materialName);
+        auto materialIter = materialList_.find(materialName);
 
-        if (materialIter != _materialList.end()) {
+        if (materialIter != materialList_.end()) {
             return new Material(*materialIter->second);
         }
 
         return nullptr;
+    }
+
+    void MaterialLibrary::Clear() {
+        // Clear all materials.
+        for (std::pair<const std::string, Material*>& material : materialList_) {
+            delete material.second;
+        }
+
+        materialList_.clear();
     }
 
 }

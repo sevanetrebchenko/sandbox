@@ -2,14 +2,16 @@
 #include <framework/camera.h>
 #include <framework/backend.h>
 
+#include <framework/window.h>
+
 namespace Sandbox {
 
     Camera::Camera(float width, float height) : _isDirty(true),
                                                 _eyePosition(glm::vec3(0.0f, 0.0f, 5.0f)),
                                                 _lookAtDirection(glm::vec3(0.0f, 0.0f, -1.0f)),
                                                 _upVector(glm::vec3(0.0f, 1.0f, 0.0f)),
-                                                _width(width),
-                                                _height(height),
+                                                _width(std::fabs(width)),
+                                                _height(std::fabs(height)),
                                                 _fovAngle(75.0f),
                                                 _aspectRatio(_width / _height),
                                                 _nearPlaneDistance(0.01f),
@@ -19,10 +21,31 @@ namespace Sandbox {
                                                 _yaw(-90.0f),
                                                 _pitch(0.0f),
                                                 _cursorEnabled(true) {
-        Backend::Core::SetViewport(0, 0, width, height);
+        Backend::Core::SetViewport(0, 0, (unsigned)_width, (unsigned)_height);
     }
 
     Camera::~Camera() = default;
+
+    void Camera::Default() {
+        Window* window = Singleton<Window>::GetInstance();
+        _isDirty = true;
+        _eyePosition = glm::vec3(0.0f, 0.0f, 5.0f);
+        _lookAtDirection = glm::vec3(0.0f, 0.0f, -1.0f);
+        _upVector = glm::vec3(0.0f, 1.0f, 0.0f);
+        _width = std::fabs((float)window->GetWidth());
+        _height = std::fabs((float)window->GetHeight());
+        _fovAngle = 75.0f;
+        _aspectRatio = _width / _height;
+        _nearPlaneDistance = 0.01f;
+        _farPlaneDistance = 1000.0f;
+        _cameraMatrix = glm::mat4(1.0f);
+        _cameraSensitivity = 0.1f;
+        _yaw = -90.0f;
+        _pitch = 0.0f;
+        _cursorEnabled = true;
+        Backend::Core::SetViewport(0, 0, (unsigned)_width, (unsigned)_height);
+
+    }
 
     void Camera::SetEyePosition(glm::vec3 position) {
         _eyePosition = position;
@@ -166,6 +189,18 @@ namespace Sandbox {
     void Camera::SetAspectRatio(float aspectRatio) {
         _aspectRatio = aspectRatio;
         _isDirty = true;
+    }
+
+    void Camera::SetWidth(float width) {
+        _width = std::fabs(width);
+        _aspectRatio = _width / _height;
+        Backend::Core::SetViewport(0, 0, (unsigned)_width, (unsigned)_height);
+    }
+
+    void Camera::SetHeight(float height) {
+        _height = std::fabs(height);
+        _aspectRatio = _width / _height;
+        Backend::Core::SetViewport(0, 0, (unsigned)_width, (unsigned)_height);
     }
 
 }

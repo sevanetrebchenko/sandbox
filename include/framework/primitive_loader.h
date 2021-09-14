@@ -2,7 +2,7 @@
 #ifndef SANDBOX_PRIMITIVE_LOADER_H
 #define SANDBOX_PRIMITIVE_LOADER_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/mesh.h>
 
 namespace Sandbox {

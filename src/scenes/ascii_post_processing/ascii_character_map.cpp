@@ -24,13 +24,13 @@ namespace Sandbox {
             throw std::runtime_error("Dimension mismatch in AddCharacter.");
         }
 
-        ImGuiLog& log = ImGuiLog::GetInstance();
+        ImGuiLog* log = Singleton<ImGuiLog>::GetInstance();
 
         if (_fontsheet.size() < MAX_NUM_CHARACTERS) {
             float characterCoverage = characterBitmap.GetCoverage();
             bool foundLocation = false;
 
-            log.LogTrace("Adding character bitmap with name: '%s' (Covwderage: %i%).", characterBitmap.GetName().c_str(), (int)(characterCoverage * 100));
+            log->LogTrace("Adding character bitmap with name: '%s' (Coverage: %i%).", characterBitmap.GetName().c_str(), (int)(characterCoverage * 100));
 
             for (auto characterIter = _fontsheet.cbegin(); characterIter != _fontsheet.cend(); ++characterIter) {
                 const CharacterBitmap& character = *characterIter;

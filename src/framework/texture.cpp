@@ -89,8 +89,8 @@ namespace Sandbox {
 
             GLenum errorCode = glGetError();
             if (errorCode != GL_NO_ERROR) {
-                ImGuiLog& log = ImGuiLog::GetInstance();
-                log.LogError("Error ( %s ) after loading texture: %s", glGetError(), textureName.c_str());
+                ImGuiLog* log = Singleton<ImGuiLog>::GetInstance();
+                log->LogError("Error ( %s ) after loading texture: %s", glGetError(), textureName.c_str());
                 return;
             }
 
@@ -125,11 +125,11 @@ namespace Sandbox {
     }
 
     void Texture::WriteDataToDirectory(const std::string &directory) const {
-        ImGuiLog& log = ImGuiLog::GetInstance();
+        ImGuiLog* log = Singleton<ImGuiLog>::GetInstance();
 
         // Make sure directory exists.
         if (!std::filesystem::is_directory(directory)) {
-            log.LogTrace("Creating new directory under: %s", directory.c_str());
+            log->LogTrace("Creating new directory under: %s", directory.c_str());
             std::filesystem::create_directory(directory);
         }
 
@@ -150,14 +150,14 @@ namespace Sandbox {
         switch (_attachmentType) {
             case COLOR:
                 WriteData(filepath, GL_RGBA, GL_UNSIGNED_BYTE, 4);
-                log.LogTrace("Saving RGBA image file: \"%s\" under location: %s", _name.c_str(), filepath.c_str());
+                log->LogTrace("Saving RGBA image file: \"%s\" under location: %s", _name.c_str(), filepath.c_str());
                 break;
             case DEPTH:
                 WriteData(filepath, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 1);
-                log.LogTrace("Saving DEPTH image file: \"%s\" under location: %s", _name.c_str(), filepath.c_str());
+                log->LogTrace("Saving DEPTH image file: \"%s\" under location: %s", _name.c_str(), filepath.c_str());
                 break;
             case UNKNOWN:
-                log.LogError("Attempting to write screenshot of existing texture. No image data generated.");
+                log->LogError("Attempting to write screenshot of existing texture. No image data generated.");
                 break;
         }
     }

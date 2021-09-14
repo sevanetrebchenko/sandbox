@@ -1,10 +1,26 @@
 [TRACE] Vendor: NVIDIA Corporation
-[TRACE] Renderer: GeForce RTX 2070 SUPER/PCIe/SSE2
-[TRACE] OpenGL Version: 4.6.0 NVIDIA 460.89
-[TRACE] Adding character bitmap with name: 'o' (Covwderage: 24%).
+[TRACE] Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
+[TRACE] OpenGL Version: 4.6.0 NVIDIA 471.41
+[TRACE] Registered scene 'Deferred Rendering' with data directory 'data/scenes/deferred_rendering'
+[TRACE] Adding character bitmap with name: 'o' (Coverage: 24%).
+[TRACE] Registered scene 'ASCII Post Processing' with data directory 'data/scenes/ascii_post_processing'
+[TRACE] Found existing ImGui layout (data\scenes\deferred_rendering\deferred_rendering_imgui.ini).
+[TRACE] Found existing ImGui log file (data\scenes\deferred_rendering\deferred_rendering_log.txt).
+[TRACE] Creating new model: bunny from .obj file: assets\models\bunny_high_poly.obj
+[TRACE] Finished loading model: bunny.
+[TRACE] Switching to scene 'ASCII Post Processing'.
 [TRACE] Found existing ImGui layout (data\scenes\ascii_post_processing\ascii_post_processing_imgui.ini).
-[TRACE] Creating new ImGui log in location (data\scenes\ascii_post_processing\ascii_post_processing_log.txt).
+[TRACE] Found existing ImGui log file (data\scenes\ascii_post_processing\ascii_post_processing_log.txt).
 [TRACE] Creating new model: viking room from .obj file: assets\models\viking_room.obj
 [TRACE] Finished loading model: viking room.
-[TRACE] Saving ImGui settings to: data\scenes\ascii_post_processing\ascii_post_processing_imgui.ini
-[TRACE] Saving ImGui log to: data\scenes\ascii_post_processing\ascii_post_processing_log.txt
+[TRACE] Switching to scene 'Deferred Rendering'.
+[TRACE] Found existing ImGui layout (data\scenes\deferred_rendering\deferred_rendering_imgui.ini).
+[TRACE] Found existing ImGui log file (data\scenes\deferred_rendering\deferred_rendering_log.txt).
+[TRACE] Creating new model: bunny from .obj file: assets\models\bunny_high_poly.obj
+[TRACE] Finished loading model: bunny.
+[TRACE] Switching to scene 'ASCII Post Processing'.
+[TRACE] Found existing ImGui layout (data\scenes\ascii_post_processing\ascii_post_processing_imgui.ini).
+[TRACE] Found existing ImGui log file (data\scenes\ascii_post_processing\ascii_post_processing_log.txt).
+[ERROR] Error ( (null) ) after loading texture: assets\textures\viking_room.png
+[TRACE] Creating new model: viking room from .obj file: assets\models\viking_room.obj
+[TRACE] Finished loading model: viking room.

@@ -2,7 +2,7 @@
 #ifndef SANDBOX_MODEL_H
 #define SANDBOX_MODEL_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/transform.h>
 #include <framework/mesh.h>
 #include <framework/shader.h>

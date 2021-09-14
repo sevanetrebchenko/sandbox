@@ -2,7 +2,7 @@
 #ifndef SANDBOX_SHADER_UNIFORM_H
 #define SANDBOX_SHADER_UNIFORM_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/texture.h>
 #include <framework/shader.h>
 

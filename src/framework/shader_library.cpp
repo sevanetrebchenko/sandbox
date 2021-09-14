@@ -3,6 +3,16 @@
 
 namespace Sandbox {
 
+    void ShaderLibrary::Initialize() {
+        if (!initialized_) {
+            initialized_ = true;
+        }
+    }
+
+    void ShaderLibrary::Shutdown() {
+        Clear();
+    }
+
     void ShaderLibrary::AddShader(Shader *shader) {
         _shaders.emplace(shader->GetName(), shader);
         _recompileTargets.push_back(shader);
@@ -38,11 +48,6 @@ namespace Sandbox {
         }
     }
 
-    ShaderLibrary &ShaderLibrary::GetInstance() {
-        static ShaderLibrary instance;
-        return instance;
-    }
-
     ShaderLibrary::ShaderLibrary() {
 
     }
@@ -51,6 +56,17 @@ namespace Sandbox {
         for (const auto& shaderPair : _shaders) {
             delete shaderPair.second;
         }
+    }
+
+    void ShaderLibrary::Clear() {
+        for (const auto& shaderPair : _shaders) {
+            delete shaderPair.second;
+        }
+
+        _shaders.clear();
+
+        // IReloadable points to shaders, no need to delete.
+        _recompileTargets.clear();
     }
 
 }

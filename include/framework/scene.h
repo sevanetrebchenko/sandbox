@@ -2,24 +2,22 @@
 #ifndef SANDBOX_SCENE_H
 #define SANDBOX_SCENE_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/camera.h>
 #include <framework/window.h>
 #include <framework/model_manager.h>
 #include <framework/lighting_manager.h>
+#include <framework/shader_library.h>
 
 namespace Sandbox {
 
-    class Scene {
+    class SceneData; // Forward declaration.
+
+    class IScene {
         public:
-            Scene(std::string name, int width, int height);
-            virtual ~Scene();
+            IScene();
+            virtual ~IScene();
 
-            void Init();
-            void Run();
-            void Shutdown();
-
-        protected:
             virtual void OnInit() = 0;
 
             virtual void OnUpdate(float dt) = 0;
@@ -32,29 +30,8 @@ namespace Sandbox {
             virtual void OnShutdown() = 0;
 
             // Data provided to derived scenes by default.
-            Window _window;
-            Camera _camera;
-            ModelManager _modelManager;
-            LightingManager _lightingManager;
-            std::string _dataDirectory;
-
-        private:
-            void LoadSceneData();
-
-            void OnImGuiMenu();
-
-            void BeginFrame();
-            void Update(float dt);
-            void EndFrame();
-
-            void ProcessInput();
-
-            std::string _sceneName;
-            std::string _imGuiIniName;
-            std::string _imGuiLogName;
-            float _dt;
-            float _currentFrameTime;
-            float _previousFrameTime;
+            Camera camera_;
+            SceneData* sceneData_;
     };
 
 }

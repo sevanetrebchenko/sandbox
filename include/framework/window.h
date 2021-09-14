@@ -2,14 +2,17 @@
 #ifndef SANDBOX_WINDOW_H
 #define SANDBOX_WINDOW_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
+#include <framework/singleton.h>
 
 namespace Sandbox {
 
-    class Window {
+    class Window : public Singleton<Window> {
         public:
-            Window(std::string name, int width, int height);
-            ~Window();
+            REGISTER_SINGLETON(Window);
+
+            void Initialize() override;
+            void Shutdown() override;
 
             void PollEvents();
             void SwapBuffers();
@@ -22,6 +25,9 @@ namespace Sandbox {
             [[nodiscard]] const std::string& GetName() const;
 
         private:
+            Window();
+            ~Window() override;
+
             void InitializeGLFW();
             void CreateGLFWWindow();
             void SetupGLFWCallbacks();

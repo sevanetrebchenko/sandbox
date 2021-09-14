@@ -3,18 +3,18 @@
 
 namespace Sandbox {
 
-    ImGuiLog& ImGuiLog::GetInstance() {
-        static ImGuiLog instance;
-        return instance;
+    void ImGuiLog::Initialize() {
+        _processingBuffer = new char[_processingBufferSize];
     }
 
-    ImGuiLog::ImGuiLog() : _processingBufferSize(64u),
-                           _processingBuffer(new char[_processingBufferSize])
-                           {
+    void ImGuiLog::Shutdown() {
+        delete[] _processingBuffer;
+    }
+
+    ImGuiLog::ImGuiLog() : _processingBufferSize(64u) {
     }
 
     ImGuiLog::~ImGuiLog() {
-        delete[] _processingBuffer;
     }
 
     void ImGuiLog::OnImGui() {

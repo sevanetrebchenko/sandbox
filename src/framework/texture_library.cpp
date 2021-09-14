@@ -4,9 +4,13 @@
 
 namespace Sandbox {
 
-    TextureLibrary &TextureLibrary::GetInstance() {
-        static TextureLibrary instance;
-        return instance;
+    void TextureLibrary::Initialize() {
+    }
+
+    void TextureLibrary::Shutdown() {
+        for (const auto& texture : _textures) {
+            delete texture.second;
+        }
     }
 
     void TextureLibrary::AddTexture(const std::string& textureName, const std::string &textureFilepath) {
@@ -33,10 +37,9 @@ namespace Sandbox {
     }
 
     TextureLibrary::TextureLibrary() {
-
     }
 
     TextureLibrary::~TextureLibrary() {
-
     }
+
 }

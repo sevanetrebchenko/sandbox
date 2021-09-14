@@ -2,18 +2,19 @@
 #ifndef SANDBOX_SHADER_LIBRARY_H
 #define SANDBOX_SHADER_LIBRARY_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/shader.h>
 #include <framework/directory_utils.h>
+#include <framework/singleton.h>
 
 namespace Sandbox {
 
-    /**
-     * Holds all the shaders in the framework.
-     */
-    class ShaderLibrary {
+    class ShaderLibrary : public Singleton<ShaderLibrary> {
         public:
-            static ShaderLibrary& GetInstance();
+            REGISTER_SINGLETON(ShaderLibrary);
+
+            void Initialize() override;
+            void Shutdown() override;
 
             void AddShader(Shader* shader);
             void AddShader(const std::string& shaderName, const std::initializer_list<std::string>& shaderComponentPaths);
@@ -23,9 +24,11 @@ namespace Sandbox {
 
             Shader* GetShader(const std::string& shaderName);
 
+            void Clear();
+
         private:
             ShaderLibrary();
-            ~ShaderLibrary();
+            ~ShaderLibrary() override;
 
             std::unordered_map<std::string, Shader*> _shaders;
             std::vector<IReloadable*> _recompileTargets;

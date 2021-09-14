@@ -4,14 +4,20 @@
 
 namespace Sandbox {
 
-    LightingManager::LightingManager() : _numActiveLights(0u),
-                                         _lightingUBO(),
-                                         _isDirty(true) {
+    void LightingManager::Initialize() {
         ConstructUniformBlock();
     }
 
-    LightingManager::~LightingManager() {
+    void LightingManager::Shutdown() {
+        Clear();
+    }
 
+    LightingManager::LightingManager() : _numActiveLights(0u),
+                                         _lightingUBO(),
+                                         _isDirty(true) {
+    }
+
+    LightingManager::~LightingManager() {
     }
 
     void LightingManager::ConstructUniformBlock() {
@@ -175,6 +181,24 @@ namespace Sandbox {
         _lights.push_back(light);
         ++_numActiveLights;
         _isDirty = true;
+    }
+
+    void LightingManager::Clear() {
+        _lightingUBO.Bind();
+        UniformBlock& lightUniformBlock = _lightingUBO.GetUniformBlock();
+        UniformBlockLayout& lightBufferBlockLayout = lightUniformBlock.GetUniformBlockLayout();
+        const std::vector<UniformBufferElement>& lightBufferElements = lightBufferBlockLayout.GetBufferElements();
+        unsigned offset = lightBufferBlockLayout.GetInitialOffsetInElements();
+
+        // Set all lights to be inactive.
+        for (int i = 0; i < MAX_NUM_LIGHTS; ++i) {
+            unsigned bufferElementIndex = offset + lightBufferBlockLayout.GetIntermediateOffsetInElements() * i;
+            const UniformBufferElement& element = lightBufferElements[bufferElementIndex];
+            unsigned elementOffset = element.GetBufferOffset();
+            unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
+            bool isActive = false;
+            _lightingUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&isActive));
+        }
     }
 
 }

@@ -5,18 +5,20 @@
 
 namespace Sandbox {
 
+    void ModelManager::Initialize() {
+
+    }
+
+    void ModelManager::Shutdown() {
+        Clear();
+    }
+
     ModelManager::ModelManager() {
     }
 
     ModelManager::~ModelManager() {
         for (Model* model : _modelList) {
             delete model;
-        }
-    }
-
-    void ModelManager::Update() {
-        for (Model* model : _modelList) {
-            model->Update();
         }
     }
 
@@ -75,8 +77,8 @@ namespace Sandbox {
         }
     }
 
-    Model* ModelManager::AddModelFromFile(std::string modelName, std::string filepath) {
-        ImGuiLog& log = ImGuiLog::GetInstance();
+    Model* ModelManager::AddModelFromFile(const std::string& modelName, std::string filepath) {
+        ImGuiLog* log = Singleton<ImGuiLog>::GetInstance();
 
         filepath = NativePathConverter::ConvertToNativeSeparators(filepath);
 
@@ -84,14 +86,14 @@ namespace Sandbox {
         std::string extension = filepath.substr(filepath.find_last_of('.') + 1);
 
         if (extension == "obj") {
-            log.LogTrace("Creating new model: %s from .obj file: %s", modelName.c_str(), filepath.c_str());
+            log->LogTrace("Creating new model: %s from .obj file: %s", modelName.c_str(), filepath.c_str());
 
             // Load in mesh and set up buffers.
-            OBJLoader& objLoader = OBJLoader::GetInstance();
-            Mesh modelMesh = objLoader.LoadFromFile(filepath);
+            OBJLoader* objLoader = Singleton<OBJLoader>::GetInstance();
+            Mesh modelMesh = objLoader->LoadFromFile(filepath);
             modelMesh.Complete();
 
-            log.LogTrace("Finished loading model: %s.", modelName.c_str());
+            log->LogTrace("Finished loading model: %s.", modelName.c_str());
 
             Model* model = new Model(modelName);
             model->SetMesh(modelMesh);
@@ -100,9 +102,17 @@ namespace Sandbox {
             return model;
         }
         else {
-            log.LogError("Failed to load model file. Loading model files of extension \"%s\" is currently unsupported.", extension.c_str());
+            log->LogError("Failed to load model file. Loading model files of extension \"%s\" is currently unsupported.", extension.c_str());
             return nullptr;
         }
+    }
+
+    void ModelManager::Clear() {
+        for (Model* model : _modelList) {
+            delete model;
+        }
+
+        _modelList.clear();
     }
 
 }

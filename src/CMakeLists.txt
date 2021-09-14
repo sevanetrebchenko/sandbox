@@ -2,7 +2,7 @@
 # PROJECT FILES
 set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/main.cpp"
-        "${PROJECT_SOURCE_DIR}/src/sandbox_pch.cpp"
+        "${PROJECT_SOURCE_DIR}/src/sandbox.cpp"
 
         # Scenes
         "scenes/deferred_rendering/deferred_rendering.cpp"
@@ -43,12 +43,14 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/texture_library.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/lighting_manager.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/light.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/scene_manager.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/application.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})
 
 target_include_directories(Sandbox PUBLIC "${PROJECT_SOURCE_DIR}/include/")
-target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/sandbox_pch.h")
+target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/sandbox.h")
 
 # DEPENDENCIES
 # Link OpenGL
@@ -78,10 +80,6 @@ target_link_libraries(Sandbox stb)
 # TinyObjLoader.
 message(STATUS "Linking TinyObjLoader to Sandbox project.")
 target_link_libraries(Sandbox tinyobjloader)
-
-# JSON.
-message(STATUS "Linking JSON to Sandbox project.")
-target_link_libraries(Sandbox nlohmann_json::nlohmann_json)
 
 # ImGui.
 message(STATUS "Linking ImGui to Sandbox project.")

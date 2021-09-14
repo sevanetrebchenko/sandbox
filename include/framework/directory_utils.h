@@ -2,7 +2,7 @@
 #ifndef SANDBOX_DIRECTORY_UTILS_H
 #define SANDBOX_DIRECTORY_UTILS_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 
 namespace Sandbox {
 
@@ -24,7 +24,7 @@ namespace Sandbox {
     class IReloadable {
         public:
             IReloadable(const std::initializer_list<std::string>& trackingFiles);
-            ~IReloadable();
+            virtual ~IReloadable();
 
             void RecompileIfModified();
 

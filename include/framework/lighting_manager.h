@@ -2,23 +2,31 @@
 #ifndef SANDBOX_LIGHTING_MANAGER_H
 #define SANDBOX_LIGHTING_MANAGER_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/buffer/ubo.h>
 #include <framework/light.h>
+#include <framework/singleton.h>
 
 namespace Sandbox {
 
-    class LightingManager {
+    class LightingManager : public Singleton<LightingManager> {
         public:
-            LightingManager();
-            ~LightingManager();
+            REGISTER_SINGLETON(LightingManager);
+
+            void Initialize() override;
+            void Shutdown() override;
 
             void OnImGui();
 
             void Update();
             void AddLight(const Light& light);
 
+            void Clear();
+
         private:
+            LightingManager();
+            ~LightingManager() override;
+
             void ConstructUniformBlock();
 
             unsigned _numActiveLights;

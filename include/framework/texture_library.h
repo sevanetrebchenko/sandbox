@@ -2,14 +2,18 @@
 #ifndef SANDBOX_TEXTURE_LIBRARY_H
 #define SANDBOX_TEXTURE_LIBRARY_H
 
-#include <sandbox_pch.h>
+#include <sandbox.h>
 #include <framework/texture.h>
+#include <framework/singleton.h>
 
 namespace Sandbox {
 
-    class TextureLibrary {
+    class TextureLibrary : public Singleton<TextureLibrary> {
         public:
-            static TextureLibrary& GetInstance();
+            REGISTER_SINGLETON(TextureLibrary);
+
+            void Initialize() override;
+            void Shutdown() override;
 
             void AddTexture(const std::string& textureName, const std::string& textureFilepath);
             void AddTexture(Texture* texture);
@@ -18,7 +22,7 @@ namespace Sandbox {
 
         private:
             TextureLibrary();
-            ~TextureLibrary();
+            ~TextureLibrary() override;
 
             std::unordered_map<std::string, Texture*> _textures;
     };
