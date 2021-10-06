@@ -79,10 +79,6 @@ target_link_libraries(Sandbox stb)
 message(STATUS "Linking TinyObjLoader to Sandbox project.")
 target_link_libraries(Sandbox tinyobjloader)
 
-# JSON.
-message(STATUS "Linking JSON to Sandbox project.")
-target_link_libraries(Sandbox nlohmann_json::nlohmann_json)
-
 # ImGui.
 message(STATUS "Linking ImGui to Sandbox project.")
 target_link_libraries(Sandbox imgui)

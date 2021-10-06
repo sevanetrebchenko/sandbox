@@ -30,7 +30,6 @@ namespace Sandbox {
 
         private:
             friend class AsciiCharacterMap;
-            friend class nlohmann::adl_serializer<Sandbox::CharacterBitmap>;
 
             [[nodiscard]] bool TestBit(unsigned bitPosition) const;
             void Clean();
@@ -44,7 +43,5 @@ namespace Sandbox {
     };
 
 }
-
-#include <framework/serialization/character_bitmap_serialization.tpp>
 
 #endif //SANDBOX_CHARACTER_BITMAP_H
