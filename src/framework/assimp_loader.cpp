@@ -83,12 +83,12 @@ namespace Sandbox {
         }
 
         // Bone data.
-        std::vector<glm::ivec4> boneIDs;
+        std::vector<glm::vec4> boneIDs;
         std::vector<glm::vec4> boneWeights;
 
         // Default bone IDs / weights.
         for (unsigned i = 0; i < numVertices; ++i) {
-            glm::ivec4 ID;
+            glm::vec4 ID;
             glm::vec4 weight;
 
             for (int j = 0; j < 4; ++j) {

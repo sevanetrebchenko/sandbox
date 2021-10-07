@@ -47,10 +47,10 @@ namespace Sandbox {
 
             // Bone IDs.
             BufferLayout boneIDBufferLayout;
-            boneIDBufferLayout.SetBufferElements({ {ShaderDataType::IVEC4, "boneIDs"} });
+            boneIDBufferLayout.SetBufferElements({ {ShaderDataType::VEC4, "boneIDs"} });
 
             VertexBufferObject* boneIDs = new VertexBufferObject(boneIDBufferLayout);
-            boneIDs->SetData(_boneIDs.size() * sizeof(int), _boneIDs.data());
+            boneIDs->SetData(_boneIDs.size() * sizeof(glm::vec4), _boneIDs.data());
 
 
             // Bone weights.
@@ -58,7 +58,7 @@ namespace Sandbox {
             boneWeightBufferLayout.SetBufferElements({ {ShaderDataType::VEC4, "boneWeights"} });
 
             VertexBufferObject* boneWeights = new VertexBufferObject(boneWeightBufferLayout);
-            boneWeights->SetData(_boneWeights.size() * sizeof(float), _boneWeights.data());
+            boneWeights->SetData(_boneWeights.size() * sizeof(glm::vec4), _boneWeights.data());
 
 
             ElementBufferObject* ebo = new ElementBufferObject();
@@ -78,7 +78,7 @@ namespace Sandbox {
         }
     }
 
-    void SkinnedMesh::SetBoneIDs(const std::vector<glm::ivec4> &boneIDs) {
+    void SkinnedMesh::SetBoneIDs(const std::vector<glm::vec4> &boneIDs) {
         _isDirty = true;
         _boneIDs = boneIDs;
     }
@@ -96,7 +96,7 @@ namespace Sandbox {
         _numBones = boneCount;
     }
 
-    const std::vector<glm::ivec4> &SkinnedMesh::GetBoneIDs() const {
+    const std::vector<glm::vec4> &SkinnedMesh::GetBoneIDs() const {
         return _boneIDs;
     }
 

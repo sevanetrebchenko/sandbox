@@ -30,7 +30,7 @@ namespace Sandbox {
 
     class Bone {
         public:
-            Bone(int boneID, std::string  boneName, const aiNodeAnim* track);
+            Bone(int boneID, std::string boneName, const aiNodeAnim* track);
             ~Bone();
 
             // Interpolate bone position, scale, and rotation based on the given animation time.
@@ -43,7 +43,9 @@ namespace Sandbox {
 
         private:
             // Interpolate position, scale, and rotation.
-            glm::mat4 Interpolate(float dt);
+            glm::mat4 InterpolatePosition(float dt);
+            glm::mat4 InterpolateRotation(float dt);
+            glm::mat4 InterpolateScale(float dt);
 
             // Assumes [start, end] : [0, duration]
             float GetFactor(float begin, float end, float duration);

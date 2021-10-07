@@ -83,6 +83,12 @@ namespace Sandbox {
                 material->Bind(phongShader);
             }
 
+            // Set bone information.
+            const std::vector<glm::mat4>& boneTransforms = _animator.GetFinalBoneTransforms();
+            for (int i = 0; i < boneTransforms.size(); ++i) {
+                phongShader->SetUniform("boneTransforms[" + std::to_string(i) + "]", boneTransforms[i]);
+            }
+
             // Render stage.
             mesh->Bind();
             Backend::Rendering::DrawIndexed(mesh->GetVAO(), mesh->GetRenderingPrimitive());

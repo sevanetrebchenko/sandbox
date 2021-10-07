@@ -40,6 +40,8 @@ namespace Sandbox {
                 added = true;
                 uniqueBones[boneName].boneID = numBones++;
             }
+
+            _bones.emplace_back(uniqueBones[boneName].boneID, boneName, track);
         }
 
         // Update mesh bones.

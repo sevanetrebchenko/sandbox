@@ -8,7 +8,6 @@ namespace Sandbox {
                            _animation(nullptr)
                            {
         // TODO: support more than 100 bones.
-        _finalBoneTransforms.reserve(100);
         for (int i = 0; i < 100; i++) {
             _finalBoneTransforms.emplace_back(1.0f);
         }
@@ -19,7 +18,8 @@ namespace Sandbox {
 
     void Animator::Update(float dt) {
         if (_animation) {
-            _currentTime += std::fmod(_animation->GetSpeed() * dt, _animation->GetDuration()); // Needs to be a counter over the duraction of the animation.
+            _currentTime += _animation->GetSpeed() * dt;
+            _currentTime = std::fmod(_currentTime, _animation->GetDuration()); // Needs to be a counter over the duration of the animation.
             CalculateBoneTransform(_animation->GetRootNode(), glm::mat4(1.0f), dt);
         }
     }
