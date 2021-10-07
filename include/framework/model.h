@@ -19,7 +19,7 @@ namespace Sandbox {
             void Update();
 
             [[nodiscard]] const std::string& GetName() const;
-            [[nodiscard]] Mesh* GetMesh();
+            [[nodiscard]] const Mesh* GetMesh() const;
             [[nodiscard]] Transform& GetTransform();
             [[nodiscard]] Material* GetMaterial(const std::string& materialName);
             [[nodiscard]] const std::vector<Material*>& GetMaterialsList() const;

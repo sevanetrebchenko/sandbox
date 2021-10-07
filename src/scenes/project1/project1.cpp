@@ -39,6 +39,9 @@ namespace Sandbox {
         catch (std::runtime_error& err) {
             log.LogError("Shader recompilation failed: %s", err.what());
         }
+
+        // Play animation.
+        _animator.Update(dt);
     }
 
     void SceneProject1::OnPreRender() {
@@ -67,7 +70,7 @@ namespace Sandbox {
 
         for (Model* model : _modelManager.GetModels()) {
             Transform& transform = model->GetTransform();
-            Mesh* mesh = model->GetMesh();
+            const Mesh* mesh = model->GetMesh();
             Material* material = model->GetMaterial("Phong");
 
             // Pre render stage.
@@ -158,8 +161,6 @@ namespace Sandbox {
 
     void SceneProject1::InitializeTextures() {
         TextureLibrary& textureLibrary = TextureLibrary::GetInstance();
-
-        textureLibrary.AddTexture("viking room", "assets/textures/viking_room.png");
     }
 
     void SceneProject1::InitializeMaterials() {
@@ -196,10 +197,14 @@ namespace Sandbox {
     void SceneProject1::ConfigureModels() {
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
 
-        Model* bunny = _modelManager.AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
-        Material* bunnyMaterial = materialLibrary.GetMaterialInstance("Phong");
-        bunnyMaterial->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-        bunny->AddMaterial(bunnyMaterial);
+        Model* walkingMan = _modelManager.AddModelFromFile("walking man", "assets/models/CesiumMan.glb");
+        Material* material = materialLibrary.GetMaterialInstance("Phong");
+        material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+        walkingMan->AddMaterial(material);
+
+        // Load animation.
+        _animation = new Animation("assets/models/CesiumMan.glb", walkingMan);
+        _animator.PlayAnimation(_animation);
     }
 
     void SceneProject1::ConstructFBO() {

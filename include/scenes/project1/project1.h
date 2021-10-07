@@ -7,6 +7,9 @@
 #include <framework/buffer/ubo.h>
 #include <framework/lighting_manager.h>
 
+#include <framework/animation.h>
+#include <framework/animator.h>
+
 namespace Sandbox {
 
     class SceneProject1 : public Scene {
@@ -35,11 +38,9 @@ namespace Sandbox {
             void ConfigureModels();
             void ConstructFBO();
 
-            void GeometryPass();
-            void RenderOutputScene();
-            void RenderDepthBuffer();
-
             FrameBufferObject _fbo;
+            Animator _animator;
+            Animation* _animation; // Needs to be valid for the duration of the program.
     };
 
 }

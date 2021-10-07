@@ -42,6 +42,10 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/light.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/skinned_mesh.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/assimp_loader.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/assimp_helper.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/bone.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/animation.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/animator.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})

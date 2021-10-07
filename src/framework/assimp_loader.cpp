@@ -1,13 +1,11 @@
 
 #include <framework/assimp_loader.h>
 #include <framework/imgui_log.h>
+#include <framework/assimp_helper.h>
 
 namespace Sandbox {
 
-    struct BoneInfo {
-        int boneID;
-        glm::mat4 modelToBone; // Transforms vertex from model space to bone space.
-    };
+
 
     AssimpLoader &AssimpLoader::GetInstance() {
         static AssimpLoader loader;
@@ -20,12 +18,8 @@ namespace Sandbox {
     AssimpLoader::~AssimpLoader() {
     }
 
-    SkinnedMesh AssimpLoader::LoadFromFile(const std::string &filepath) {
-        if (_loadedMeshes.find(filepath) != _loadedMeshes.end()) {
-            return _loadedMeshes[filepath]; // Make copy.
-        }
-
-        SkinnedMesh mesh(GL_TRIANGLES);
+    SkinnedMesh* AssimpLoader::LoadFromFile(const std::string &filepath) {
+        SkinnedMesh* mesh = new SkinnedMesh(GL_TRIANGLES);
 
         // Read via Assimp.
         Assimp::Importer importer;
@@ -34,11 +28,11 @@ namespace Sandbox {
         if (!modelScene || modelScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !modelScene->mRootNode) {
             ImGuiLog& log = ImGuiLog::GetInstance();
             log.LogError("Assimp failed to open model scene '%s', error message: %s", filepath.c_str(), importer.GetErrorString());
-
-            return mesh;
+            throw std::runtime_error("Failed to load .glb model.");
         }
 
         std::queue<aiNode*> sceneNodes;
+        sceneNodes.push(modelScene->mRootNode);
 
         while (!sceneNodes.empty()) {
             aiNode* node = sceneNodes.front();
@@ -60,7 +54,7 @@ namespace Sandbox {
         return mesh;
     }
 
-    void AssimpLoader::ProcessMesh(aiMesh *mesh, SkinnedMesh& skinnedMesh) {
+    void AssimpLoader::ProcessMesh(aiMesh *mesh, SkinnedMesh* skinnedMesh) {
         // TODO: Bounding box
         // TODO: Skinning
         // TODO: Vertex / bone indexing
@@ -68,38 +62,42 @@ namespace Sandbox {
 
         unsigned numVertices = mesh->mNumVertices;
 
-        std::vector<glm::vec3> vertices (numVertices);
-        std::vector<glm::vec3> normals (numVertices);
-        std::vector<glm::vec2> uv (numVertices);
+        std::vector<glm::vec3> vertices;
+        std::vector<glm::vec3> normals;
+        std::vector<glm::vec2> uv;
 
         // Vertex data.
         for (unsigned i = 0; i < numVertices; ++i) {
-            vertices[i] = GetGLMVector(mesh->mVertices[i]);
-            normals[i] = GetGLMVector(mesh->mNormals[i]);
-            uv[i] = glm::vec2(0.0f, 0.0f); // No texture loading.
+            vertices.emplace_back(GetGLMVector(mesh->mVertices[i]));
+            normals.emplace_back(GetGLMVector(mesh->mNormals[i]));
+            uv.emplace_back(glm::vec2(0.0f, 0.0f)); // No textures.
         }
 
         // Index data.
-        std::vector<unsigned> indices (numVertices);
-        unsigned counter = 0;
-
+        std::vector<unsigned> indices;
         for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
             aiFace face = mesh->mFaces[i];
             for (unsigned int j = 0; j < face.mNumIndices; j++) {
-                indices[counter++] = face.mIndices[j];
+                indices.emplace_back(face.mIndices[j]);
             }
         }
 
         // Bone data.
-        std::vector<glm::ivec4> boneIDs (numVertices);
-        std::vector<glm::vec4> boneWeights (numVertices);
+        std::vector<glm::ivec4> boneIDs;
+        std::vector<glm::vec4> boneWeights;
 
         // Default bone IDs / weights.
         for (unsigned i = 0; i < numVertices; ++i) {
+            glm::ivec4 ID;
+            glm::vec4 weight;
+
             for (int j = 0; j < 4; ++j) {
-                boneIDs[i][j] = -1;
-                boneWeights[i][j] = 0.0f;
+                ID[j] = -1;
+                weight[j] = 0.0f;
             }
+
+            boneIDs.emplace_back(ID);
+            boneWeights.emplace_back(weight);
         }
 
         std::unordered_map<std::string, BoneInfo> uniqueBones;
@@ -139,33 +137,26 @@ namespace Sandbox {
 
                 assert(vertexID < vertices.size());
 
-                boneIDs[vertexID][i] = boneID;
-                boneWeights[vertexID][i] = weight;
+                for (int j = 0; j < 4; ++j) {
+                    // Find first bone that has not been initialized.
+                    if (boneIDs[vertexID][j] < 0) {
+                        boneWeights[vertexID][j] = weight;
+                        boneIDs[vertexID][j] = boneID;
+                        break;
+                    }
+                }
             }
         }
 
         // Start setting mesh.
-        skinnedMesh.SetVertices(vertices);
-        skinnedMesh.SetNormals(normals);
-        skinnedMesh.SetIndices(indices);
-        skinnedMesh.SetUV(uv);
-        skinnedMesh.SetBoneIDs(boneIDs);
-        skinnedMesh.SetBoneWeights(boneWeights);
-    }
-
-    glm::vec3 AssimpLoader::GetGLMVector(const aiVector3D &input) const {
-        return { input.x, input.y, input.z };
-    }
-
-    glm::mat4 AssimpLoader::GetGLMMatrix(const aiMatrix4x4 &input) const {
-        glm::mat4 matrix;
-
-        matrix[0][0] = input.a1; matrix[1][0] = input.a2; matrix[2][0] = input.a3; matrix[3][0] = input.a4;
-        matrix[0][1] = input.b1; matrix[1][1] = input.b2; matrix[2][1] = input.b3; matrix[3][1] = input.b4;
-        matrix[0][2] = input.c1; matrix[1][2] = input.c2; matrix[2][2] = input.c3; matrix[3][2] = input.c4;
-        matrix[0][3] = input.d1; matrix[1][3] = input.d2; matrix[2][3] = input.d3; matrix[3][3] = input.d4;
-
-        return matrix;
+        skinnedMesh->SetVertices(vertices);
+        skinnedMesh->SetNormals(normals);
+        skinnedMesh->SetIndices(indices);
+        skinnedMesh->SetUV(uv);
+        skinnedMesh->SetBoneIDs(boneIDs);
+        skinnedMesh->SetBoneWeights(boneWeights);
+        skinnedMesh->SetUniqueBoneMapping(uniqueBones);
+        skinnedMesh->SetBoneCount(totalNumBones);
     }
 
 }

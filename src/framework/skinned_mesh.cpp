@@ -79,11 +79,21 @@ namespace Sandbox {
     }
 
     void SkinnedMesh::SetBoneIDs(const std::vector<glm::ivec4> &boneIDs) {
+        _isDirty = true;
         _boneIDs = boneIDs;
     }
 
     void SkinnedMesh::SetBoneWeights(const std::vector<glm::vec4> &boneWeights) {
+        _isDirty = true;
         _boneWeights = boneWeights;
+    }
+
+    void SkinnedMesh::SetUniqueBoneMapping(const std::unordered_map<std::string, BoneInfo> &uniqueBones) {
+        _uniqueBones = uniqueBones;
+    }
+
+    void SkinnedMesh::SetBoneCount(unsigned boneCount) {
+        _numBones = boneCount;
     }
 
     const std::vector<glm::ivec4> &SkinnedMesh::GetBoneIDs() const {
@@ -92,6 +102,14 @@ namespace Sandbox {
 
     const std::vector<glm::vec4> &SkinnedMesh::GetBoneWeights() const {
         return _boneWeights;
+    }
+
+    const std::unordered_map<std::string, BoneInfo>& SkinnedMesh::GetUniqueBoneMapping() const {
+        return _uniqueBones;
+    }
+
+    unsigned SkinnedMesh::GetBoneCount() const {
+        return _numBones;
     }
 
 }

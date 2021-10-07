@@ -23,7 +23,7 @@ namespace Sandbox {
         return _name;
     }
 
-    Mesh* Model::GetMesh() {
+    const Mesh* Model::GetMesh() const {
         return _mesh;
     }
 

@@ -311,7 +311,7 @@ namespace Sandbox {
         // Render models to FBO attachments.
         for (Model* model : _modelManager.GetModels()) {
             Transform& transform = model->GetTransform();
-            Mesh* mesh = model->GetMesh();
+            const Mesh* mesh = model->GetMesh();
             Material* material = model->GetMaterial("Phong");
 
             // Pre render stage.

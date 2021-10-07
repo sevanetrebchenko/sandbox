@@ -1,6 +1,7 @@
 
 #include <framework/model_manager.h>
 #include <framework/object_loader.h>
+#include <framework/assimp_loader.h>
 #include <framework/imgui_log.h>
 
 namespace Sandbox {
@@ -84,14 +85,14 @@ namespace Sandbox {
         std::string extension = filepath.substr(filepath.find_last_of('.') + 1);
 
         if (extension == "obj") {
-            log.LogTrace("Creating new model: %s from .obj file: %s", modelName.c_str(), filepath.c_str());
+            log.LogTrace("Creating new model: '%s' from .obj file: %s", modelName.c_str(), filepath.c_str());
 
             // Load in mesh and set up buffers.
             OBJLoader& objLoader = OBJLoader::GetInstance();
             Mesh modelMesh = objLoader.LoadFromFile(filepath);
             modelMesh.Complete();
 
-            log.LogTrace("Finished loading model: %s.", modelName.c_str());
+            log.LogTrace("Finished loading model: '%s'.", modelName.c_str());
 
             Model* model = new Model(modelName);
             model->SetMesh(new Mesh(modelMesh));
@@ -99,6 +100,23 @@ namespace Sandbox {
             _modelList.emplace_back(model);
             return model;
         }
+        else if (extension == "glb") {
+            log.LogTrace("Creating new model: '%s' from .glb file: %s", modelName.c_str(), filepath.c_str());
+
+            // Load in mesh and set up buffers.
+            AssimpLoader& objLoader = AssimpLoader::GetInstance();
+            SkinnedMesh* modelMesh = objLoader.LoadFromFile(filepath);
+            modelMesh->Complete();
+
+            log.LogTrace("Finished loading model: '%s'.", modelName.c_str());
+
+            Model* model = new Model(modelName);
+            model->SetMesh(modelMesh);
+
+            _modelList.emplace_back(model);
+            return model;
+        }
+
         else {
             log.LogError("Failed to load model file. Loading model files of extension \"%s\" is currently unsupported.", extension.c_str());
             return nullptr;

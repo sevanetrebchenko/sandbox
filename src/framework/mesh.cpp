@@ -109,18 +109,22 @@ namespace Sandbox {
     }
 
     void Mesh::SetVertices(const std::vector<glm::vec3> &vertices) {
+        _isDirty = true;
         _vertices = vertices;
     }
 
     void Mesh::SetNormals(const std::vector<glm::vec3> &normals) {
+        _isDirty = true;
         _normals = normals;
     }
 
     void Mesh::SetUV(const std::vector<glm::vec2> &uvs) {
+        _isDirty = true;
         _uv = uvs;
     }
 
     void Mesh::SetIndices(const std::vector<unsigned int>& indices) {
+        _isDirty = true;
         _triangles = indices;
     }
 
