@@ -38,6 +38,10 @@ namespace Sandbox {
     }
 
     void Mesh::RecalculateNormals() {
+        if (!_normals.empty()) {
+            return;
+        }
+
         std::size_t numIndices = _triangles.size();
         assert(numIndices % 3 == 0);
 
@@ -108,6 +112,10 @@ namespace Sandbox {
         _vertices = vertices;
     }
 
+    void Mesh::SetNormals(const std::vector<glm::vec3> &normals) {
+        _normals = normals;
+    }
+
     void Mesh::SetUV(const std::vector<glm::vec2> &uvs) {
         _uv = uvs;
     }
@@ -124,6 +132,10 @@ namespace Sandbox {
 
     const std::vector<glm::vec3> &Mesh::GetVertices() const {
         return _vertices;
+    }
+
+    const std::vector<glm::vec3> &Mesh::GetNormals() const {
+        return _normals;
     }
 
     const std::vector<glm::vec2> &Mesh::GetUV() const {

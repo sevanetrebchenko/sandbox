@@ -1,19 +1,18 @@
 
-#ifndef SANDBOX_ASCII_POST_PROCESSING_H
-#define SANDBOX_ASCII_POST_PROCESSING_H
+#ifndef SANDBOX_PROJECT1_H
+#define SANDBOX_PROJECT1_H
 
 #include <framework/scene.h>
 #include <framework/buffer/fbo.h>
 #include <framework/buffer/ubo.h>
-#include <framework/mesh.h>
-#include <scenes/ascii_post_processing/ascii_character_map.h>
+#include <framework/lighting_manager.h>
 
 namespace Sandbox {
 
-    class SceneAsciiPostProcessing : public Scene {
+    class SceneProject1 : public Scene {
         public:
-            SceneAsciiPostProcessing(int width, int height);
-            ~SceneAsciiPostProcessing() override;
+            SceneProject1(int width, int height);
+            ~SceneProject1() override;
 
         protected:
             void OnInit() override;
@@ -32,15 +31,17 @@ namespace Sandbox {
             void InitializeShaders();
             void InitializeTextures();
             void InitializeMaterials();
+            void ConfigureLights();
             void ConfigureModels();
             void ConstructFBO();
 
-            void ConstructAsciiMaps();
+            void GeometryPass();
+            void RenderOutputScene();
+            void RenderDepthBuffer();
 
             FrameBufferObject _fbo;
-            AsciiCharacterMap _characterMap;
     };
 
 }
 
-#endif //SANDBOX_ASCII_POST_PROCESSING_H
+#endif //SANDBOX_PROJECT1_H

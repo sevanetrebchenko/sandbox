@@ -18,10 +18,14 @@ namespace Sandbox {
                 return sizeof(glm::ivec2);
             case ShaderDataType::VEC3:
                 return sizeof(glm::vec3);
+            case ShaderDataType::IVEC3:
+                return sizeof(glm::ivec3);
             case ShaderDataType::UVEC3:
                 return sizeof(glm::uvec3);
             case ShaderDataType::VEC4:
                 return sizeof(glm::vec4);
+            case ShaderDataType::IVEC4:
+                return sizeof(glm::ivec4);
             case ShaderDataType::UVEC4:
                 return sizeof(glm::uvec4);
             case ShaderDataType::MAT4:

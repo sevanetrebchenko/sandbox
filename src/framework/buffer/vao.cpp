@@ -55,10 +55,16 @@ namespace Sandbox {
                 switch (vertexBufferElement.GetShaderDataType()) {
                     case ShaderDataType::BOOL:
                     case ShaderDataType::INT:
+                    case ShaderDataType::UINT:
                     case ShaderDataType::FLOAT:
                     case ShaderDataType::VEC2:
+                    case ShaderDataType::IVEC2:
                     case ShaderDataType::VEC3:
+                    case ShaderDataType::IVEC3:
+                    case ShaderDataType::UVEC3:
                     case ShaderDataType::VEC4:
+                    case ShaderDataType::IVEC4:
+                    case ShaderDataType::UVEC4:
                         glEnableVertexAttribArray(_currentAttributeIndex);
                         glVertexAttribPointer(_currentAttributeIndex,
                                               vertexBufferElement.GetComponentCount(),
@@ -97,7 +103,13 @@ namespace Sandbox {
             case ShaderDataType::BOOL:
                 return GL_BOOL;
             case ShaderDataType::INT:
+            case ShaderDataType::IVEC2:
+            case ShaderDataType::IVEC3:
+            case ShaderDataType::IVEC4:
                 return GL_INT;
+            case ShaderDataType::UVEC3:
+            case ShaderDataType::UVEC4:
+                return GL_UNSIGNED_INT;
             case ShaderDataType::FLOAT:
             case ShaderDataType::VEC2:
             case ShaderDataType::VEC3:

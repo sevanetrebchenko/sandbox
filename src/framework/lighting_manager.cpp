@@ -31,22 +31,11 @@ namespace Sandbox {
         UniformBlockLayout lightingBlockLayout;
         lightingBlockLayout.SetBufferElements(0, 5, elementList);
 
-        UniformBlock lightingBlock(1, lightingBlockLayout);
+        UniformBlock lightingBlock(0, lightingBlockLayout);
         _lightingUBO.SetUniformBlock(lightingBlock);
     }
 
     void LightingManager::OnImGui() {
-//        if (ImGui::Button("New Light")) {
-//            if (_currentNumLights >= _maximumNumLights) {
-//                ImGuiLog::GetInstance().LogTrace("Attempt to create new light blocked: maximum allowed number of lights has been reached.");
-//            }
-//            else {
-//                _lightList.emplace_back(new Light());
-//                ++_currentNumLights;
-//            }
-//        }
-
-//        ImGui::Separator();
         ImGui::BeginChild("#scrollingSection", ImVec2(0, 0), false, ImGuiWindowFlags_None);
 
         for (int i = 0; i < _numActiveLights; ++i) {

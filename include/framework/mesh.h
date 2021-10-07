@@ -10,7 +10,7 @@ namespace Sandbox {
     class Mesh {
         public:
             explicit Mesh(GLuint renderingPrimitive = -1u);
-            ~Mesh();
+            virtual ~Mesh();
 
             Mesh(const Mesh& mesh);
             Mesh& operator=(const Mesh& mesh);
@@ -19,19 +19,21 @@ namespace Sandbox {
             void Unbind() const;
 
             void SetVertices(const std::vector<glm::vec3>& vertices);
+            void SetNormals(const std::vector<glm::vec3>& normals);
             void SetUV(const std::vector<glm::vec2>& uvs);
             void SetIndices(const std::vector<unsigned>& indices);
             void RecalculateNormals();
             void Complete();
 
             [[nodiscard]] const std::vector<glm::vec3>& GetVertices() const;
+            [[nodiscard]] const std::vector<glm::vec3>& GetNormals() const;
             [[nodiscard]] const std::vector<glm::vec2>& GetUV() const;
             [[nodiscard]] const std::vector<unsigned>& GetIndices() const;
             [[nodiscard]] GLuint GetRenderingPrimitive() const;
             [[nodiscard]] const VertexArrayObject* GetVAO() const;
 
-        private:
-            void InitializeBuffers();
+        protected:
+            virtual void InitializeBuffers();
 
             VertexArrayObject* _vao;
             GLuint _renderingPrimitive;

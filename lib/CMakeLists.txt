@@ -28,4 +28,12 @@ add_subdirectory(stb)
 message(STATUS "Building TinyOBJLoader.")
 add_subdirectory(tinyobj)
 
+# Build Assimp
+message(STATUS "Building Assimp.")
+
+SET (ASSIMP_BUILD_TESTS OFF)
+SET (ASSIMP_INSTALL OFF)
+
+add_subdirectory(assimp)
+
 

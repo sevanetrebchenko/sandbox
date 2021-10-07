@@ -1,6 +1,6 @@
 [TRACE] Vendor: NVIDIA Corporation
-[TRACE] Renderer: GeForce RTX 2070 SUPER/PCIe/SSE2
-[TRACE] OpenGL Version: 4.6.0 NVIDIA 460.89
+[TRACE] Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
+[TRACE] OpenGL Version: 4.6.0 NVIDIA 471.41
 [TRACE] Found existing ImGui layout (data\scenes\deferred_rendering\deferred_rendering_imgui.ini).
 [TRACE] Creating new ImGui log in location (data\scenes\deferred_rendering\deferred_rendering_log.txt).
 [TRACE] Creating new model: bunny from .obj file: assets\models\bunny_high_poly.obj

@@ -23,7 +23,7 @@ namespace Sandbox {
         return _name;
     }
 
-    Mesh &Model::GetMesh() {
+    Mesh* Model::GetMesh() {
         return _mesh;
     }
 
@@ -45,9 +45,9 @@ namespace Sandbox {
         return _materialList;
     }
 
-    void Model::SetMesh(const Mesh& mesh) {
+    void Model::SetMesh(Mesh* mesh) {
         _mesh = mesh;
-        _mesh.Complete();
+        _mesh->Complete();
     }
 
     void Model::AddMaterial(Material* material) {

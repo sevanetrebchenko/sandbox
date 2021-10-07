@@ -6,10 +6,7 @@ set(CORE_SOURCE_FILES
 
         # Scenes
         "scenes/deferred_rendering/deferred_rendering.cpp"
-        "scenes/ascii_post_processing/ascii_post_processing.cpp"
-        "scenes/ascii_post_processing/character_bitmap.cpp"
-        "scenes/ascii_post_processing/ascii_character_map.cpp"
-        "scenes/ascii_post_processing/ascii_character_map_manager.cpp"
+        "scenes/project1/project1.cpp"
 
         # Buffer
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"
@@ -43,6 +40,8 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/texture_library.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/lighting_manager.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/light.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/skinned_mesh.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/assimp_loader.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})
@@ -78,6 +77,10 @@ target_link_libraries(Sandbox stb)
 # TinyObjLoader.
 message(STATUS "Linking TinyObjLoader to Sandbox project.")
 target_link_libraries(Sandbox tinyobjloader)
+
+# Assimp
+message(STATUS "Linking Assimp to Sandbox project.")
+target_link_libraries(Sandbox assimp)
 
 # ImGui.
 message(STATUS "Linking ImGui to Sandbox project.")

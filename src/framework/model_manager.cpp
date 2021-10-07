@@ -94,7 +94,7 @@ namespace Sandbox {
             log.LogTrace("Finished loading model: %s.", modelName.c_str());
 
             Model* model = new Model(modelName);
-            model->SetMesh(modelMesh);
+            model->SetMesh(new Mesh(modelMesh));
 
             _modelList.emplace_back(model);
             return model;

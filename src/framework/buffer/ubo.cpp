@@ -87,8 +87,10 @@ namespace Sandbox {
                     break;
                     // Size of 4N (16).
                 case ShaderDataType::VEC3:
+                case ShaderDataType::IVEC3:
                 case ShaderDataType::UVEC3:
                 case ShaderDataType::VEC4:
+                case ShaderDataType::IVEC4:
                 case ShaderDataType::UVEC4:
                     elementAlignment = 16;
                     totalElementSize = UniformBufferElement::UBOShaderDataTypeSize(ShaderDataType::VEC4);
