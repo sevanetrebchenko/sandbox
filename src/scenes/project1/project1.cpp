@@ -85,9 +85,12 @@ namespace Sandbox {
 
             // Set bone information.
             const std::vector<glm::mat4>& boneTransforms = _animator.GetFinalBoneTransforms();
-            for (int i = 0; i < boneTransforms.size(); ++i) {
+            int numBones = boneTransforms.size();
+            for (int i = 0; i < numBones; ++i) {
                 phongShader->SetUniform("boneTransforms[" + std::to_string(i) + "]", boneTransforms[i]);
             }
+
+            phongShader->SetUniform("numBones", numBones);
 
             // Render stage.
             mesh->Bind();
@@ -203,7 +206,8 @@ namespace Sandbox {
     void SceneProject1::ConfigureModels() {
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
 
-        Model* walkingMan = _modelManager.AddModelFromFile("walking man", "assets/models/CesiumMan.glb");
+        Model* walkingMan = _modelManager.AddModelFromFile("monster", "assets/models/Hyperspace_Madness_Killamari_Minion.glb");
+//        Model* walkingMan = _modelManager.AddModelFromFile("walking man", "assets/models/CesiumMan.glb");
         Material* material = materialLibrary.GetMaterialInstance("Phong");
         material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
         walkingMan->AddMaterial(material);

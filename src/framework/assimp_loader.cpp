@@ -23,6 +23,8 @@ namespace Sandbox {
 
         // Read via Assimp.
         Assimp::Importer importer;
+        importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
+
         const aiScene* modelScene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 
         if (!modelScene || modelScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !modelScene->mRootNode) {
@@ -148,15 +150,93 @@ namespace Sandbox {
             }
         }
 
-        // Start setting mesh.
-        skinnedMesh->SetVertices(vertices);
-        skinnedMesh->SetNormals(normals);
-        skinnedMesh->SetIndices(indices);
-        skinnedMesh->SetUV(uv);
-        skinnedMesh->SetBoneIDs(boneIDs);
-        skinnedMesh->SetBoneWeights(boneWeights);
-        skinnedMesh->SetUniqueBoneMapping(uniqueBones);
-        skinnedMesh->SetBoneCount(totalNumBones);
+
+        unsigned offset = skinnedMesh->GetVertices().size();  // Additional meshes get loaded at an offset into the same mesh.
+
+        // Append vertices.
+        {
+            std::vector<glm::vec3> current = skinnedMesh->GetVertices();
+            for (const glm::vec3& vertex : vertices) {
+                current.emplace_back(vertex);
+            }
+            skinnedMesh->SetVertices(current);
+        }
+
+        // Append indices.
+        {
+            std::vector<unsigned> current = skinnedMesh->GetIndices();
+            for (unsigned index : indices) {
+                current.emplace_back(index + offset);
+            }
+            skinnedMesh->SetIndices(current);
+        }
+
+        // Append normals.
+        {
+            std::vector<glm::vec3> current = skinnedMesh->GetNormals();
+            for (const glm::vec3& normal : normals) {
+                current.emplace_back(normal);
+            }
+            skinnedMesh->SetNormals(current);
+        }
+
+        // Append UV.
+        {
+            std::vector<glm::vec2> current = skinnedMesh->GetUV();
+            for (const glm::vec2& coordinate : uv) {
+                current.emplace_back(coordinate);
+            }
+            skinnedMesh->SetUV(current);
+        }
+
+        // Append bone IDs.
+        {
+            std::vector<glm::vec4> current = skinnedMesh->GetBoneIDs();
+            for (glm::vec4 boneID : boneIDs) {
+
+                for (int i = 0; i < 4; ++i) {
+                    if (boneID[i] > -0.5f) { // 0 is a valid bone index.
+                        boneID[i] += offset; // Offset into vertex array.
+                    }
+                }
+
+                current.emplace_back(boneID);
+            }
+            skinnedMesh->SetBoneIDs(current);
+        }
+
+        // Append bone weights.
+        {
+            std::vector<glm::vec4> current = skinnedMesh->GetBoneWeights();
+            for (const glm::vec4& boneWeight : boneWeights) {
+                current.emplace_back(boneWeight);
+            }
+            skinnedMesh->SetBoneWeights(current);
+        }
+
+        // Update any new bones.
+        {
+            std::unordered_map<std::string, BoneInfo> boneInfo = skinnedMesh->GetUniqueBoneMapping();
+            unsigned numBones = skinnedMesh->GetBoneCount();
+
+            bool addedNew = false;
+
+            for (const std::pair<const std::string, BoneInfo>& data : uniqueBones) {
+                // Found new bone.
+                if (boneInfo.find(data.first) == boneInfo.end()) {
+                    boneInfo[data.first] = data.second;
+                    boneInfo[data.first].boneID += offset;
+                    ++numBones;
+
+                    addedNew = true;
+                }
+            }
+
+            if (addedNew) {
+                skinnedMesh->SetUniqueBoneMapping(boneInfo);
+                skinnedMesh->SetBoneCount(numBones);
+            }
+        }
     }
 
 }

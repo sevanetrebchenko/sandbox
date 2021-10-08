@@ -13,3 +13,6 @@
 [submodule "lib/assimp"]
 	path = lib/assimp
 	url = git@github.com:assimp/assimp.git
+[submodule "lib/debugdraw"]
+	path = lib/debugdraw
+	url = git@github.com:glampert/debug-draw.git

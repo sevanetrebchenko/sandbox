@@ -6,9 +6,10 @@ uniform mat4 viewTransform;
 uniform mat4 cameraTransform;
 uniform mat4 normalTransform;
 
-const int MAX_BONES = 100;
+const int MAX_BONES = 176;
 const int MAX_BONE_INFLUENCE = 4;
 uniform mat4 boneTransforms[MAX_BONES];
+uniform int numBones;
 
 layout (location = 0) in vec3 vertexPosition;
 layout (location = 1) in vec3 vertexNormal;
@@ -29,7 +30,7 @@ void main()
             continue;
         }
 
-        if (boneIDs[i] >= MAX_BONES) {
+        if (boneIDs[i] >= numBones) {
             finalPosition = vec4(vertexPosition, 0.0f);
             finalNormal = vec4(vertexNormal, 1.0f);
             break;

@@ -52,4 +52,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "../lib/debugdraw/debug_draw.hpp"
+
 #endif //SANDBOX_SANDBOX_PCH_H

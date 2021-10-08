@@ -9,3 +9,6 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+
+#define DEBUG_DRAW_IMPLEMENTATION
+#include "../lib/debugdraw/debug_draw.hpp"

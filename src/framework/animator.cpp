@@ -7,10 +7,6 @@ namespace Sandbox {
     Animator::Animator() : _currentTime(0.0f),
                            _animation(nullptr)
                            {
-        // TODO: support more than 100 bones.
-        for (int i = 0; i < 100; i++) {
-            _finalBoneTransforms.emplace_back(1.0f);
-        }
     }
 
     Animator::~Animator() {
@@ -25,6 +21,17 @@ namespace Sandbox {
     }
 
     void Animator::PlayAnimation(Animation *animation) {
+        // Pre-allocate final transform data.
+        SkinnedMesh* mesh = dynamic_cast<SkinnedMesh*>(const_cast<Mesh*>(animation->GetBoundModel()->GetMesh()));
+        assert(mesh);
+        unsigned boneCount = mesh->GetBoneCount();
+        assert(boneCount < 256); // Maximum allowed bone count in shader.
+
+        _finalBoneTransforms.clear();
+        for (int i = 0; i < boneCount; ++i) {
+            _finalBoneTransforms.emplace_back(1.0f);
+        }
+
         _animation = animation;
         _currentTime = 0.0f; // Reset animation time for new animation.
     }

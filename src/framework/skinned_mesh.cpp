@@ -3,7 +3,9 @@
 
 namespace Sandbox {
 
-    SkinnedMesh::SkinnedMesh(GLuint renderingPrimitive) : Mesh(renderingPrimitive) {
+    SkinnedMesh::SkinnedMesh(GLuint renderingPrimitive) : Mesh(renderingPrimitive),
+                                                          _numBones(0)
+                                                          {
     }
 
     SkinnedMesh::~SkinnedMesh() {
