@@ -5,7 +5,17 @@
 
 namespace Sandbox {
 
+    template <typename T>
+    std::vector<T> Combine(const std::vector<T>& first, const std::vector<T>& second) {
+        std::vector<T> combined;
 
+        combined.reserve(first.size() + second.size());
+
+        combined.insert(combined.end(), first.begin(), first.end());
+        combined.insert(combined.end(), second.begin(), second.end());
+
+        return combined;
+    }
 
     AssimpLoader &AssimpLoader::GetInstance() {
         static AssimpLoader loader;
@@ -18,14 +28,12 @@ namespace Sandbox {
     AssimpLoader::~AssimpLoader() {
     }
 
-    SkinnedMesh* AssimpLoader::LoadFromFile(const std::string &filepath) {
-        SkinnedMesh* mesh = new SkinnedMesh(GL_TRIANGLES);
-
+    AnimatedModel* AssimpLoader::LoadFromFile(const std::string &filepath) {
         // Read via Assimp.
         Assimp::Importer importer;
         importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
 
-        const aiScene* modelScene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
+        const aiScene* modelScene = importer.ReadFile(filepath, aiProcess_FlipUVs | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes | aiProcessPreset_TargetRealtime_Fast | aiProcess_LimitBoneWeights | aiProcess_PopulateArmatureData);
 
         if (!modelScene || modelScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !modelScene->mRootNode) {
             ImGuiLog& log = ImGuiLog::GetInstance();
@@ -33,6 +41,10 @@ namespace Sandbox {
             throw std::runtime_error("Failed to load .glb model.");
         }
 
+        SkinnedMesh* mesh = new SkinnedMesh(GL_TRIANGLES);
+        Skeleton* skeleton = new Skeleton();
+
+        // Parse scene root nodes.
         std::queue<aiNode*> sceneNodes;
         sceneNodes.push(modelScene->mRootNode);
 
@@ -44,7 +56,8 @@ namespace Sandbox {
                 // Load individual mesh.
                 aiMesh* currentMesh = modelScene->mMeshes[node->mMeshes[i]];
 
-                ProcessMesh(currentMesh, mesh);
+                LoadMeshData(currentMesh, mesh);
+                LoadSkeletonData(currentMesh, mesh, skeleton);
             }
 
             // Add any children nodes.
@@ -53,43 +66,56 @@ namespace Sandbox {
             }
         }
 
-        return mesh;
+        mesh->Complete();
+
+        // Load animations.
+        Animator* animator = new Animator();
+        animator->SetTarget(skeleton);
+        LoadSceneAnimations(modelScene, skeleton, animator);
+
+        AnimatedModel* model = new AnimatedModel(filepath);
+        model->SetAnimator(animator);
+        model->SetMesh(mesh);
+
+        return model;
     }
 
-    void AssimpLoader::ProcessMesh(aiMesh *mesh, SkinnedMesh* skinnedMesh) {
-        // TODO: Bounding box
-        // TODO: Skinning
-        // TODO: Vertex / bone indexing
-        // TODO: Skeleton class + BFS traveral for scene view.
-
-        unsigned numVertices = mesh->mNumVertices;
+    void AssimpLoader::LoadMeshData(const aiMesh* mesh, SkinnedMesh* meshData) {
+        std::size_t offset = meshData->GetVertices().size();
 
         std::vector<glm::vec3> vertices;
         std::vector<glm::vec3> normals;
         std::vector<glm::vec2> uv;
+        std::vector<unsigned> indices;
 
         // Vertex data.
-        for (unsigned i = 0; i < numVertices; ++i) {
+        for (unsigned i = 0; i < mesh->mNumVertices; ++i) {
             vertices.emplace_back(GetGLMVector(mesh->mVertices[i]));
             normals.emplace_back(GetGLMVector(mesh->mNormals[i]));
             uv.emplace_back(glm::vec2(0.0f, 0.0f)); // No textures.
         }
 
         // Index data.
-        std::vector<unsigned> indices;
         for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
             aiFace face = mesh->mFaces[i];
             for (unsigned int j = 0; j < face.mNumIndices; j++) {
-                indices.emplace_back(face.mIndices[j]);
+                indices.emplace_back(face.mIndices[j] + offset);
             }
         }
 
-        // Bone data.
+        // Combine with previous.
+        meshData->SetVertices(Combine(meshData->GetVertices(), vertices));
+        meshData->SetIndices(Combine(meshData->GetIndices(), indices));
+        meshData->SetNormals(Combine(meshData->GetNormals(), normals));
+        meshData->SetUV(Combine(meshData->GetUV(), uv));
+    }
+
+    void AssimpLoader::LoadSkeletonData(const aiMesh *mesh, SkinnedMesh *meshData, Skeleton *skeleton) {
         std::vector<glm::vec4> boneIDs;
         std::vector<glm::vec4> boneWeights;
 
         // Default bone IDs / weights.
-        for (unsigned i = 0; i < numVertices; ++i) {
+        for (unsigned i = 0; i < meshData->GetVertices().size(); ++i) {
             glm::vec4 ID;
             glm::vec4 weight;
 
@@ -102,140 +128,187 @@ namespace Sandbox {
             boneWeights.emplace_back(weight);
         }
 
-        std::unordered_map<std::string, BoneInfo> uniqueBones;
-        int totalNumBones = 0; // Running total of unique bones.
+        if (mesh->HasBones() && skeleton->_bones.empty()) {
+            // Bone name -> (bone index, used in skeleton)
+            std::unordered_map<std::string, std::pair<unsigned, bool>> boneMap;
 
-        for (int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
-            int boneID = -1;
-            aiBone* bone = mesh->mBones[boneIndex];
-            std::string boneName = bone->mName.C_Str();
-
-            if (uniqueBones.find(boneName) == uniqueBones.end()) {
-                // Bone with this name has not been encountered, register new entry.
-                BoneInfo newBone { };
-
-                newBone.boneID = totalNumBones;
-                newBone.modelToBone = GetGLMMatrix(bone->mOffsetMatrix);
-
-                // Register unique bone.
-                uniqueBones[boneName] = newBone;
-                boneID = totalNumBones;
-
-                ++totalNumBones;
-            }
-            else {
-                // Found duplicate bone.
-                boneID = uniqueBones[boneName].boneID;
+            for (unsigned boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
+                aiBone* bone = mesh->mBones[boneIndex];
+                boneMap[bone->mName.C_Str()] = std::make_pair(boneIndex, false);
             }
 
-            assert(boneID != -1); // Should never happen.
+            // Traverse bone hierarchy until bone has no parent (find root node).
+            aiNode* rootBoneNode = mesh->mBones[0]->mNode;
+            while (rootBoneNode) {
+                if (boneMap.find(rootBoneNode->mName.C_Str()) == boneMap.end()) {
+                    // Bone not present in the bone map.
+                    break;
+                }
 
-            aiVertexWeight* weights = bone->mWeights;
-            unsigned numWeights = bone->mNumWeights;
+                rootBoneNode = rootBoneNode->mParent;
+            }
 
-            for (int i = 0; i < numWeights; ++i) {
-                unsigned vertexID = weights[i].mVertexId;
-                float weight = weights[i].mWeight;
+            if (rootBoneNode) {
+                // Get all root bones.
+                std::vector<std::pair<std::string, int>> rootBones;
 
-                assert(vertexID < vertices.size());
+                for (unsigned i = 0; i < rootBoneNode->mNumChildren; ++i) {
+                    aiNode* childNode = rootBoneNode->mChildren[i];
 
-                for (int j = 0; j < 4; ++j) {
-                    // Find first bone that has not been initialized.
-                    if (boneIDs[vertexID][j] < 0) {
-                        boneWeights[vertexID][j] = weight;
-                        boneIDs[vertexID][j] = boneID;
-                        break;
+                    if (auto iter = boneMap.find(childNode->mName.C_Str()); iter != boneMap.end()) {
+                        // Found additional root node.
+                        rootBones.emplace_back(iter->first, iter->second.first);
+                    }
+                }
+
+                // Build skeleton + assign bone weights to vertices.
+                for (const std::pair<std::string, int>& rootBoneData : rootBones) {
+                    std::queue<aiNode*> armatures;
+                    int numBones = static_cast<int>(skeleton->_bones.size()); // Used for determining bone IDs.
+
+                    // Initialize with the root bone (total number of bones is the same as the final bone index).
+                    skeleton->AddRoot(numBones);
+
+                    Bone rootBone { };
+                    rootBone._name = rootBoneData.first;
+                    skeleton->AddBone(rootBone);
+
+                    // Add root bone to be processed.
+                    armatures.push(mesh->mBones[rootBoneData.second]->mNode);
+
+                    // Create skeleton for this root node, assign vertex weights.
+                    while (!armatures.empty()) {
+                        aiNode* boneNode = armatures.front();
+                        armatures.pop();
+
+                        // Node processing.
+                        std::pair<unsigned, bool>& boneInfo = boneMap[boneNode->mName.C_Str()];
+                        aiBone* bone = mesh->mBones[boneInfo.first];
+                        boneInfo.second = true; // Mark this bone as part of the skeleton.
+
+                        // Initialize bone in skeleton.
+                        Bone& skeletonBone = skeleton->_bones[numBones];
+                        skeletonBone._index = numBones++;
+
+                        // Get bone matrices.
+                        skeletonBone._boneToModel = GetGLMMatrix(bone->mOffsetMatrix);
+                        skeletonBone._modelToBone = glm::inverse(skeletonBone._boneToModel);
+
+                        if (skeletonBone._parentIndex != -1) {
+                            // Register bone as child bone of its parent.
+                            skeleton->_bones[skeletonBone._parentIndex]._children.push_back(skeletonBone._index);
+                        }
+
+                        // Assign bone weight data.
+                        for (unsigned i = 0; i < bone->mNumWeights; ++i) {
+                            unsigned vertexID = bone->mWeights[i].mVertexId; // Vertex ID affected by this bone.
+                            float weight = bone->mWeights[i].mWeight;
+
+                            for (int j = 0; j < 4; ++j) {
+                                // Find first bone that has not been initialized yet.
+                                if (boneIDs[vertexID][j] == -1.0f) {
+                                    boneIDs[vertexID][j] = static_cast<float>(skeletonBone._index);
+                                    boneWeights[vertexID][j] = weight;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Nodes that get pushed back are next in line for processing - BFS.
+                        for (unsigned i = 0; i < boneNode->mNumChildren; ++i) {
+                            aiNode* childNode = boneNode->mChildren[i];
+                            auto iter = boneMap.find(childNode->mName.C_Str());
+
+                            if (iter != boneMap.end()) {
+                                // Bones that are already part of the skeleton should not be processed again.
+                                if (!iter->second.second) {
+                                    // Append new bone.
+                                    Bone newSkeletonBone { };
+                                    newSkeletonBone._name = iter->first;
+                                    newSkeletonBone._parentIndex = numBones - 1;
+
+                                    skeleton->AddBone(newSkeletonBone);
+
+                                    // Process skeleton further.
+                                    armatures.push(childNode);
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
+        meshData->SetBoneIDs(boneIDs);
+        meshData->SetBoneWeights(boneWeights);
+    }
 
-        unsigned offset = skinnedMesh->GetVertices().size();  // Additional meshes get loaded at an offset into the same mesh.
+    void AssimpLoader::LoadSceneAnimations(const aiScene *scene, Skeleton *skeleton, Animator *animator) {
+        for (unsigned i = 0; i < scene->mNumAnimations; ++i) {
+            aiAnimation* importedAnimation = scene->mAnimations[i];
 
-        // Append vertices.
-        {
-            std::vector<glm::vec3> current = skinnedMesh->GetVertices();
-            for (const glm::vec3& vertex : vertices) {
-                current.emplace_back(vertex);
-            }
-            skinnedMesh->SetVertices(current);
-        }
+            // Create animation.
+            Animation* animation = new Animation();
+            animation->_name = std::string(importedAnimation->mName.C_Str());
+            animation->_duration = static_cast<float>(importedAnimation->mDuration);
+            animation->_speed = static_cast<float>(importedAnimation->mTicksPerSecond);
+            animation->_boneTracks.resize(skeleton->_bones.size());
 
-        // Append indices.
-        {
-            std::vector<unsigned> current = skinnedMesh->GetIndices();
-            for (unsigned index : indices) {
-                current.emplace_back(index + offset);
-            }
-            skinnedMesh->SetIndices(current);
-        }
+            // Configure bone tracks.
+            for (unsigned j = 0; j < importedAnimation->mNumChannels; ++j) {
+                aiNodeAnim* animationChannel = importedAnimation->mChannels[j];
+                std::string boneName = animationChannel->mNodeName.C_Str();
 
-        // Append normals.
-        {
-            std::vector<glm::vec3> current = skinnedMesh->GetNormals();
-            for (const glm::vec3& normal : normals) {
-                current.emplace_back(normal);
-            }
-            skinnedMesh->SetNormals(current);
-        }
+                auto iter = skeleton->_boneMapping.find(boneName);
 
-        // Append UV.
-        {
-            std::vector<glm::vec2> current = skinnedMesh->GetUV();
-            for (const glm::vec2& coordinate : uv) {
-                current.emplace_back(coordinate);
-            }
-            skinnedMesh->SetUV(current);
-        }
+                if (iter != skeleton->_boneMapping.end()) {
+                    unsigned boneID = iter->second;
 
-        // Append bone IDs.
-        {
-            std::vector<glm::vec4> current = skinnedMesh->GetBoneIDs();
-            for (glm::vec4 boneID : boneIDs) {
+                    // Bone exists in the skeleton, register bone track.
+                    Track& boneTrack = animation->_boneTracks[boneID];
+                    boneTrack._name = boneName;
 
-                for (int i = 0; i < 4; ++i) {
-                    if (boneID[i] > -0.5f) { // 0 is a valid bone index.
-                        boneID[i] += offset; // Offset into vertex array.
+                    // Load position keys.
+                    for (unsigned k = 0; k < animationChannel->mNumPositionKeys; ++k) {
+                        aiVectorKey& animationPositionKey = animationChannel->mPositionKeys[k];
+
+                        KeyPosition positionKey { };
+                        positionKey.dt = static_cast<float>(animationPositionKey.mTime);
+                        positionKey.position = GetGLMVector(animationPositionKey.mValue);
+
+                        boneTrack._positionKeys.push_back(positionKey);
+                    }
+
+                    // Load rotation keys.
+                    for (unsigned k = 0; k < animationChannel->mNumRotationKeys; ++k) {
+                        aiQuatKey& animationRotationKey = animationChannel->mRotationKeys[k];
+
+                        KeyRotation rotationKey { };
+                        rotationKey.dt = static_cast<float>(animationRotationKey.mTime);
+                        rotationKey.orientation = GetGLMQuaternion(animationRotationKey.mValue);
+
+                        boneTrack._rotationKeys.push_back(rotationKey);
+                    }
+
+                    // Load scale keys.
+                    for (unsigned k = 0; k < animationChannel->mNumScalingKeys; ++k) {
+                        aiVectorKey& animationScaleKey = animationChannel->mScalingKeys[k];
+
+                        KeyScale scaleKey { };
+                        scaleKey.dt = static_cast<float>(animationScaleKey.mTime);
+                        scaleKey.scale = GetGLMVector(animationScaleKey.mValue);
+
+                        boneTrack._scaleKeys.push_back(scaleKey);
                     }
                 }
-
-                current.emplace_back(boneID);
-            }
-            skinnedMesh->SetBoneIDs(current);
-        }
-
-        // Append bone weights.
-        {
-            std::vector<glm::vec4> current = skinnedMesh->GetBoneWeights();
-            for (const glm::vec4& boneWeight : boneWeights) {
-                current.emplace_back(boneWeight);
-            }
-            skinnedMesh->SetBoneWeights(current);
-        }
-
-        // Update any new bones.
-        {
-            std::unordered_map<std::string, BoneInfo> boneInfo = skinnedMesh->GetUniqueBoneMapping();
-            unsigned numBones = skinnedMesh->GetBoneCount();
-
-            bool addedNew = false;
-
-            for (const std::pair<const std::string, BoneInfo>& data : uniqueBones) {
-                // Found new bone.
-                if (boneInfo.find(data.first) == boneInfo.end()) {
-                    boneInfo[data.first] = data.second;
-                    boneInfo[data.first].boneID += offset;
-                    ++numBones;
-
-                    addedNew = true;
+                else {
+                    // Bone is not present in the animation.
+                    // TODO: Add bone?
                 }
             }
 
-            if (addedNew) {
-                skinnedMesh->SetUniqueBoneMapping(boneInfo);
-                skinnedMesh->SetBoneCount(numBones);
-            }
+            // Add animation to animator.
+            animator->AddAnimation(animation);
         }
     }
 

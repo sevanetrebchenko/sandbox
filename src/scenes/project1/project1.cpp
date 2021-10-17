@@ -7,6 +7,9 @@
 #include <framework/texture_library.h>
 #include <framework/primitive_loader.h>
 #include <framework/imgui_log.h>
+#include <framework/skinned_mesh.h>
+#include <framework/animated_model.h>
+#include <framework/animator.h>
 
 namespace Sandbox {
 
@@ -40,8 +43,7 @@ namespace Sandbox {
             log.LogError("Shader recompilation failed: %s", err.what());
         }
 
-        // Play animation.
-        _animator.Update(dt);
+        _modelManager.Update(dt);
     }
 
     void SceneProject1::OnPreRender() {
@@ -84,13 +86,17 @@ namespace Sandbox {
             }
 
             // Set bone information.
-            const std::vector<glm::mat4>& boneTransforms = _animator.GetFinalBoneTransforms();
-            int numBones = boneTransforms.size();
-            for (int i = 0; i < numBones; ++i) {
-                phongShader->SetUniform("boneTransforms[" + std::to_string(i) + "]", boneTransforms[i]);
+            if (AnimatedModel* animatedModel = dynamic_cast<AnimatedModel*>(model); animatedModel) {
+                Animator* animator = animatedModel->GetAnimator();
+                const std::vector<glm::mat4>& boneTransforms = animator->GetFinalBoneTransformations();
+                int numBones = boneTransforms.size();
+                for (int i = 0; i < numBones; ++i) {
+                    phongShader->SetUniform("finalBoneTransforms[" + std::to_string(i) + "]", boneTransforms[i]);
+                }
+
+                phongShader->SetUniform("numBones", numBones);
             }
 
-            phongShader->SetUniform("numBones", numBones);
 
             // Render stage.
             mesh->Bind();
@@ -150,7 +156,7 @@ namespace Sandbox {
     }
 
     void SceneProject1::OnShutdown() {
-
+        dd::shutdown();
     }
 
     void SceneProject1::InitializeShaders() {
@@ -206,15 +212,12 @@ namespace Sandbox {
     void SceneProject1::ConfigureModels() {
         MaterialLibrary& materialLibrary = MaterialLibrary::GetInstance();
 
-        Model* walkingMan = _modelManager.AddModelFromFile("monster", "assets/models/Hyperspace_Madness_Killamari_Minion.glb");
-//        Model* walkingMan = _modelManager.AddModelFromFile("walking man", "assets/models/CesiumMan.glb");
+        AnimatedModel* walkingMan = dynamic_cast<AnimatedModel*>(_modelManager.AddModelFromFile("walking man", "assets/models/CesiumMan.glb"));
         Material* material = materialLibrary.GetMaterialInstance("Phong");
         material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
         walkingMan->AddMaterial(material);
 
-        // Load animation.
-        _animation = new Animation("assets/models/CesiumMan.glb", walkingMan);
-        _animator.PlayAnimation(_animation);
+        walkingMan->GetAnimator()->PlayAnimation(0);
     }
 
     void SceneProject1::ConstructFBO() {

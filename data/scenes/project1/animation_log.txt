@@ -3,7 +3,7 @@
 [TRACE] OpenGL Version: 4.6.0 NVIDIA 471.41
 [TRACE] Found existing ImGui layout (data\scenes\project1\animation_imgui.ini).
 [TRACE] Creating new ImGui log in location (data\scenes\project1\animation_log.txt).
-[TRACE] Creating new model: 'monster' from .glb file: assets\models\Hyperspace_Madness_Killamari_Minion.glb
-[TRACE] Finished loading model: 'monster'.
+[TRACE] Creating new model: 'walking man' from .glb file: assets\models\CesiumMan.glb
+[TRACE] Finished loading model: 'walking man'.
 [TRACE] Saving ImGui settings to: data\scenes\project1\animation_imgui.ini
 [TRACE] Saving ImGui log to: data\scenes\project1\animation_log.txt

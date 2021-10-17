@@ -5,6 +5,9 @@
 #include <sandbox_pch.h>
 #include <framework/skinned_mesh.h>
 #include <framework/bone.h>
+#include <framework/skeleton.h>
+#include <framework/animator.h>
+#include <framework/animated_model.h>
 
 namespace Sandbox {
 
@@ -12,13 +15,15 @@ namespace Sandbox {
         public:
             static AssimpLoader& GetInstance();
 
-            [[nodiscard]] SkinnedMesh* LoadFromFile(const std::string& filepath);
+            [[nodiscard]] AnimatedModel* LoadFromFile(const std::string& filepath);
 
         private:
             AssimpLoader();
             ~AssimpLoader();
 
-            void ProcessMesh(aiMesh* mesh, SkinnedMesh* skinnedMesh);
+            void LoadMeshData(const aiMesh* mesh, SkinnedMesh* meshData);
+            void LoadSkeletonData(const aiMesh* mesh, SkinnedMesh* meshData, Skeleton* skeleton);
+            void LoadSceneAnimations(const aiScene* scene, Skeleton* skeleton, Animator* animator);
     };
 
 }

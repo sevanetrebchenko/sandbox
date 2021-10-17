@@ -4,6 +4,7 @@
 
 #include <sandbox_pch.h>
 #include <framework/animation.h>
+#include <framework/skeleton.h>
 
 namespace Sandbox {
 
@@ -13,17 +14,29 @@ namespace Sandbox {
             ~Animator();
 
             void Update(float dt);
-            void PlayAnimation(Animation* animation);
 
-            [[nodiscard]] const std::vector<glm::mat4>& GetFinalBoneTransforms() const;
+            void SetTarget(Skeleton* skeleton);
+            void AddAnimation(Animation* animation);
+
+            void PlayAnimation(const std::string& animationName);
+            void PlayAnimation(unsigned animationIndex);
+
+            [[nodiscard]] const std::vector<glm::mat4>& GetFinalBoneTransformations() const;
 
         private:
-            void CalculateBoneTransform(const AnimationNode& node, glm::mat4 parentTransform, float dt);
+            void InterpolateBone(int boneIndex);
 
-            std::vector<glm::mat4> _finalBoneTransforms;
-            Animation* _animation;
+            Skeleton* _target;
+            Animation* _selectedAnimation;
+            std::vector<Animation*> _animations;
+
+            std::vector<glm::mat4> _finalBoneTransformations;
 
             float _currentTime;
+            float _playbackSpeed;
+
+            bool _useBindPose;
+            bool _reset; //
     };
 
 }

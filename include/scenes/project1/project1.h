@@ -9,6 +9,7 @@
 
 #include <framework/animation.h>
 #include <framework/animator.h>
+#include <framework/debug.h>
 
 namespace Sandbox {
 
@@ -39,8 +40,6 @@ namespace Sandbox {
             void ConstructFBO();
 
             FrameBufferObject _fbo;
-            Animator _animator;
-            Animation* _animation; // Needs to be valid for the duration of the program.
     };
 
 }

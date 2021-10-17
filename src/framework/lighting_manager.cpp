@@ -1,11 +1,11 @@
 
 #include <framework/lighting_manager.h>
+#include <framework/ubo_manager.h>
 #define MAX_NUM_LIGHTS 256
 
 namespace Sandbox {
 
     LightingManager::LightingManager() : _numActiveLights(0u),
-                                         _lightingUBO(),
                                          _isDirty(true) {
         ConstructUniformBlock();
     }
@@ -32,7 +32,8 @@ namespace Sandbox {
         lightingBlockLayout.SetBufferElements(0, 5, elementList);
 
         UniformBlock lightingBlock(0, lightingBlockLayout);
-        _lightingUBO.SetUniformBlock(lightingBlock);
+
+        UBOManager::GetInstance().AddUBO(lightingBlock);
     }
 
     void LightingManager::OnImGui() {
@@ -83,8 +84,11 @@ namespace Sandbox {
 
     void LightingManager::Update() {
         if (_isDirty) {
-            _lightingUBO.Bind();
-            UniformBlock& lightUniformBlock = _lightingUBO.GetUniformBlock();
+            UniformBufferObject* ubo = UBOManager::GetInstance().GetUBO(0);
+            assert(ubo);
+
+            ubo->Bind();
+            UniformBlock& lightUniformBlock = ubo->GetUniformBlock();
             UniformBlockLayout& lightBufferBlockLayout = lightUniformBlock.GetUniformBlockLayout();
             const std::vector<UniformBufferElement>& lightBufferElements = lightBufferBlockLayout.GetBufferElements();
             unsigned offset = lightBufferBlockLayout.GetInitialOffsetInElements();
@@ -106,7 +110,7 @@ namespace Sandbox {
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
                         bool isActive = light.IsActive();
-                        _lightingUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&isActive));
+                        ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&isActive));
                     }
 
                     ++bufferElementIndex;
@@ -117,7 +121,7 @@ namespace Sandbox {
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
                         const glm::vec3& position = light.GetTransform().GetPosition();
-                        _lightingUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&position));
+                        ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&position));
                     }
 
                     ++bufferElementIndex;
@@ -128,7 +132,7 @@ namespace Sandbox {
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
                         const glm::vec3& ambientColor = light.GetAmbientColor();
-                        _lightingUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&ambientColor));
+                        ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&ambientColor));
                     }
 
                     ++bufferElementIndex;
@@ -139,7 +143,7 @@ namespace Sandbox {
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
                         const glm::vec3& diffuseColor = light.GetDiffuseColor();
-                        _lightingUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&diffuseColor));
+                        ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&diffuseColor));
                     }
 
                     ++bufferElementIndex;
@@ -150,13 +154,13 @@ namespace Sandbox {
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
                         const glm::vec3& specularColor = light.GetSpecularColor();
-                        _lightingUBO.SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&specularColor));
+                        ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&specularColor));
                     }
                 }
             }
 
             _isDirty = false;
-            _lightingUBO.Unbind();
+            ubo->Unbind();
         }
     }
 

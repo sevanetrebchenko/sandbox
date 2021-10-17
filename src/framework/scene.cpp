@@ -68,7 +68,7 @@ namespace Sandbox {
     }
 
     void Scene::Update(float dt) {
-        _modelManager.Update();
+        _modelManager.Update(dt);
         _lightingManager.Update();
     }
 

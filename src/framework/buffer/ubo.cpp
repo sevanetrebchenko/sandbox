@@ -26,7 +26,7 @@ namespace Sandbox {
     }
 
     UniformBufferElement::UniformBufferElement(ShaderDataType shaderDataType, std::string elementName) : BufferElement(shaderDataType, std::move(elementName)),
-                                                                                                         _enabled(false)
+                                                                                                         _enabled(true)
     {
 
     }

@@ -1,21 +1,27 @@
 
 #version 450 core
 
-uniform mat4 modelTransform;
-uniform mat4 viewTransform;
-uniform mat4 cameraTransform;
-uniform mat4 normalTransform;
-
-const int MAX_BONES = 176;
-const int MAX_BONE_INFLUENCE = 4;
-uniform mat4 boneTransforms[MAX_BONES];
-uniform int numBones;
-
 layout (location = 0) in vec3 vertexPosition;
 layout (location = 1) in vec3 vertexNormal;
 layout (location = 2) in vec2 vertexTextureCoordinate;
 layout (location = 3) in vec4 boneIDs;
 layout (location = 4) in vec4 boneWeights;
+
+uniform mat4 modelTransform;
+uniform mat4 viewTransform;
+uniform mat4 cameraTransform;
+uniform mat4 normalTransform;
+
+const int MAX_BONES = 100;
+const int MAX_BONE_INFLUENCE = 4;
+uniform mat4 finalBoneTransforms[MAX_BONES];
+uniform int numBones;
+
+// Animation UBO.
+//layout (std140, binding = 2) uniform AnimationData {
+    //int numBones;
+    //mat4[MAX_BONES] finalBoneTransforms;
+//} animationData;
 
 out vec4 viewPosition;
 out vec4 viewNormal;
@@ -38,7 +44,7 @@ void main()
 
         int ID = int(boneIDs[i]);
 
-        mat4 transform = boneTransforms[ID];
+        mat4 transform = finalBoneTransforms[ID];
 
         vec4 localPosition = transform * vec4(vertexPosition, 1.0f);
         finalPosition += localPosition * boneWeights[i];

@@ -3,10 +3,28 @@
 #include <framework/object_loader.h>
 #include <framework/assimp_loader.h>
 #include <framework/imgui_log.h>
+#include <framework/buffer/ubo.h>
+#include <framework/ubo_manager.h>
 
 namespace Sandbox {
 
     ModelManager::ModelManager() {
+
+        // Construct uniform block for animated models.
+        std::vector<UniformBufferElement> elementList;
+
+        // Layout per light.
+        elementList.emplace_back(ShaderDataType::INT, "numBones");
+        for (int i = 0; i < 100; ++i) {
+            elementList.emplace_back( ShaderDataType::MAT4, "transformationMatrix" );
+        }
+
+        UniformBlockLayout animationBlockLayout;
+        animationBlockLayout.SetBufferElements(1, 1, elementList);
+
+        UniformBlock animationBlock(1, animationBlockLayout);
+
+        UBOManager::GetInstance().AddUBO(animationBlock);
     }
 
     ModelManager::~ModelManager() {
@@ -15,9 +33,9 @@ namespace Sandbox {
         }
     }
 
-    void ModelManager::Update() {
+    void ModelManager::Update(float dt) {
         for (Model* model : _modelList) {
-            model->Update();
+            model->Update(dt);
         }
     }
 
@@ -105,13 +123,9 @@ namespace Sandbox {
 
             // Load in mesh and set up buffers.
             AssimpLoader& objLoader = AssimpLoader::GetInstance();
-            SkinnedMesh* modelMesh = objLoader.LoadFromFile(filepath);
-            modelMesh->Complete();
+            AnimatedModel* model = objLoader.LoadFromFile(filepath);
 
             log.LogTrace("Finished loading model: '%s'.", modelName.c_str());
-
-            Model* model = new Model(modelName);
-            model->SetMesh(modelMesh);
 
             _modelList.emplace_back(model);
             return model;

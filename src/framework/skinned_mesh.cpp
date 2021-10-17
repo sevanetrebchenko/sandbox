@@ -3,18 +3,11 @@
 
 namespace Sandbox {
 
-    SkinnedMesh::SkinnedMesh(GLuint renderingPrimitive) : Mesh(renderingPrimitive),
-                                                          _numBones(0)
+    SkinnedMesh::SkinnedMesh(GLuint renderingPrimitive) : Mesh(renderingPrimitive)
                                                           {
     }
 
     SkinnedMesh::~SkinnedMesh() {
-    }
-
-    SkinnedMesh::SkinnedMesh(const SkinnedMesh &other) : Mesh(other),
-                                                         _boneIDs(other._boneIDs),
-                                                         _boneWeights(other._boneWeights)
-                                                         {
     }
 
     void SkinnedMesh::InitializeBuffers() {
@@ -90,28 +83,12 @@ namespace Sandbox {
         _boneWeights = boneWeights;
     }
 
-    void SkinnedMesh::SetUniqueBoneMapping(const std::unordered_map<std::string, BoneInfo> &uniqueBones) {
-        _uniqueBones = uniqueBones;
-    }
-
-    void SkinnedMesh::SetBoneCount(unsigned boneCount) {
-        _numBones = boneCount;
-    }
-
     const std::vector<glm::vec4> &SkinnedMesh::GetBoneIDs() const {
         return _boneIDs;
     }
 
     const std::vector<glm::vec4> &SkinnedMesh::GetBoneWeights() const {
         return _boneWeights;
-    }
-
-    const std::unordered_map<std::string, BoneInfo>& SkinnedMesh::GetUniqueBoneMapping() const {
-        return _uniqueBones;
-    }
-
-    unsigned SkinnedMesh::GetBoneCount() const {
-        return _numBones;
     }
 
 }

@@ -5,34 +5,22 @@
 #include <sandbox_pch.h>
 #include <framework/model.h>
 #include <framework/bone.h>
+#include <framework/track.h>
 
 namespace Sandbox {
 
-    struct AnimationNode {
-        glm::mat4 _transform;
+    struct Animation {
+        Animation();
+        ~Animation();
+
+        [[nodiscard]] std::pair<KeyPosition, KeyPosition> GetPositionKeyPair(int boneIndex, float animationTime) const;
+        [[nodiscard]] std::pair<KeyRotation, KeyRotation> GetRotationKeyPair(int boneIndex, float animationTime) const;
+        [[nodiscard]] std::pair<KeyScale, KeyScale> GetScaleKeyPair(int boneIndex, float animationTime) const;
+
         std::string _name;
-        std::vector<AnimationNode> _children;
-    };
-
-    class Animation {
-        public:
-            Animation(const std::string& filepath, Model* model);
-            ~Animation();
-
-            [[nodiscard]] Bone* GetBone(const std::string& boneName);
-            [[nodiscard]] float GetSpeed() const;
-            [[nodiscard]] float GetDuration() const;
-            [[nodiscard]] const AnimationNode& GetRootNode() const;
-            [[nodiscard]] const Model* GetBoundModel() const; // Get the model this animation is tied to.
-
-        private:
-            void ProcessAnimationNode(const aiNode* root, AnimationNode& data);
-
-            Model* _model;
-            float _speed;
-            float _duration;
-            std::vector<Bone> _bones;
-            AnimationNode _root;
+        float _duration;
+        float _speed;
+        std::vector<Track> _boneTracks;
     };
 
 }

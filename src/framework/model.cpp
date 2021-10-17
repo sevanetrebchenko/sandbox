@@ -15,7 +15,7 @@ namespace Sandbox {
     Model::~Model() {
     }
 
-    void Model::Update() {
+    void Model::Update(float dt) {
         _transform.Clean();
     }
 

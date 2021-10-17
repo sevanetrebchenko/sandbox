@@ -24,7 +24,6 @@ namespace Sandbox {
             unsigned _numActiveLights;
             bool _isDirty;
 
-            UniformBufferObject _lightingUBO;
             std::list<Light> _lights;
     };
 
