@@ -23,6 +23,14 @@ namespace Sandbox {
 
             [[nodiscard]] const std::vector<glm::mat4>& GetFinalBoneTransformations() const;
 
+            [[nodiscard]] const Animation* GetCurrentAnimation() const;
+
+            [[nodiscard]] float GetPlaybackSpeed() const;
+            void SetPlaybackSpeed(float playbackSpeed);
+
+            [[nodiscard]] bool IsBindPoseActive() const;
+            void SetBindPoseActive(bool active);
+
         private:
             void InterpolateBone(int boneIndex);
 

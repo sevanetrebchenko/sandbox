@@ -61,7 +61,7 @@ namespace Sandbox {
 
     void LightingManager::Update() {
         if (_isDirty) {
-            UniformBufferObject* ubo = UBOManager::GetInstance().GetUBO(0);
+            UniformBufferObject* ubo = UBOManager::GetInstance().GetUBO(1);
             assert(ubo);
 
             ubo->Bind();

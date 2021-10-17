@@ -48,8 +48,16 @@ namespace Sandbox {
         return _animator;
     }
 
+    Skeleton *AnimatedModel::GetSkeleton() const {
+        return _skeleton;
+    }
+
     void AnimatedModel::SetAnimator(Sandbox::Animator *animator) {
         _animator = animator;
+    }
+
+    void AnimatedModel::SetSkeleton(Skeleton *skeleton) {
+        _skeleton = skeleton;
     }
 
 }

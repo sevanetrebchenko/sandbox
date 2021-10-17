@@ -24,6 +24,9 @@ namespace Sandbox {
         private:
             void DrawModelTransformImGui(Model* model) const;
             void DrawModelMaterialImGui(Model* model) const;
+            void DrawModelMeshImgui(Model* model) const;
+            void DrawModelSkeletonImGui(Model* model) const;
+            void DrawModelAnimatorImGui(Model* model) const;
 
             std::vector<Model*> _modelList;
     };

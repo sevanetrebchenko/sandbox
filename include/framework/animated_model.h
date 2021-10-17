@@ -17,10 +17,14 @@ namespace Sandbox {
             void Update(float dt) override;
 
             [[nodiscard]] Animator* GetAnimator() const;
+            [[nodiscard]] Skeleton* GetSkeleton() const;
+
             void SetAnimator(Animator* animator);
+            void SetSkeleton(Skeleton* skeleton);
 
         private:
             Animator* _animator;
+            Skeleton* _skeleton;
     };
 
 }

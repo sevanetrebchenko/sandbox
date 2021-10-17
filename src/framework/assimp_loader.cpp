@@ -75,6 +75,7 @@ namespace Sandbox {
 
         AnimatedModel* model = new AnimatedModel(filepath);
         model->SetAnimator(animator);
+        model->SetSkeleton(skeleton);
         model->SetMesh(mesh);
 
         return model;

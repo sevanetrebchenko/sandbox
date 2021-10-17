@@ -160,4 +160,24 @@ namespace Sandbox {
         return _finalBoneTransformations;
     }
 
+    const Animation *Animator::GetCurrentAnimation() const {
+        return _selectedAnimation;
+    }
+
+    float Animator::GetPlaybackSpeed() const {
+        return _playbackSpeed;
+    }
+
+    void Animator::SetPlaybackSpeed(float playbackSpeed) {
+        _playbackSpeed = playbackSpeed;
+    }
+
+    bool Animator::IsBindPoseActive() const {
+        return _useBindPose;
+    }
+
+    void Animator::SetBindPoseActive(bool active) {
+        _useBindPose = active;
+    }
+
 }
