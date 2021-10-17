@@ -35,8 +35,7 @@ namespace Sandbox {
             _currentTime += dt * _selectedAnimation->_speed * _playbackSpeed;
             _currentTime = std::fmod(_currentTime, _selectedAnimation->_duration);
 
-            for (std::size_t i = 0; i < _target->_bones.size(); ++i) {
-                Bone& bone = _target->_bones[i];
+            for (Bone& bone : _target->_bones) {
                 int boneIndex = bone._index;
 
                 InterpolateBone(boneIndex);
@@ -51,7 +50,7 @@ namespace Sandbox {
                 _finalBoneTransformations[boneIndex] = parentTransform * _finalBoneTransformations[boneIndex];
             }
 
-            // Shift bone to proper position after calculating ALL bone matrices.
+            // Shift bone to proper position AFTER calculating ALL bone matrices.
             for (Bone& bone : _target->_bones) {
                 int boneIndex = bone._index;
                 _finalBoneTransformations[boneIndex] = _finalBoneTransformations[boneIndex] * bone._boneToModel;

@@ -8,24 +8,7 @@
 
 namespace Sandbox {
 
-    ModelManager::ModelManager() {
-
-        // Construct uniform block for animated models.
-        std::vector<UniformBufferElement> elementList;
-
-        // Layout per light.
-        elementList.emplace_back(ShaderDataType::INT, "numBones");
-        for (int i = 0; i < 100; ++i) {
-            elementList.emplace_back( ShaderDataType::MAT4, "transformationMatrix" );
-        }
-
-        UniformBlockLayout animationBlockLayout;
-        animationBlockLayout.SetBufferElements(1, 1, elementList);
-
-        UniformBlock animationBlock(1, animationBlockLayout);
-
-        UBOManager::GetInstance().AddUBO(animationBlock);
-    }
+    ModelManager::ModelManager() = default;
 
     ModelManager::~ModelManager() {
         for (Model* model : _modelList) {

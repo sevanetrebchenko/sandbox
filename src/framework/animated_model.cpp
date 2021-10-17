@@ -19,33 +19,29 @@ namespace Sandbox {
         Model::Update(dt);
         _animator->Update(dt);
 
-//        // Update bone transformations in UBO.
-//        const std::vector<glm::mat4>& finalTransformations = _animator->GetFinalBoneTransformations();
-//
-//        UniformBufferObject* ubo = UBOManager::GetInstance().GetUBO(1);
-//        const UniformBlockLayout& uboLayout = ubo->GetUniformBlock().GetUniformBlockLayout();
-//
-//        ubo->Bind();
-//
-//        // Set numBones uniform in UBO.
-//        {
-//            const UniformBufferElement& element = uboLayout.GetBufferElements()[0];
-//            unsigned elementOffset = element.GetBufferOffset();
-//            unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
-//            int numBones = finalTransformations.size();
-//            ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(&numBones));
-//        }
-//
-//        // Set final bone transformation matrices.
-//        for (int i = 1; i < finalTransformations.size(); ++i) {
-//            const UniformBufferElement& element = uboLayout.GetBufferElements()[i];
-//            unsigned elementOffset = element.GetBufferOffset();
-//            unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
-//
-//            ubo->SetSubData(elementOffset, elementDataSize, static_cast<const void*>(finalTransformations.data()));
-//        }
-//
-//        ubo->Unbind();
+        // Update bone transformations in UBO.
+        const std::vector<glm::mat4>& finalTransformations = _animator->GetFinalBoneTransformations();
+        UniformBufferObject* ubo = UBOManager::GetInstance().GetUBO(2);
+        const UniformBlockLayout& uboLayout = ubo->GetUniformBlock().GetUniformBlockLayout();
+
+        ubo->Bind();
+
+        unsigned counter = 0;
+        const std::vector<UniformBufferElement>& elements = uboLayout.GetBufferElements();
+
+        // Set 'numBones' uniform.
+        std::size_t numBones = finalTransformations.size();
+        ubo->SetSubData(elements[counter].GetBufferOffset(), UniformBufferElement::UBOShaderDataTypeSize(elements[counter].GetShaderDataType()), static_cast<const void*>(&numBones));
+
+        ++counter;
+
+        // Set final bone transformation matrices.
+        for (std::size_t i = 0; i < numBones; ++i) {
+            ubo->SetSubData(elements[counter].GetBufferOffset(), UniformBufferElement::UBOShaderDataTypeSize(elements[counter].GetShaderDataType()), static_cast<const void*>(&finalTransformations[i]));
+            ++counter;
+        }
+
+        ubo->Unbind();
     }
 
     Animator *Sandbox::AnimatedModel::GetAnimator() const {

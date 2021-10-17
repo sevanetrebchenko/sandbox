@@ -19,8 +19,6 @@ namespace Sandbox {
             void AddLight(const Light& light);
 
         private:
-            void ConstructUniformBlock();
-
             unsigned _numActiveLights;
             bool _isDirty;
 

@@ -18,7 +18,11 @@ namespace Sandbox {
             UBOManager();
             ~UBOManager();
 
-            std::vector<UniformBufferObject> _ubos;
+            void CreateMVPDataUBO();
+            void CreateLightingUBO();
+            void CreateAnimationDataUBO();
+
+            std::vector<UniformBufferObject*> _ubos;
     };
 
 }

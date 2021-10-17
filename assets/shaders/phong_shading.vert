@@ -12,16 +12,14 @@ uniform mat4 viewTransform;
 uniform mat4 cameraTransform;
 uniform mat4 normalTransform;
 
-const int MAX_BONES = 100;
+const int MAX_BONES = 256;
 const int MAX_BONE_INFLUENCE = 4;
-uniform mat4 finalBoneTransforms[MAX_BONES];
-uniform int numBones;
 
 // Animation UBO.
-//layout (std140, binding = 2) uniform AnimationData {
-    //int numBones;
-    //mat4[MAX_BONES] finalBoneTransforms;
-//} animationData;
+layout (std140, binding = 2) uniform AnimationData {
+    int numBones;
+    mat4[MAX_BONES] finalBoneTransformations;
+} animationData;
 
 out vec4 viewPosition;
 out vec4 viewNormal;
@@ -36,7 +34,7 @@ void main()
             continue;
         }
 
-        if (boneIDs[i] >= numBones) {
+        if (boneIDs[i] >= animationData.numBones) {
             finalPosition = vec4(vertexPosition, 0.0f);
             finalNormal = vec4(vertexNormal, 1.0f);
             break;
@@ -44,7 +42,7 @@ void main()
 
         int ID = int(boneIDs[i]);
 
-        mat4 transform = finalBoneTransforms[ID];
+        mat4 transform = animationData.finalBoneTransformations[ID];
 
         vec4 localPosition = transform * vec4(vertexPosition, 1.0f);
         finalPosition += localPosition * boneWeights[i];

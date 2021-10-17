@@ -1,39 +1,16 @@
 
 #include <framework/lighting_manager.h>
 #include <framework/ubo_manager.h>
-#define MAX_NUM_LIGHTS 256
 
 namespace Sandbox {
 
     LightingManager::LightingManager() : _numActiveLights(0u),
-                                         _isDirty(true) {
-        ConstructUniformBlock();
+                                         _isDirty(true)
+                                         {
     }
 
     LightingManager::~LightingManager() {
 
-    }
-
-    void LightingManager::ConstructUniformBlock() {
-        // Initialize UBO layout.
-        // Layout for global data.
-        std::vector<UniformBufferElement> elementList;
-
-        // Layout per light.
-        for (int i = 0; i < MAX_NUM_LIGHTS; ++i) {
-            elementList.emplace_back(UniformBufferElement { ShaderDataType::BOOL, "isActive" });
-            elementList.emplace_back(UniformBufferElement { ShaderDataType::VEC3, "position" });
-            elementList.emplace_back(UniformBufferElement { ShaderDataType::VEC3, "ambientColor" });
-            elementList.emplace_back(UniformBufferElement { ShaderDataType::VEC3, "diffuseColor" });
-            elementList.emplace_back(UniformBufferElement { ShaderDataType::VEC3, "specularColor" });
-        }
-
-        UniformBlockLayout lightingBlockLayout;
-        lightingBlockLayout.SetBufferElements(0, 5, elementList);
-
-        UniformBlock lightingBlock(0, lightingBlockLayout);
-
-        UBOManager::GetInstance().AddUBO(lightingBlock);
     }
 
     void LightingManager::OnImGui() {

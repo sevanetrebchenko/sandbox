@@ -18,7 +18,7 @@ struct Light {
 };
 
 // Light data uniform block.
-layout (std140, binding = 0) uniform LightData {
+layout (std140, binding = 1) uniform LightData {
     Light lights[MAX_NUM_LIGHTS];
 } lightData;
 

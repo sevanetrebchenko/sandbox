@@ -18,8 +18,9 @@ namespace Sandbox {
             case ShaderDataType::UVEC3:
             case ShaderDataType::VEC4:
             case ShaderDataType::UVEC4:
-            case ShaderDataType::MAT4:
                 return 16;
+            case ShaderDataType::MAT4:
+                return 64;
             default:
                 throw std::runtime_error("Unknown shader data type provided to UBOShaderDataTypeSize.");
         }
@@ -204,7 +205,7 @@ namespace Sandbox {
         Bind();
         unsigned bindingPoint = _uniformBlock->GetBindingPoint();
         unsigned blockSize = _uniformBlock->GetBlockDataSize();
-        glBufferData(GL_UNIFORM_BUFFER, blockSize, nullptr, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, blockSize, nullptr, GL_DYNAMIC_DRAW);
         Unbind();
 
         glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, _bufferID);

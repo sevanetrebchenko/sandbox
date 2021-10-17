@@ -85,19 +85,6 @@ namespace Sandbox {
                 material->Bind(phongShader);
             }
 
-            // Set bone information.
-            if (AnimatedModel* animatedModel = dynamic_cast<AnimatedModel*>(model); animatedModel) {
-                Animator* animator = animatedModel->GetAnimator();
-                const std::vector<glm::mat4>& boneTransforms = animator->GetFinalBoneTransformations();
-                int numBones = boneTransforms.size();
-                for (int i = 0; i < numBones; ++i) {
-                    phongShader->SetUniform("finalBoneTransforms[" + std::to_string(i) + "]", boneTransforms[i]);
-                }
-
-                phongShader->SetUniform("numBones", numBones);
-            }
-
-
             // Render stage.
             mesh->Bind();
             Backend::Rendering::DrawIndexed(mesh->GetVAO(), mesh->GetRenderingPrimitive());
