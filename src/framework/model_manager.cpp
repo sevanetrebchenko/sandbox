@@ -99,6 +99,9 @@ namespace Sandbox {
         if (ImGui::TreeNode("Skeleton")) {
             Skeleton* skeleton = animatedModel->GetSkeleton();
 
+            ImGui::Text("Render Skeleton Bones");
+            ImGui::Checkbox("##drawSkeleton", &skeleton->_drawSkeleton);
+
             ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
                 // Bone count.
                 ImGui::Text("Bone Count: %zu", skeleton->_bones.size());
@@ -186,7 +189,8 @@ namespace Sandbox {
 
             // Bind pose toggle.
             bool isBindPose = animator->IsBindPoseActive();
-            if (ImGui::Checkbox("Bind Pose: ", &isBindPose)) {
+            ImGui::Text("Show Bind Pose");
+            if (ImGui::Checkbox("##bindPose", &isBindPose)) {
                 animator->SetBindPoseActive(isBindPose);
             }
 

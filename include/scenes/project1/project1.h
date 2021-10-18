@@ -10,6 +10,7 @@
 #include <framework/animation.h>
 #include <framework/animator.h>
 #include <framework/debug.h>
+#include <framework/animated_model.h>
 
 namespace Sandbox {
 
@@ -39,7 +40,11 @@ namespace Sandbox {
             void ConfigureModels();
             void ConstructFBO();
 
+            void RenderSkeletonBones(AnimatedModel* animatedModel) const;
+            void RenderSkeletonBone(Skeleton* skeleton, Animator* animator, const glm::mat4& parentTransform, const glm::vec3& origin, int root) const;
+
             FrameBufferObject _fbo;
+            DDRenderInterfaceCoreGL* _debugRenderer;
     };
 
 }

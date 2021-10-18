@@ -29,6 +29,14 @@ namespace Sandbox {
         ConfigureLights();
         ConstructFBO();
         ConfigureModels();
+
+        // Initialize debug renderer.
+        _debugRenderer = new DDRenderInterfaceCoreGL();
+        dd::initialize(_debugRenderer);
+
+        // Initialize camera position.
+        _camera.SetEyePosition(glm::vec3(2.5f));
+        _camera.SetLookAtDirection(glm::normalize(glm::vec3(-2.5f, -1.0f, -2.5f)));
     }
 
     void SceneProject1::OnUpdate(float dt) {
@@ -110,6 +118,31 @@ namespace Sandbox {
         }
 
         phongShader->Unbind();
+
+
+        // Debug drawing.
+        glUseProgram(_debugRenderer->linePointProgram);
+        _debugRenderer->mvpMatrix = _camera.GetMatrix();
+
+        // Grid.
+        ddVec3_In cGray = { 0.15f, 0.15f, 0.15f };
+        dd::xzSquareGrid(-20.0f, 20.0f, 0.0f, 1.f, &cGray[0], 0, true);
+
+        // Model skeleton.
+        for (Model* model : _modelManager.GetModels()) {
+            if (AnimatedModel* animatedModel = dynamic_cast<AnimatedModel*>(model); animatedModel) {
+                RenderSkeletonBones(animatedModel);
+                break;
+            }
+        }
+
+        glUseProgram(0);
+
+        // Flush debug renderer.
+        const double seconds = glfwGetTime();
+        dd::flush(static_cast<std::int64_t>(seconds * 1000.0));
+
+        Backend::Core::EnableFlag(GL_DEPTH_TEST);
 
         _fbo.Unbind();
         Backend::Core::SetViewport(0, 0, _window.GetWidth(), _window.GetHeight());
@@ -217,7 +250,12 @@ namespace Sandbox {
         AnimatedModel* walkingMan = dynamic_cast<AnimatedModel*>(_modelManager.AddModelFromFile("walking man", "assets/models/CesiumMan.glb"));
         Material* material = materialLibrary.GetMaterialInstance("Phong");
         material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+        material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.3f));
         walkingMan->AddMaterial(material);
+
+        // Values hard-coded for this model.
+        walkingMan->GetTransform().SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+        walkingMan->GetTransform().SetScale(glm::vec3(2.0f));
 
         walkingMan->GetAnimator()->PlayAnimation(0);
     }
@@ -260,6 +298,45 @@ namespace Sandbox {
         Transform& threeTransform = three.GetTransform();
         threeTransform.SetPosition(glm::vec3(0.0f, 2.0f, 0.0f));
         _lightingManager.AddLight(three);
+    }
+
+    void SceneProject1::RenderSkeletonBones(AnimatedModel *animatedModel) const {
+        Skeleton* skeleton = animatedModel->GetSkeleton();
+        Animator* animator = animatedModel->GetAnimator();
+
+        if (skeleton->_drawSkeleton) {
+            for (int root : skeleton->_roots) {
+                RenderSkeletonBone(skeleton, animator, animatedModel->GetTransform().GetMatrix(), animatedModel->GetTransform().GetPosition(), root);
+            }
+        }
+    }
+
+    void SceneProject1::RenderSkeletonBone(Skeleton *skeleton, Animator *animator, const glm::mat4 &parentTransform, const glm::vec3 &origin, int root) const {
+        const std::vector<VQS>& finalTransformations = animator->GetFinalBoneTransformations();
+
+        glm::vec3 start = origin;
+        glm::vec3 end = glm::vec3(parentTransform * glm::vec4(finalTransformations[root] * skeleton->_bones[root]._modelToBoneVQS.GetTranslation(), 1.0f));
+        glm::vec3 direction = start - end;
+
+        // Don't render the base root node.
+        bool isBoneBaseRoot = false;
+        for (int currentID : skeleton->_roots) {
+            if (root == currentID) {
+                isBoneBaseRoot = true;
+                break;
+            }
+        }
+
+        // Render bone.
+        if (!isBoneBaseRoot) {
+            dd::line(static_cast<const float*>(&start[0]), static_cast<const float*>(&end[0]), dd::colors::Orange, 0, false);
+            dd::cone(static_cast<const float*>(&end[0]), static_cast<const float*>(&direction[0]), dd::colors::Orange, 0.025f, 0.0f, 0, false);
+        }
+
+        // Render child bones from the end of this bone.
+        for (std::size_t i = 0; i < skeleton->_bones[root]._children.size(); ++i) {
+            RenderSkeletonBone(skeleton, animator, parentTransform, end, skeleton->_bones[root]._children[i]);
+        }
     }
 
 }

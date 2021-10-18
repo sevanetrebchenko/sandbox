@@ -51,6 +51,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/quaternion.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/vqs.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/interpolation.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/debug.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})

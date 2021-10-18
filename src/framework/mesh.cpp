@@ -18,7 +18,8 @@ namespace Sandbox {
                                    _vertices(mesh._vertices),
                                    _uv(mesh._uv),
                                    _triangles(mesh._triangles),
-                                   _normals(mesh._normals) {
+                                   _normals(mesh._normals)
+                                   {
     }
 
     Mesh &Mesh::operator=(const Mesh &mesh) {

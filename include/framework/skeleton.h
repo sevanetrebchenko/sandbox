@@ -8,7 +8,7 @@
 namespace Sandbox {
 
     struct Skeleton {
-        Skeleton() {}
+        Skeleton() : _drawSkeleton(false) {}
         ~Skeleton() {}
 
         void DrawImGui() {
@@ -26,6 +26,7 @@ namespace Sandbox {
             _roots.push_back(root);
         }
 
+        bool _drawSkeleton;
         std::vector<Bone> _bones;
         std::vector<int> _roots;
         std::unordered_map<std::string, unsigned> _boneMapping;
@@ -33,7 +34,7 @@ namespace Sandbox {
         private:
             void DisplayNode(int nodeIndex) {
                 bool isLeafNode = _bones[nodeIndex]._children.empty();
-                int flags = isLeafNode ? ImGuiTreeNodeFlags_Bullet : 0;
+                int flags = isLeafNode ? ImGuiTreeNodeFlags_Leaf : 0;
 
                 if (ImGui::TreeNodeEx(_bones[nodeIndex]._name.c_str(), flags)) {
                     if (!isLeafNode) {
