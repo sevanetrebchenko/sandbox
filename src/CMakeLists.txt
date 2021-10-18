@@ -48,6 +48,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/animator.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/animated_model.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/ubo_manager.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/quaternion.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})
