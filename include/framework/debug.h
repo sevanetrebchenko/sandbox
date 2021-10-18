@@ -69,13 +69,6 @@ class DDRenderInterfaceCoreGL final : public dd::RenderInterface {
         DDRenderInterfaceCoreGL()
                 : mvpMatrix(glm::mat4(1.0f)), linePointProgram(0), linePointProgram_MvpMatrixLocation(-1),
                   linePointVAO(0), linePointVBO(0) {
-            std::printf("\n");
-            std::printf("GL_VENDOR    : %s\n", glGetString(GL_VENDOR));
-            std::printf("GL_RENDERER  : %s\n", glGetString(GL_RENDERER));
-            std::printf("GL_VERSION   : %s\n", glGetString(GL_VERSION));
-            std::printf("GLSL_VERSION : %s\n\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-            std::printf("DDRenderInterfaceCoreGL initializing ...\n");
-
             // Default OpenGL states:
             glEnable(GL_CULL_FACE);
             glEnable(GL_DEPTH_TEST);
