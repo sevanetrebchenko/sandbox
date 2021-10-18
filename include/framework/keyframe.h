@@ -2,6 +2,8 @@
 #ifndef SANDBOX_KEYFRAME_H
 #define SANDBOX_KEYFRAME_H
 
+#include <framework/quaternion.h>
+
 namespace Sandbox {
 
     // Stored animation key types.
@@ -13,7 +15,7 @@ namespace Sandbox {
 
     struct KeyRotation {
         float dt;
-        glm::quat orientation; // TODO: replace with VQS.
+        Quaternion orientation;
     };
 
     struct KeyScale {

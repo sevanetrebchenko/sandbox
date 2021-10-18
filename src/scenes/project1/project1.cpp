@@ -85,6 +85,22 @@ namespace Sandbox {
                 material->Bind(phongShader);
             }
 
+            if (AnimatedModel* animatedModel = dynamic_cast<AnimatedModel*>(model); animatedModel) {
+                // Bind animated model uniforms.
+                Animator* animator = animatedModel->GetAnimator();
+                const std::vector<VQS>& boneTransforms = animator->GetFinalBoneTransformations();
+                int numBones = boneTransforms.size();
+
+                phongShader->SetUniform("numBones", numBones);
+
+                for (int i = 0; i < numBones; ++i) {
+                    const VQS& vqs = boneTransforms[i];
+                    phongShader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].translation", vqs.GetTranslation());
+                    phongShader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].rotation", vqs.GetOrientation().ToVec4());
+                    phongShader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].scale", vqs.GetScalingFactor());
+                }
+            }
+
             // Render stage.
             mesh->Bind();
             Backend::Rendering::DrawIndexed(mesh->GetVAO(), mesh->GetRenderingPrimitive());
@@ -101,7 +117,6 @@ namespace Sandbox {
 
     void SceneProject1::OnPostRender() {
         // Restore viewport.
-
     }
 
     void SceneProject1::OnImGui() {

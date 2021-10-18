@@ -125,12 +125,72 @@ namespace Sandbox {
                 ImGui::Text("Current Animation: %s", animator->GetCurrentAnimation()->_name.c_str());
             ImGui::PopStyleColor();
 
+            // Interpolation methods.
+            // Key interpolation method.
+            {
+                std::string selected = ToString(animator->GetKeyInterpolationMethod());
+                std::vector<std::string> interpolationMethods = { "Default", "Incremental" };
+
+                ImGui::Text("Key Interpolation Method:");
+
+                if (ImGui::BeginCombo("##keyInterpolationMethods", selected.c_str())) {
+                    for (const std::string& method : interpolationMethods) {
+                        bool isSelected = (selected == method);
+                        if (ImGui::Selectable(method.c_str(), isSelected)) {
+                            selected = method;
+
+                            if (selected == "Default") {
+                                animator->SetKeyInterpolationMethod(KeyInterpolationMethod::DEFAULT);
+                            }
+                            else if (selected == "Incremental") {
+                                animator->SetKeyInterpolationMethod(KeyInterpolationMethod::INCREMENTAL);
+                            }
+                        }
+
+                        if (isSelected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
+            // Quaternion interpolation method.
+            {
+                std::vector<std::string> interpolationMethods = { "Lerp", "Slerp" };
+                std::string selected = ToString(animator->GetQuaternionInterpolationMethod());
+
+                ImGui::Text("Quaternion Interpolation Method:");
+
+                if (ImGui::BeginCombo("##quaternionInterpolationMethods", selected.c_str())) {
+                    for (const std::string& method : interpolationMethods) {
+                        bool isSelected = (selected == method);
+                        if (ImGui::Selectable(method.c_str(), isSelected)) {
+                            selected = method;
+
+                            if (selected == "Lerp") {
+                                animator->SetQuaternionInterpolationMethod(QuaternionInterpolationMethod::LERP);
+                            }
+                            else if (selected == "Slerp") {
+                                animator->SetQuaternionInterpolationMethod(QuaternionInterpolationMethod::SLERP);
+                            }
+                        }
+
+                        if (isSelected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
             // Bind pose toggle.
             bool isBindPose = animator->IsBindPoseActive();
             if (ImGui::Checkbox("Bind Pose: ", &isBindPose)) {
                 animator->SetBindPoseActive(isBindPose);
             }
 
+            // Animation playback speed.
             ImGui::Text("Animation Playback Speed:");
             float playbackSpeed = animator->GetPlaybackSpeed();
             if (ImGui::DragFloat("##playbackSpeed", &playbackSpeed, 0.05f, 0.0f, 2.0f)) {

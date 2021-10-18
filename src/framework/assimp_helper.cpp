@@ -22,4 +22,8 @@ namespace Sandbox {
         return { input.w, input.x, input.y, input.z };
     }
 
+    Quaternion GetQuaternion(const aiQuaternion &input) {
+        return { input.w, input.x, input.y, input.z };
+    }
+
 }

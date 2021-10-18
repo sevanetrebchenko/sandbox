@@ -33,9 +33,9 @@ namespace Sandbox {
     }
 
     UBOManager::UBOManager() {
-        CreateMVPDataUBO();
+//        CreateMVPDataUBO();
         CreateLightingUBO();
-        CreateAnimationDataUBO();
+//        CreateAnimationDataUBO();
     }
 
     UBOManager::~UBOManager() {
@@ -73,13 +73,15 @@ namespace Sandbox {
         std::vector<UniformBufferElement> elementList;
 
         // Layout per light.
-        elementList.emplace_back(ShaderDataType::INT, "numBones");
+        elementList.emplace_back(ShaderDataType::VEC4, "numBones");
         for (int i = 0; i < MAX_NUM_BONES; ++i) {
-            elementList.emplace_back( ShaderDataType::MAT4, "finalBoneTransformations" );
+            elementList.emplace_back( ShaderDataType::VEC3, "translation" );
+            elementList.emplace_back( ShaderDataType::VEC4, "rotation" );
+            elementList.emplace_back( ShaderDataType::FLOAT, "scale" );
         }
 
         UniformBlockLayout animationBlockLayout;
-        animationBlockLayout.SetBufferElements(1, 1, elementList);
+        animationBlockLayout.SetBufferElements(1, 3, elementList);
 
         UniformBlock animationBlock(2, animationBlockLayout);
         AddUBO(animationBlock);

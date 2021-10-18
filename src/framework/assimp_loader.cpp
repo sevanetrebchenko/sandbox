@@ -192,8 +192,11 @@ namespace Sandbox {
                         skeletonBone._index = numBones++;
 
                         // Get bone matrices.
-                        skeletonBone._boneToModel = GetGLMMatrix(bone->mOffsetMatrix);
-                        skeletonBone._modelToBone = glm::inverse(skeletonBone._boneToModel);
+                        skeletonBone._boneToModelMatrix = GetGLMMatrix(bone->mOffsetMatrix);
+                        skeletonBone._boneToModelVQS = VQS(skeletonBone._boneToModelMatrix[3], Quaternion(skeletonBone._boneToModelMatrix));
+
+                        skeletonBone._modelToBoneMatrix = glm::inverse(skeletonBone._boneToModelMatrix);
+                        skeletonBone._modelToBoneVQS = VQS(skeletonBone._modelToBoneMatrix[3], Quaternion(skeletonBone._modelToBoneMatrix));
 
                         if (skeletonBone._parentIndex != -1) {
                             // Register bone as child bone of its parent.
@@ -286,7 +289,7 @@ namespace Sandbox {
 
                         KeyRotation rotationKey { };
                         rotationKey.dt = static_cast<float>(animationRotationKey.mTime);
-                        rotationKey.orientation = GetGLMQuaternion(animationRotationKey.mValue);
+                        rotationKey.orientation = GetQuaternion(animationRotationKey.mValue); // Use custom quaternion.
 
                         boneTrack._rotationKeys.push_back(rotationKey);
                     }

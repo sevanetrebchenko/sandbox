@@ -16,38 +16,41 @@ namespace Sandbox {
 
             [[nodiscard]] static Quaternion Identity();
 
+            [[nodiscard]] float GetScalar() const;
+            [[nodiscard]] glm::vec3 GetVector() const;
+
             // Arithmetic operations with other Quaternions.
             [[nodiscard]] Quaternion operator+(const Quaternion& other) const;
-            [[nodiscard]] Quaternion& operator+=(const Quaternion& other);
+            Quaternion& operator+=(const Quaternion& other);
             [[nodiscard]] Quaternion operator-(const Quaternion& other) const;
-            [[nodiscard]] Quaternion& operator-=(const Quaternion& other);
+            Quaternion& operator-=(const Quaternion& other);
             [[nodiscard]] Quaternion operator*(float multiplier) const;
-            [[nodiscard]] Quaternion& operator*=(float multiplier);
+            Quaternion& operator*=(float multiplier);
+            [[nodiscard]] Quaternion operator/(float divisor) const;
+            Quaternion& operator/=(float divisor);
 
-            [[nodiscard]] Quaternion& Normalize();
-            [[nodiscard]] Quaternion GetNormalized() const;
+            [[nodiscard]] static Quaternion Normalize(const Quaternion& quaternion);
+            // [[nodiscard]] static Quaternion Invert(const Quaternion& quaternion);
+            [[nodiscard]] static Quaternion Conjugate(const Quaternion& quaternion);
+            [[nodiscard]] static float DotProduct(const Quaternion& first, const Quaternion& second);
 
-            [[nodiscard]] Quaternion& Invert();
-            [[nodiscard]] Quaternion GetInverted() const;
-
-            [[nodiscard]] float Dot(const Quaternion& other) const;
             [[nodiscard]] Quaternion operator*(const Quaternion& other) const; // Quaternion product.
-            [[nodiscard]] Quaternion Conjugate() const; // Quaternion conjugate.
 
             // Rotate input vector by this Quaternion.
             [[nodiscard]] glm::vec3 operator*(const glm::vec3& vector) const;
 
-            // Convert back to a 4x4 matrix.
+            // Converter functions.
             [[nodiscard]] glm::mat4 ToMatrix() const;
-
-            [[nodiscard]] static Quaternion Slerp(const Quaternion& start, const Quaternion& end, float t);
+            [[nodiscard]] glm::vec4 ToVec4() const;
 
         private:
-            float _s;
-            glm::vec3 _v;
+            // x, y, z, w
+            glm::vec4 quat;
     };
 
     [[nodiscard]] Quaternion operator*(float multiplier, const Quaternion& quaternion);
+    [[nodiscard]] Quaternion operator/(float divisor, const Quaternion& quaternion);
+    [[nodiscard]] glm::vec3 operator*(const glm::vec3& vector, const Quaternion& quaternion);
 
 }
 
