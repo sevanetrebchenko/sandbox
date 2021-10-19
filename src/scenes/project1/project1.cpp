@@ -14,7 +14,7 @@
 namespace Sandbox {
 
     SceneProject1::SceneProject1(int width, int height) : Scene("Animation", width, height),
-                                                                   _fbo(2560, 1440) {
+                                                                   _fbo(1920, 1080) {
         _dataDirectory = "data/scenes/project1";
     }
 

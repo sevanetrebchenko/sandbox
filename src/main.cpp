@@ -5,7 +5,7 @@
 
 int main() {
 
-    Sandbox::Scene* scene = new Sandbox::SceneProject1(1920, 1080);
+    Sandbox::Scene* scene = new Sandbox::SceneProject1(1280, 720);
     try {
         scene->Init();
     }
