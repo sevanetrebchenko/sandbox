@@ -266,14 +266,14 @@ namespace Sandbox {
         // Output texture.
         Texture* outputTexture = new Texture("output");
         outputTexture->Bind();
-        outputTexture->ReserveData(Texture::AttachmentType::COLOR, 2560, 1440);
+        outputTexture->ReserveData(Texture::AttachmentType::COLOR, 1920, 1080);
         outputTexture->Unbind();
         _fbo.AttachRenderTarget(outputTexture);
 
         // Depth buffer (RBO).
         RenderBufferObject* depthBuffer = new RenderBufferObject();
         depthBuffer->Bind();
-        depthBuffer->ReserveData(2560, 1440);
+        depthBuffer->ReserveData(1920, 1080);
         _fbo.AttachDepthBuffer(depthBuffer);
 
         if (!_fbo.CheckStatus()) {
