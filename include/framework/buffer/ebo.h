@@ -2,6 +2,8 @@
 #ifndef SANDBOX_EBO_H
 #define SANDBOX_EBO_H
 
+#include <sandbox_pch.h>
+
 namespace Sandbox {
 
     class ElementBufferObject {
