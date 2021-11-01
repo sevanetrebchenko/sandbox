@@ -14,8 +14,7 @@
 namespace Sandbox {
 
     SceneProject2::SceneProject2(int width, int height) : Scene("Motion Along a Path", width, height),
-                                                          _fbo(1920, 1080)
-                                                          {
+                                                          _fbo(1920, 1080) {
         _dataDirectory = "data/scenes/project2";
     }
 
@@ -129,14 +128,39 @@ namespace Sandbox {
         _debugRenderer->mvpMatrix = _camera.GetMatrix();
 
         // Grid.
-        ddVec3_In cGray = {0.15f, 0.15f, 0.15f};
-        dd::xzSquareGrid(-20.0f, 20.0f, 0.0f, 1.f, &cGray[0], 0, true);
+        ddVec3 gray = {0.2f, 0.2f, 0.2f};
+        dd::xzSquareGrid(-20.0f, 20.0f, 0.0f, 1.f, &gray[0]);
 
         // Model skeleton.
         for (Model *model : _modelManager.GetModels()) {
             if (AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model); animatedModel) {
                 RenderSkeletonBones(animatedModel);
                 break;
+            }
+        }
+
+        // Path.
+        const float height = 1.0f;
+
+        // Control points.
+        const std::vector<glm::dvec2>& controlPoints = _path.GetControlPoints();
+        for (const glm::dvec2& controlPoint : controlPoints) {
+            ddVec3 point { static_cast<float>(controlPoint.x), height, static_cast<float>(controlPoint.y) };
+            dd::sphere(point, gray, 0.1f);
+        }
+
+        // Interpolated curve.
+        if (_path.IsValid()) {
+            const std::vector<glm::dvec2>& curve = _path.GetCurveApproximation();
+
+            for (int i = 0; i < curve.size() - 1; ++i) {
+                const glm::dvec2& start = curve[i];
+                const glm::dvec2& end = curve[i + 1];
+
+                ddVec3 lineStart = { static_cast<float>(start.x), height, static_cast<float>(start.y) };
+                ddVec3 lineEnd = { static_cast<float>(end.x), height, static_cast<float>(end.y) };
+
+                dd::line(lineStart, lineEnd, gray);
             }
         }
 
@@ -194,6 +218,8 @@ namespace Sandbox {
         materialLibrary.OnImGui();
 
         _modelManager.OnImGui();
+
+        _path.OnImGui();
     }
 
     void SceneProject2::OnShutdown() {

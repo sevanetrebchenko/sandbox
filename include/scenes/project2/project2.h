@@ -11,6 +11,7 @@
 #include <framework/animator.h>
 #include <framework/debug.h>
 #include <framework/animated_model.h>
+#include <framework/path.h>
 
 namespace Sandbox {
 
@@ -45,6 +46,7 @@ namespace Sandbox {
 
             FrameBufferObject _fbo;
             DDRenderInterfaceCoreGL* _debugRenderer;
+            Path _path;
     };
 
 }

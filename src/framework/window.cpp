@@ -24,6 +24,11 @@ namespace Sandbox {
     }
 
     Window::~Window() {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImPlot::DestroyContext();
+        ImGui::DestroyContext();
+
         glfwDestroyWindow(_window);
         glfwTerminate();
     }
@@ -80,6 +85,8 @@ namespace Sandbox {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
+
+        ImPlot::CreateContext();
 
         io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/inconsolata/Inconsolata-Regular.ttf", 17.0f);
         ImGui::StyleColorsDark();

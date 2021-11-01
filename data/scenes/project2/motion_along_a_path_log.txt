@@ -1,7 +1,7 @@
 [TRACE] Vendor: NVIDIA Corporation
 [TRACE] Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
 [TRACE] OpenGL Version: 4.6.0 NVIDIA 471.41
-[TRACE] Creating new ImGui layout in location (data\scenes\project2\motion_along_a_path_imgui.ini).
+[TRACE] Found existing ImGui layout (data\scenes\project2\motion_along_a_path_imgui.ini).
 [TRACE] Creating new ImGui log in location (data\scenes\project2\motion_along_a_path_log.txt).
 [TRACE] Creating new model: 'walking man' from .glb file: assets\models\CesiumMan.glb
 [TRACE] Finished loading model: 'walking man'.
