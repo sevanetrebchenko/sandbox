@@ -1,11 +1,12 @@
 
 // Scenes.
 #include <scenes/project1/project1.h>
+#include <scenes/project2/project2.h>
 #include <scenes/deferred_rendering/deferred_rendering.h>
 
 int main() {
 
-    Sandbox::Scene* scene = new Sandbox::SceneProject1(1280, 720);
+    Sandbox::Scene* scene = new Sandbox::SceneProject2(1280, 720);
     try {
         scene->Init();
     }

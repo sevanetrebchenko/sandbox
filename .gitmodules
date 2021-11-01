@@ -16,3 +16,6 @@
 [submodule "lib/debugdraw"]
 	path = lib/debugdraw
 	url = git@github.com:glampert/debug-draw.git
+[submodule "lib/implot"]
+	path = lib/implot
+	url = git@github.com:epezent/implot.git

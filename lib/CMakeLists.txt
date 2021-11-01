@@ -101,4 +101,8 @@ SET (ASSIMP_BUILD_OBJ_EXPORTER OFF)
 
 add_subdirectory(assimp EXCLUDE_FROM_ALL)
 
+# ImPlot
+message(STATUS "Building ImPlot.")
+include(implot_setup IMPLOT_SETUP_RESULT)
+
 

@@ -7,6 +7,7 @@
 #include <framework/window.h>
 #include <framework/model_manager.h>
 #include <framework/lighting_manager.h>
+#include <implot.h>
 
 namespace Sandbox {
 

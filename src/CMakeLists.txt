@@ -5,8 +5,9 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/sandbox_pch.cpp"
 
         # Scenes
-        "scenes/deferred_rendering/deferred_rendering.cpp"
-        "scenes/project1/project1.cpp"
+        "${PROJECT_SOURCE_DIR}/src/scenes/deferred_rendering/deferred_rendering.cpp"
+        "${PROJECT_SOURCE_DIR}/src/scenes/project1/project1.cpp"
+        "${PROJECT_SOURCE_DIR}/src/scenes/project2/project2.cpp"
 
         # Buffer
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"
@@ -104,6 +105,10 @@ target_link_libraries(Sandbox assimp)
 # ImGui.
 message(STATUS "Linking ImGui to Sandbox project.")
 target_link_libraries(Sandbox imgui)
+
+# ImPlot.
+message(STATUS "Linking ImPlot to Sandbox project.")
+target_link_libraries(Sandbox implot)
 
 
 
