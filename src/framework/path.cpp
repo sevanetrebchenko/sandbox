@@ -94,20 +94,20 @@ namespace Sandbox {
             // Compute arc length table.
             ComputeArcLengthTable();
 
-            isDirty_ = false;
-
-            float a = 0.0f;
-            float step = 1.0f / 1000.0f;
-
-            for (int i = 0; i < 1000; ++i) {
-                a = i * step;
-
-                std::cout << a << " , " << GetArcLength(a) << std::endl;
-            }
-
-            std::cout << std::endl;
-            std::cout << std::endl;
-
+//            float steps = 1000.0f;
+//            float step = 1.0f / steps;
+//
+//            for (int i = 0; i < (int)steps; ++i) {
+//                float s = GetArcLength((float)i * step);
+//                float u = GetInterpolatingParameter(s);
+//
+//                std::cout << "at arc length: " << s << ", interpolation parameter: " << u << std::endl;
+//            }
+//
+//            std::cout << std::endl;
+//            std::cout << std::endl;
+//
+//            isDirty_ = false;
         }
     }
 
@@ -367,19 +367,52 @@ namespace Sandbox {
             std::size_t numCurvePoints = curveApproximation_.size();
 
             // Difference of t between any two points.
-            float dt = 1.0f / static_cast<float>(numCurvePoints - 1);
+            float du = 1.0f / static_cast<float>(numCurvePoints - 1);
 
             // Get bounds within the curve points for given value of t
-            int index = glm::max(static_cast<int>(u / dt) - 1, 0);
-            float ti = arcLengthTable_[index].x;
+            int index = glm::max(static_cast<int>(u / du) - 1, 0);
+            float ui = arcLengthTable_[index].x;
 
             // Compute actual position of point in arc length by interpolating between bounds of t.
-            float k = (u - ti) / dt;
+            float k = (u - ui) / du;
             return arcLengthTable_[index].y + k * (arcLengthTable_[index + 1].y - arcLengthTable_[index].y);
         }
         else {
             return 0.0f;
         }
+    }
+
+    float Path::GetInterpolatingParameter(float s) const {
+        if (IsValid()) {
+            std::size_t numCurvePoints = curveApproximation_.size();
+
+            // Difference of t between any two points.
+            float du = 1.0f / static_cast<float>(numCurvePoints - 1);
+
+            // Monotonically increasing entries allows for binary search.
+            // TODO: binary search
+            int index = 0;
+            for (int i = 0; i < numCurvePoints - 1; ++i) {
+                if (arcLengthTable_[i].y <= s && arcLengthTable_[i + 1].y >= s) {
+                    index = i;
+                }
+            }
+
+            float ui = arcLengthTable_[index].x; // Interpolation parameter.
+            float si = arcLengthTable_[index].y; // Arc length.
+
+            float uii = arcLengthTable_[index + 1].x; // Interpolation parameter.
+            float sii = arcLengthTable_[index + 1].y; // Arc length.
+
+            // Solve for parameter value using linear interpolation.
+            // (u - ui) / (uii - ui) = (s - si) / (sii - si)
+            float k = du / (sii - si);
+            return ui + k * (s - si);
+        }
+        else {
+            return 0.0f;
+        }
+
     }
 
 }
