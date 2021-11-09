@@ -18,11 +18,18 @@ namespace Sandbox {
             [[nodiscard]] bool IsValid() const;
             void Recompute();
 
+            // p = P(u)
             // Value should be passed in the range [0.0, 1.0].
-            [[nodiscard]] glm::dvec2 Evaluate(float t) const;
+            [[nodiscard]] glm::dvec2 Evaluate(float u) const;
 
+            // s = G(u)
             // Value should be passed in the range [0.0, 1.0].
-            [[nodiscard]] float GetArcLength(float t) const;
+            // Returns arc length approximation up until this point.
+            [[nodiscard]] float GetArcLength(float u) const;
+
+            // u = G^-1(s)
+            // Returns normalized interpolation parameter based on path arc length s.
+            [[nodiscard]] float GetInterpolatingParameter(float s) const;
 
             [[nodiscard]] const std::vector<glm::dvec2>& GetControlPoints() const;
             [[nodiscard]] const std::vector<glm::dvec2>& GetCurveApproximation() const;

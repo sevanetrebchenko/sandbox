@@ -96,41 +96,43 @@ namespace Sandbox {
 
             isDirty_ = false;
 
+            float a = 0.0f;
+            float step = 1.0f / 1000.0f;
 
-//            float a = 0.0f;
-//            float step = 1.0f / 1000.0f;
-//
-//            for (int i = 0; i < 1000; ++i) {
-//                a = i * step;
-//
-//                std::cout << a << " , " << GetArcLength(a) << std::endl;
-//            }
+            for (int i = 0; i < 1000; ++i) {
+                a = i * step;
+
+                std::cout << a << " , " << GetArcLength(a) << std::endl;
+            }
+
+            std::cout << std::endl;
+            std::cout << std::endl;
 
         }
     }
 
-    glm::dvec2 Path::Evaluate(float t) const {
+    glm::dvec2 Path::Evaluate(float u) const {
         glm::dvec2 value(0.0f);
 
         // a0 = 1
         value.x += polynomial_[0].x;
         value.y += polynomial_[0].y;
 
-        // a1 = t
-        value.x += polynomial_[1].x * t;
-        value.y += polynomial_[1].y * t;
+        // a1 = u
+        value.x += polynomial_[1].x * u;
+        value.y += polynomial_[1].y * u;
 
-        // a2 = t ^ 2
-        value.x += polynomial_[2].x * t * t;
-        value.y += polynomial_[2].y * t * t;
+        // a2 = u ^ 2
+        value.x += polynomial_[2].x * u * u;
+        value.y += polynomial_[2].y * u * u;
 
-        // a3 = t ^ 3
-        value.x += polynomial_[3].x * t * t * t;
-        value.y += polynomial_[3].y * t * t * t;
+        // a3 = u ^ 3
+        value.x += polynomial_[3].x * u * u * u;
+        value.y += polynomial_[3].y * u * u * u;
 
         // Truncated power functions.
         for (int c = 1; c <= polynomial_.size() - 4; ++c) {
-            float multiplier = TruncatedPow3(t, static_cast<float>(c));
+            float multiplier = TruncatedPow3(u, static_cast<float>(c));
             value.x += polynomial_[3 + c].x * multiplier;
             value.y += polynomial_[3 + c].y * multiplier;
         }
@@ -358,15 +360,9 @@ namespace Sandbox {
                 arcLengthTable_.emplace_back(t, arcLengthTable_[i - 1].y + glm::length(from - to));
             }
         }
-
-        // Normalize arc length.
-//        for (int i = 0; i < curveApproximation_.size(); ++i) {
-//            arcLengthTable_[i].x /= (float) (numControlPoints - 1);
-//            arcLengthTable_[i].y /= arcLengthTable_.back().y;
-//        }
     }
 
-    float Path::GetArcLength(float t) const {
+    float Path::GetArcLength(float u) const {
         if (IsValid()) {
             std::size_t numCurvePoints = curveApproximation_.size();
 
@@ -374,11 +370,11 @@ namespace Sandbox {
             float dt = 1.0f / static_cast<float>(numCurvePoints - 1);
 
             // Get bounds within the curve points for given value of t
-            int index = glm::max(static_cast<int>(t / dt) - 1, 0);
+            int index = glm::max(static_cast<int>(u / dt) - 1, 0);
             float ti = arcLengthTable_[index].x;
 
             // Compute actual position of point in arc length by interpolating between bounds of t.
-            float k = (t - ti) / dt;
+            float k = (u - ti) / dt;
             return arcLengthTable_[index].y + k * (arcLengthTable_[index + 1].y - arcLengthTable_[index].y);
         }
         else {
