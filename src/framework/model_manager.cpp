@@ -227,6 +227,14 @@ namespace Sandbox {
             ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
             ImGui::PopStyleColor();
 
+            float cycleTime = pather->GetCompletionTime();
+            ImGui::Text("Path Cycle Time (seconds):");
+            if (ImGui::DragFloat("##cycleTime", &cycleTime, 0.05f, 0.01f, 100.0f)) {
+            	pather->SetCompletionTime(cycleTime);
+            }
+
+            ImGui::Separator();
+
             if (ImGui::Button("Clear")) {
                 path.Clear();
             }
@@ -237,7 +245,6 @@ namespace Sandbox {
                 path.Recompute();
             }
 
-            const auto widgetWidth = (ImGui::GetContentRegionAvailWidth() - ImGui::CalcTextSize("X Scale").x * 2) / 3;
             if (ImPlot::BeginPlot("##pathOutliner", ImVec2(-1, 0), ImPlotFlags_CanvasOnly)) {
                 // Axes.
                 ImPlot::SetupAxesLimits(-15, 15, -15, 15);

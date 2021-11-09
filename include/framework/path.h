@@ -54,7 +54,7 @@ namespace Sandbox {
             std::vector<glm::dvec2> controlPoints_;
             std::vector<glm::dvec2> polynomial_;
 
-            int curveLOD_; // Number of intermediate curve points between control points.
+            int curveLOD_; // Total number of points in the curve.
             int maxNumPoints_;
             std::vector<glm::dvec2> curveApproximation_;
             std::vector<glm::vec2> arcLengthTable_; // Pairing: (value of t at this point of the curve, arc length)

@@ -4,7 +4,7 @@
 
 namespace Sandbox {
 
-    Path::Path() : curveLOD_(20),
+    Path::Path() : curveLOD_(200),
                    maxNumPoints_(20),
                    isDirty_(false) {
     }
@@ -190,11 +190,10 @@ namespace Sandbox {
         }
 
         // Calculate curve.
-        int steps = numPoints * curveLOD_;
-        float alpha = static_cast<float>(numPoints - 1) / static_cast<float>(steps);
+        float alpha = 1.0f / static_cast<float>(curveLOD_);
 
-        for (int i = 0; i <= steps; ++i) {
-            curveApproximation_.push_back(Evaluate(alpha * static_cast<float>(i) / (float)(numPoints - 1)));
+        for (int i = 0; i <= curveLOD_; ++i) {
+        	curveApproximation_.push_back(Evaluate(alpha * static_cast<float>(i)));
         }
     }
 
@@ -308,10 +307,8 @@ namespace Sandbox {
 
     float Path::GetArcLength(float u) const {
         if (IsValid()) {
-            std::size_t numCurvePoints = curveApproximation_.size();
-
             // Difference of t between any two points.
-            float du = 1.0f / static_cast<float>(numCurvePoints - 1);
+            float du = 1.0f / static_cast<float>(curveLOD_ - 1);
 
             // Get bounds within the curve points for given value of t
             int index = glm::max(static_cast<int>(std::ceil(u / du)) - 1, 0);
@@ -331,15 +328,13 @@ namespace Sandbox {
 
     float Path::GetInterpolationParameter(float s) const {
         if (IsValid()) {
-            std::size_t numCurvePoints = curveApproximation_.size();
-
             // Difference of t between any two points.
-            float du = 1.0f / static_cast<float>(numCurvePoints - 1);
+            float du = 1.0f / static_cast<float>(curveLOD_ - 1);
 
             // Monotonically increasing entries allows for binary search.
             // TODO: binary search
             int index = 0;
-            for (int i = 0; i < numCurvePoints - 1; ++i) {
+            for (int i = 0; i < curveLOD_ - 1; ++i) {
                 if (arcLengthTable_[i].y <= s && arcLengthTable_[i + 1].y >= s) {
                     index = i;
                 }

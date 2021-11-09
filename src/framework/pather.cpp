@@ -23,7 +23,7 @@ namespace Sandbox {
 
             switch (velocityFunction_) {
                 case VelocityTimeFunction::CONSTANT:
-                    ConstantVelocity();
+                    ConstantVelocity(dt);
                     break;
 
                     case VelocityTimeFunction::EASE_IN_OUT:
@@ -35,10 +35,15 @@ namespace Sandbox {
         }
     }
 
-    void Pather::ConstantVelocity() {
+    void Pather::ConstantVelocity(float dt) {
+    	float arcLength = path_.GetArcLength(1.0f);
+    	float velocity = arcLength / cycleTime_;
+
+    	distance_ += velocity * dt;
+    	distance_ = std::fmod(distance_, arcLength);
+
         // Interpolating parameter at the end of the path will always be 1.
-        float s = path_.GetArcLength(time_ / cycleTime_);
-        float u = path_.GetInterpolationParameter(s);
+        float u = path_.GetInterpolationParameter(distance_);
 
         // Compute position along the curve.
         glm::dvec2 position = path_.Evaluate(u);
@@ -77,5 +82,13 @@ namespace Sandbox {
     Path &Pather::GetPath() {
         return path_;
     }
+
+	float Pather::GetCompletionTime() const {
+		return cycleTime_;
+	}
+
+	void Pather::SetCompletionTime(float cycleTime) {
+		cycleTime_ = cycleTime;
+	}
 
 }

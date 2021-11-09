@@ -27,15 +27,18 @@ namespace Sandbox {
 
             void Update(float dt);
 
+            void SetCompletionTime(float cycleTime);
+
             [[nodiscard]] const glm::vec3& GetCurrentPosition() const;
             [[nodiscard]] const glm::vec3& GetCurrentPointOfInterest() const;
             [[nodiscard]] const glm::vec3& GetCurrentOrientation() const;
 
             [[nodiscard]] float GetPathHeight() const;
             [[nodiscard]] Path& GetPath();
+            [[nodiscard]] float GetCompletionTime() const;
 
         private:
-            void ConstantVelocity();
+            void ConstantVelocity(float dt);
 
             Path path_;
             VelocityTimeFunction velocityFunction_;
@@ -46,6 +49,7 @@ namespace Sandbox {
             glm::vec3 orientation_;
 
             float pathHeight_;
+            float distance_;
 
             float time_;
             float cycleTime_;
