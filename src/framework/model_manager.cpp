@@ -233,6 +233,12 @@ namespace Sandbox {
             	pather->SetCompletionTime(cycleTime);
             }
 
+            float lookAheadDistance = pather->GetLookAheadDistance();
+            ImGui::Text("Look Ahead Distance:");
+            if (ImGui::DragFloat("##lookahead", &lookAheadDistance, 0.05f, -10.0f, 10.0f)) {
+            	pather->SetLookAheadDistance(lookAheadDistance);
+            }
+
             ImGui::Separator();
 
             if (ImGui::Button("Clear")) {

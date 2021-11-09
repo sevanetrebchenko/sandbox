@@ -258,7 +258,7 @@ namespace Sandbox {
         walkingMan->AddMaterial(material);
 
         // Values hard-coded for this model.
-        walkingMan->GetTransform().SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+        walkingMan->GetTransform().SetRotation(270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
         walkingMan->GetTransform().SetScale(glm::vec3(2.0f));
 
         walkingMan->GetAnimator()->PlayAnimation(0);
@@ -376,6 +376,12 @@ namespace Sandbox {
 
                 dd::line(lineStart, lineEnd, gray);
             }
+
+            // Draw sphere for POI.
+            glm::vec3 poi = pather->GetCurrentPointOfInterest();
+
+            ddVec3 point { static_cast<float>(poi.x), height, static_cast<float>(poi.z) };
+            dd::sphere(point, gray, 0.1f);
         }
     }
 

@@ -28,14 +28,9 @@ namespace Sandbox {
         if (pather_ && pather_->GetPath().IsValid()) {
             pather_->Update(dt);
 
-            // Apply pather values to transform.
+            // Apply values to transform.
             _transform.SetPosition(pather_->GetCurrentPosition());
-
-            glm::vec3 lookAt = glm::normalize(pather_->GetCurrentOrientation());
-            glm::vec3 x = { 0.0f, 0.0f, 1.0f };
-            glm::vec3 rotation = _transform.GetRotation();
-
-            _transform.SetRotation(glm::vec3(rotation.x, rotation.y, glm::degrees(glm::acos(glm::dot(x, lookAt)))));
+            _transform.SetRotationOffset(glm::quatLookAt(pather_->GetCurrentOrientation(), glm::vec3(0.0f, 1.0f, 0.0f)));
         }
 
     }

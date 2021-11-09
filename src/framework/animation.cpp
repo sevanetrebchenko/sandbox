@@ -31,6 +31,10 @@ namespace Sandbox {
             }
         }
 
+        if (track._rotationKeys.size() == 1) {
+        	return std::make_pair(track._rotationKeys[0], track._rotationKeys[0]);
+        }
+
         throw std::runtime_error("Animation time is outside of the animation duration range in GetRotationKeyPair.");
     }
 
@@ -41,6 +45,10 @@ namespace Sandbox {
             if (animationTime < track._scaleKeys[i + 1].dt) {
                 return std::make_pair(track._scaleKeys[i], track._scaleKeys[i + 1]);
             }
+        }
+
+        if (track._scaleKeys.size() == 1) {
+        	return std::make_pair(track._scaleKeys[0], track._scaleKeys[0]);
         }
 
         throw std::runtime_error("Animation time is outside of the animation duration range in GetScaleKeyPair.");

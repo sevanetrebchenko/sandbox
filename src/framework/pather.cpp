@@ -8,7 +8,8 @@ namespace Sandbox {
               centerOfInterestMode_(centerOfInterestMode),
               pathHeight_(1.0f),
               time_(0.0f),
-              cycleTime_(10.0f)
+              cycleTime_(10.0f),
+              lookAheadDistance_(5.0f)
               {
     }
 
@@ -50,17 +51,15 @@ namespace Sandbox {
         position_ = glm::vec3(static_cast<float>(position.x), 0.0f, static_cast<float>(position.y));
 
         // Compute position of focus object.
-        float focusTime = glm::clamp(time_ + 0.1f, 0.0f, cycleTime_) / cycleTime_;
-        glm::dvec2 focusPosition = path_.Evaluate(focusTime);
-        lookAt_ = glm::vec3(static_cast<float>(focusPosition.x), 0.0f, static_cast<float>(focusPosition.y));
+        float targetDistance = glm::clamp(distance_ + lookAheadDistance_, 0.0f, arcLength);
+        float tu = path_.GetInterpolationParameter(targetDistance);
 
-        // Compute final orientation.
-        glm::vec2 w = glm::normalize(focusPosition - position);
-        glm::vec3 W = glm::vec3(w.x, 0.0f, w.y);
-        glm::vec3 U = glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), W);
-        glm::vec3 V = glm::cross(W, U);
+        glm::dvec2 targetPosition = path_.Evaluate(tu);
+        lookAt_ = glm::vec3(static_cast<float>(targetPosition.x), 0.0f, static_cast<float>(targetPosition.y));
 
-        orientation_ = V;
+        // Compute orientation vector.
+        glm::dvec2 viewDirection = -glm::normalize(targetPosition - position);
+        orientation_ = glm::vec3(static_cast<float>(-viewDirection.y), 0.0f, static_cast<float>(viewDirection.x));
     }
 
     const glm::vec3 &Pather::GetCurrentPosition() const {
@@ -89,6 +88,14 @@ namespace Sandbox {
 
 	void Pather::SetCompletionTime(float cycleTime) {
 		cycleTime_ = cycleTime;
+	}
+
+	void Pather::SetLookAheadDistance(float distance) {
+		lookAheadDistance_ = distance;
+	}
+
+	float Pather::GetLookAheadDistance() const {
+		return lookAheadDistance_;
 	}
 
 }

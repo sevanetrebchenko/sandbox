@@ -192,7 +192,7 @@ namespace Sandbox {
         // Calculate curve.
         float alpha = 1.0f / static_cast<float>(curveLOD_);
 
-        for (int i = 0; i <= curveLOD_; ++i) {
+        for (int i = 0; i < curveLOD_; ++i) {
         	curveApproximation_.push_back(Evaluate(alpha * static_cast<float>(i)));
         }
     }

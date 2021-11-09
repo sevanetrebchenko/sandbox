@@ -28,6 +28,7 @@ namespace Sandbox {
             void Update(float dt);
 
             void SetCompletionTime(float cycleTime);
+            void SetLookAheadDistance(float distance);
 
             [[nodiscard]] const glm::vec3& GetCurrentPosition() const;
             [[nodiscard]] const glm::vec3& GetCurrentPointOfInterest() const;
@@ -36,6 +37,7 @@ namespace Sandbox {
             [[nodiscard]] float GetPathHeight() const;
             [[nodiscard]] Path& GetPath();
             [[nodiscard]] float GetCompletionTime() const;
+            [[nodiscard]] float GetLookAheadDistance() const;
 
         private:
             void ConstantVelocity(float dt);
@@ -50,6 +52,7 @@ namespace Sandbox {
 
             float pathHeight_;
             float distance_;
+            float lookAheadDistance_;
 
             float time_;
             float cycleTime_;
