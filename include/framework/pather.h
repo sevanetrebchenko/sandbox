@@ -12,12 +12,14 @@ namespace Sandbox {
         USER_DEFINED
     };
 
+    [[nodiscard]] std::string ToString(VelocityTimeFunction function);
+
     enum class CenterOfInterestMode {
         ORBIT,
-        FORWARD,
-        TETHER,
-        COMBINED
+        FORWARD
     };
+
+    [[nodiscard]] std::string ToString(CenterOfInterestMode mode);
 
     class Pather {
         public:
@@ -29,6 +31,9 @@ namespace Sandbox {
 
             void SetCompletionTime(float cycleTime);
             void SetLookAheadDistance(float distance);
+            void SetOrbitFocus(glm::dvec2 orbitFocus);
+            void SetCenterOfInterestMode(CenterOfInterestMode mode);
+            void SetVelocityTimeFunction(VelocityTimeFunction function);
 
             [[nodiscard]] const glm::vec3& GetCurrentPosition() const;
             [[nodiscard]] const glm::vec3& GetCurrentPointOfInterest() const;
@@ -38,10 +43,11 @@ namespace Sandbox {
             [[nodiscard]] Path& GetPath();
             [[nodiscard]] float GetCompletionTime() const;
             [[nodiscard]] float GetLookAheadDistance() const;
+            [[nodiscard]] glm::vec2 GetOrbitFocus() const;
+            [[nodiscard]] CenterOfInterestMode GetCenterOfInterestMode() const;
+            [[nodiscard]] VelocityTimeFunction GetVelocityTimeFunction() const;
 
         private:
-            void ConstantVelocity(float dt);
-
             Path path_;
             VelocityTimeFunction velocityFunction_;
             CenterOfInterestMode centerOfInterestMode_;
@@ -52,6 +58,10 @@ namespace Sandbox {
 
             float pathHeight_;
             float distance_;
+
+            glm::vec2 orbitFocus_;
+
+            // Forward.
             float lookAheadDistance_;
 
             float time_;

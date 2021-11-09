@@ -227,16 +227,88 @@ namespace Sandbox {
             ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
             ImGui::PopStyleColor();
 
+            // Center of interest mode.
+            {
+				std::vector<std::string> methods = { "Forward", "Orbit" };
+				std::string selected = ToString(pather->GetCenterOfInterestMode());
+
+				ImGui::Text("Center of Interest Mode:");
+
+				if (ImGui::BeginCombo("##centerOfInterestMode", selected.c_str())) {
+					for (const std::string& method : methods) {
+						bool isSelected = (selected == method);
+						if (ImGui::Selectable(method.c_str(), isSelected)) {
+							selected = method;
+
+							if (selected == "Forward") {
+								pather->SetCenterOfInterestMode(CenterOfInterestMode::FORWARD);
+							}
+							else if (selected == "Orbit") {
+								pather->SetCenterOfInterestMode(CenterOfInterestMode::ORBIT);
+							}
+						}
+
+						if (isSelected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+					ImGui::EndCombo();
+				}
+            }
+
+            switch (pather->GetCenterOfInterestMode()) {
+				case CenterOfInterestMode::ORBIT: {
+					glm::vec2 orbitFocus = pather->GetOrbitFocus();
+					ImGui::Text("Orbit Focus:");
+					if (ImGui::DragFloat2("##orbitFocus", &orbitFocus.x, 0.05f, -10.0f, 10.0f)) {
+						pather->SetOrbitFocus(orbitFocus);
+					}
+					break;
+				}
+				case CenterOfInterestMode::FORWARD: {
+					float lookAheadDistance = pather->GetLookAheadDistance();
+					ImGui::Text("Look Ahead Distance:");
+					if (ImGui::DragFloat("##lookahead", &lookAheadDistance, 0.05f, -10.0f, 10.0f)) {
+						pather->SetLookAheadDistance(lookAheadDistance);
+					}
+					break;
+				}
+			}
+
+            // Velocity time function.
+            {
+            	std::vector<std::string> methods = { "Constant", "Ease In / Ease Out" };
+            	std::string selected = ToString(pather->GetVelocityTimeFunction());
+
+            	ImGui::Text("Velocity Time Function:");
+
+            	if (ImGui::BeginCombo("##velocityTimeFunction", selected.c_str())) {
+            		for (const std::string& method : methods) {
+            			bool isSelected = (selected == method);
+            			if (ImGui::Selectable(method.c_str(), isSelected)) {
+            				selected = method;
+
+            				if (selected == "Constant") {
+            					pather->SetVelocityTimeFunction(VelocityTimeFunction::CONSTANT);
+            				}
+            				else if (selected == "Ease In / Ease Out") {
+            					pather->SetVelocityTimeFunction(VelocityTimeFunction::EASE_IN_OUT);
+            				}
+            			}
+
+            			if (isSelected) {
+            				ImGui::SetItemDefaultFocus();
+            			}
+            		}
+            		ImGui::EndCombo();
+            	}
+            }
+
+
             float cycleTime = pather->GetCompletionTime();
             ImGui::Text("Path Cycle Time (seconds):");
             if (ImGui::DragFloat("##cycleTime", &cycleTime, 0.05f, 0.01f, 100.0f)) {
             	pather->SetCompletionTime(cycleTime);
-            }
-
-            float lookAheadDistance = pather->GetLookAheadDistance();
-            ImGui::Text("Look Ahead Distance:");
-            if (ImGui::DragFloat("##lookahead", &lookAheadDistance, 0.05f, -10.0f, 10.0f)) {
-            	pather->SetLookAheadDistance(lookAheadDistance);
             }
 
             ImGui::Separator();

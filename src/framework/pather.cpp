@@ -9,7 +9,8 @@ namespace Sandbox {
               pathHeight_(1.0f),
               time_(0.0f),
               cycleTime_(10.0f),
-              lookAheadDistance_(5.0f)
+              lookAheadDistance_(5.0f),
+              orbitFocus_(glm::vec2(0.0f))
               {
     }
 
@@ -22,44 +23,54 @@ namespace Sandbox {
             time_ += dt;
             time_ = std::fmod(time_, cycleTime_);
 
+            float arcLength = path_.GetArcLength(1.0f);
+
             switch (velocityFunction_) {
-                case VelocityTimeFunction::CONSTANT:
-                    ConstantVelocity(dt);
-                    break;
+                case VelocityTimeFunction::CONSTANT: {
+                	float velocity = arcLength / cycleTime_;
 
-                    case VelocityTimeFunction::EASE_IN_OUT:
-                        break;
+                	distance_ += velocity * dt;
+                	distance_ = std::fmod(distance_, arcLength);
 
-                    case VelocityTimeFunction::USER_DEFINED:
-                        break;
+                	// Interpolating parameter at the end of the path will always be 1.
+                	float u = path_.GetInterpolationParameter(distance_);
+
+                	// Compute position along the curve.
+                	glm::dvec2 position = path_.Evaluate(u);
+                	position_ = glm::vec3(static_cast<float>(position.x), 0.0f, static_cast<float>(position.y));
+
+                	break;
+                }
+				case VelocityTimeFunction::EASE_IN_OUT:
+					break;
+
+				case VelocityTimeFunction::USER_DEFINED:
+					break;
             }
+
+            glm::dvec2 targetPosition;
+
+            switch (centerOfInterestMode_) {
+				case CenterOfInterestMode::ORBIT: {
+					targetPosition = orbitFocus_;
+					break;
+				}
+
+				case CenterOfInterestMode::FORWARD: {
+					// Compute position of focus object.
+					float targetDistance = glm::clamp(distance_ + lookAheadDistance_, 0.0f, arcLength);
+					float tu = path_.GetInterpolationParameter(targetDistance);
+					targetPosition = path_.Evaluate(tu);
+					break;
+				}
+			}
+
+			lookAt_ = glm::vec3(static_cast<float>(targetPosition.x), 0.0f, static_cast<float>(targetPosition.y));
+
+			// Compute orientation vector.
+			glm::dvec2 viewDirection = -glm::normalize(targetPosition - glm::dvec2(position_.x, position_.z));
+            orientation_ = glm::vec3(static_cast<float>(-viewDirection.y), 0.0f, static_cast<float>(viewDirection.x));
         }
-    }
-
-    void Pather::ConstantVelocity(float dt) {
-    	float arcLength = path_.GetArcLength(1.0f);
-    	float velocity = arcLength / cycleTime_;
-
-    	distance_ += velocity * dt;
-    	distance_ = std::fmod(distance_, arcLength);
-
-        // Interpolating parameter at the end of the path will always be 1.
-        float u = path_.GetInterpolationParameter(distance_);
-
-        // Compute position along the curve.
-        glm::dvec2 position = path_.Evaluate(u);
-        position_ = glm::vec3(static_cast<float>(position.x), 0.0f, static_cast<float>(position.y));
-
-        // Compute position of focus object.
-        float targetDistance = glm::clamp(distance_ + lookAheadDistance_, 0.0f, arcLength);
-        float tu = path_.GetInterpolationParameter(targetDistance);
-
-        glm::dvec2 targetPosition = path_.Evaluate(tu);
-        lookAt_ = glm::vec3(static_cast<float>(targetPosition.x), 0.0f, static_cast<float>(targetPosition.y));
-
-        // Compute orientation vector.
-        glm::dvec2 viewDirection = -glm::normalize(targetPosition - position);
-        orientation_ = glm::vec3(static_cast<float>(-viewDirection.y), 0.0f, static_cast<float>(viewDirection.x));
     }
 
     const glm::vec3 &Pather::GetCurrentPosition() const {
@@ -98,4 +109,51 @@ namespace Sandbox {
 		return lookAheadDistance_;
 	}
 
+	void Pather::SetOrbitFocus(glm::dvec2 orbitFocus) {
+		orbitFocus_ = orbitFocus;
+	}
+
+	glm::vec2 Pather::GetOrbitFocus() const {
+		return orbitFocus_;
+	}
+
+	void Pather::SetCenterOfInterestMode(CenterOfInterestMode mode) {
+		centerOfInterestMode_ = mode;
+	}
+
+	void Pather::SetVelocityTimeFunction(VelocityTimeFunction function) {
+		velocityFunction_ = function;
+	}
+
+	CenterOfInterestMode Pather::GetCenterOfInterestMode() const {
+		return centerOfInterestMode_;
+	}
+
+	VelocityTimeFunction Pather::GetVelocityTimeFunction() const {
+		return velocityFunction_;
+	}
+
+	std::string ToString(VelocityTimeFunction function) {
+    	switch (function) {
+			case VelocityTimeFunction::CONSTANT:
+				return "Constant";
+			case VelocityTimeFunction::EASE_IN_OUT:
+				return "Ease In / Ease Out";
+			case VelocityTimeFunction::USER_DEFINED:
+				return "User Defined";
+			}
+
+		return "";
+	}
+
+	std::string ToString(CenterOfInterestMode mode) {
+		switch (mode) {
+			case CenterOfInterestMode::ORBIT:
+				return "Orbit";
+			case CenterOfInterestMode::FORWARD:
+				return "Forward";
+		}
+
+		return "";
+	}
 }
