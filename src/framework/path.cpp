@@ -5,8 +5,8 @@
 namespace Sandbox {
 
     Path::Path() : curveLOD_(20),
-                   isDirty_(false)
-                   {
+                   maxNumPoints_(20),
+                   isDirty_(false) {
     }
 
     Path::~Path() {
@@ -45,15 +45,17 @@ namespace Sandbox {
                 // Visualize control points.
                 for (int i = 0; i < controlPoints_.size(); ++i) {
                     glm::dvec2 &point = controlPoints_[i];
-                    if (ImPlot::DragPoint(i, &point.x, &point.y,ImVec4(1, 1, 1, 1))) {
+                    if (ImPlot::DragPoint(i, &point.x, &point.y, ImVec4(1, 1, 1, 1))) {
                         isDirty_ = true;
+                        Recompute();
                     }
                 }
 
                 // Draw curve.
                 if (IsValid()) {
                     ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1, 1, 1, 1));
-                    ImPlot::PlotLine("Path", curveXCoordinates_.data(), curveYCoordinates_.data(), curveApproximation_.size());
+                    ImPlot::PlotLine("Path", curveXCoordinates_.data(), curveYCoordinates_.data(),
+                                     curveApproximation_.size());
                 }
 
                 ImPlot::EndPlot();
@@ -64,10 +66,12 @@ namespace Sandbox {
     }
 
     void Path::AddControlPoint(const glm::dvec2 &point) {
-        controlPoints_.push_back(point);
-        isDirty_ = true;
+        if (controlPoints_.size() < maxNumPoints_) {
+            controlPoints_.push_back(point);
+            isDirty_ = true;
 
-        Recompute();
+            Recompute();
+        }
     }
 
     void Path::Recompute() {
@@ -76,17 +80,32 @@ namespace Sandbox {
             curveApproximation_.clear();
             curveXCoordinates_.clear();
             curveYCoordinates_.clear();
+            arcLengthTable_.clear();
 
             // Recompute curve.
             InterpolatingSplines();
 
             // Separate x and y coordinates for ImPlot rendering.
-            for (const glm::dvec2& point : curveApproximation_) {
+            for (const glm::dvec2 &point : curveApproximation_) {
                 curveXCoordinates_.push_back(point.x);
                 curveYCoordinates_.push_back(point.y);
             }
 
+            // Compute arc length table.
+            ComputeArcLengthTable();
+
             isDirty_ = false;
+
+
+//            float a = 0.0f;
+//            float step = 1.0f / 1000.0f;
+//
+//            for (int i = 0; i < 1000; ++i) {
+//                a = i * step;
+//
+//                std::cout << a << " , " << GetArcLength(a) << std::endl;
+//            }
+
         }
     }
 
@@ -101,11 +120,11 @@ namespace Sandbox {
         value.x += polynomial_[1].x * t;
         value.y += polynomial_[1].y * t;
 
-        //a2 = t ^ 2
+        // a2 = t ^ 2
         value.x += polynomial_[2].x * t * t;
         value.y += polynomial_[2].y * t * t;
 
-        //a3 = t ^ 3
+        // a3 = t ^ 3
         value.x += polynomial_[3].x * t * t * t;
         value.y += polynomial_[3].y * t * t * t;
 
@@ -189,7 +208,8 @@ namespace Sandbox {
         for (int i = 1; i <= k - 1; ++i) {
             if (k - i < 0) {
                 linearSystem[numPoints + 1][3 + i] = glm::dvec2(0, 0);
-            } else {
+            }
+            else {
                 linearSystem[numPoints + 1][3 + i] = glm::dvec2(6 * (k - i), 6 * (k - i));
             }
         }
@@ -241,7 +261,8 @@ namespace Sandbox {
     float Path::TruncatedPow3(float t, float c) const {
         if (t < c) {
             return 0.0f;
-        } else {
+        }
+        else {
             return (t - c) * (t - c) * (t - c);
         }
     }
@@ -317,6 +338,52 @@ namespace Sandbox {
 
     bool Path::IsValid() const {
         return !curveApproximation_.empty();
+    }
+
+    void Path::ComputeArcLengthTable() {
+        std::size_t numCurvePoints = curveApproximation_.size();
+        std::size_t numControlPoints = controlPoints_.size();
+
+        for (int i = 0; i < numCurvePoints; ++i) {
+            float t = ((float) i / (float) (numCurvePoints - 1)) * (float) (numControlPoints - 1);
+
+            if (i == 0) {
+                arcLengthTable_.emplace_back(0.0f, 0.0f);
+            }
+            else {
+                glm::vec2 from = curveApproximation_[i - 1];
+                glm::vec2 to = curveApproximation_[i];
+
+                // Pairing: (value of t at this point of the curve, arc length)
+                arcLengthTable_.emplace_back(t, arcLengthTable_[i - 1].y + glm::length(from - to));
+            }
+        }
+
+        // Normalize arc length.
+//        for (int i = 0; i < curveApproximation_.size(); ++i) {
+//            arcLengthTable_[i].x /= (float) (numControlPoints - 1);
+//            arcLengthTable_[i].y /= arcLengthTable_.back().y;
+//        }
+    }
+
+    float Path::GetArcLength(float t) const {
+        if (IsValid()) {
+            std::size_t numCurvePoints = curveApproximation_.size();
+
+            // Difference of t between any two points.
+            float dt = 1.0f / static_cast<float>(numCurvePoints - 1);
+
+            // Get bounds within the curve points for given value of t
+            int index = glm::max(static_cast<int>(t / dt) - 1, 0);
+            float ti = arcLengthTable_[index].x;
+
+            // Compute actual position of point in arc length by interpolating between bounds of t.
+            float k = (t - ti) / dt;
+            return arcLengthTable_[index].y + k * (arcLengthTable_[index + 1].y - arcLengthTable_[index].y);
+        }
+        else {
+            return 0.0f;
+        }
     }
 
 }

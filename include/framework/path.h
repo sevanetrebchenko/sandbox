@@ -21,11 +21,15 @@ namespace Sandbox {
             // Value should be passed in the range [0.0, 1.0].
             [[nodiscard]] glm::dvec2 Evaluate(float t) const;
 
+            // Value should be passed in the range [0.0, 1.0].
+            [[nodiscard]] float GetArcLength(float t) const;
+
             [[nodiscard]] const std::vector<glm::dvec2>& GetControlPoints() const;
             [[nodiscard]] const std::vector<glm::dvec2>& GetCurveApproximation() const;
 
         private:
             void InterpolatingSplines();
+            void ComputeArcLengthTable();
 
             // Truncated power function (t - c) ^ 3+
             [[nodiscard]] float TruncatedPow3(float t, float c) const;
@@ -39,10 +43,12 @@ namespace Sandbox {
             std::vector<glm::dvec2> controlPoints_;
             std::vector<glm::dvec2> polynomial_;
 
-            int curveLOD_;
+            int curveLOD_; // Number of intermediate curve points between control points.
+            int maxNumPoints_;
             std::vector<glm::dvec2> curveApproximation_;
             std::vector<double> curveXCoordinates_;
             std::vector<double> curveYCoordinates_;
+            std::vector<glm::vec2> arcLengthTable_; // Pairing: (value of t at this point of the curve, arc length)
 
             bool isDirty_;
     };
