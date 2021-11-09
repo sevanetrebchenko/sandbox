@@ -7,54 +7,37 @@
 namespace Sandbox {
 
     AnimatedModel::AnimatedModel(std::string name) : Model(std::move(name)),
-                                                     _animator(nullptr)
+                                                     _animator(nullptr),
+                                                     pather_(nullptr)
                                                      {
     }
 
     AnimatedModel::~AnimatedModel() {
         delete _animator;
+        delete _skeleton;
+        delete pather_;
     }
 
     void AnimatedModel::Update(float dt) {
         Model::Update(dt);
-        _animator->Update(dt);
 
-        // Update bone transformations in UBO.
-//        const std::vector<VQS>& finalTransformations = _animator->GetFinalBoneTransformations();
-//        UniformBufferObject* ubo = UBOManager::GetInstance().GetUBO(2);
-//        const UniformBlockLayout& uboLayout = ubo->GetUniformBlock().GetUniformBlockLayout();
-//
-//        ubo->Bind();
-//
-//        unsigned counter = 0;
-//        const std::vector<UniformBufferElement>& elements = uboLayout.GetBufferElements();
-//
-//        // Set 'numBones' uniform.
-//        int numBones = static_cast<int>(finalTransformations.size());
-//        ubo->SetSubData(elements[counter].GetBufferOffset(), UniformBufferElement::UBOShaderDataTypeSize(elements[counter].GetShaderDataType()), static_cast<const void*>(&numBones));
-//        ++counter;
-//
-//        // Set final bone transformation VQS structures.
-//        for (std::size_t i = 0; i < numBones; ++i) {
-//            const VQS& vqs = finalTransformations[i];
-//
-//            // Set 'translation' uniform.
-//            glm::vec3 translation = vqs.GetTranslation();
-//            ubo->SetSubData(elements[counter].GetBufferOffset(), UniformBufferElement::UBOShaderDataTypeSize(elements[counter].GetShaderDataType()), static_cast<const void*>(&translation));
-//            ++counter;
-//
-//            // Set 'rotation' uniform.
-//            glm::vec4 quaternion = vqs.GetOrientation().ToVec4();
-//            ubo->SetSubData(elements[counter].GetBufferOffset(), UniformBufferElement::UBOShaderDataTypeSize(elements[counter].GetShaderDataType()), static_cast<const void*>(&quaternion));
-//            ++counter;
-//
-//            // Set 'scale' uniform.
-//            float scalingFactor = vqs.GetScalingFactor();
-//            ubo->SetSubData(elements[counter].GetBufferOffset(), UniformBufferElement::UBOShaderDataTypeSize(elements[counter].GetShaderDataType()), static_cast<const void*>(&scalingFactor));
-//            ++counter;
-//        }
-//
-//        ubo->Unbind();
+        if (_animator) {
+            _animator->Update(dt);
+        }
+
+        if (pather_ && pather_->GetPath().IsValid()) {
+            pather_->Update(dt);
+
+            // Apply pather values to transform.
+            _transform.SetPosition(pather_->GetCurrentPosition());
+
+            glm::vec3 lookAt = glm::normalize(pather_->GetCurrentOrientation());
+            glm::vec3 x = { 0.0f, 0.0f, 1.0f };
+            glm::vec3 rotation = _transform.GetRotation();
+
+            _transform.SetRotation(glm::vec3(rotation.x, rotation.y, glm::degrees(glm::acos(glm::dot(x, lookAt)))));
+        }
+
     }
 
     Animator *Sandbox::AnimatedModel::GetAnimator() const {
@@ -65,12 +48,20 @@ namespace Sandbox {
         return _skeleton;
     }
 
+    Pather *AnimatedModel::GetPather() const {
+        return pather_;
+    }
+
     void AnimatedModel::SetAnimator(Sandbox::Animator *animator) {
         _animator = animator;
     }
 
     void AnimatedModel::SetSkeleton(Skeleton *skeleton) {
         _skeleton = skeleton;
+    }
+
+    void AnimatedModel::SetPather(Pather *pather) {
+        pather_ = pather;
     }
 
 }

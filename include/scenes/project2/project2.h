@@ -44,9 +44,10 @@ namespace Sandbox {
             void RenderSkeletonBones(AnimatedModel* animatedModel) const;
             void RenderSkeletonBone(Skeleton* skeleton, Animator* animator, const glm::mat4& parentTransform, const glm::vec3& origin, int root) const;
 
+            void RenderAnimatedModelPath(Pather* pather) const;
+
             FrameBufferObject _fbo;
             DDRenderInterfaceCoreGL* _debugRenderer;
-            Path _path;
     };
 
 }

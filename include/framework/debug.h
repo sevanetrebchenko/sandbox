@@ -79,8 +79,6 @@ class DDRenderInterfaceCoreGL final : public dd::RenderInterface {
 
             setupShaderPrograms();
             setupVertexBuffers();
-
-            std::printf("DDRenderInterfaceCoreGL ready!\n\n");
         }
 
         ~DDRenderInterfaceCoreGL() {
@@ -90,8 +88,6 @@ class DDRenderInterfaceCoreGL final : public dd::RenderInterface {
         }
 
         void setupShaderPrograms() {
-            std::printf("> DDRenderInterfaceCoreGL::setupShaderPrograms()\n");
-
             //
             // Line/point drawing shader:
             //
@@ -120,8 +116,6 @@ class DDRenderInterfaceCoreGL final : public dd::RenderInterface {
         }
 
         void setupVertexBuffers() {
-            std::printf("> DDRenderInterfaceCoreGL::setupVertexBuffers()\n");
-
             //
             // Lines/points vertex buffer:
             //

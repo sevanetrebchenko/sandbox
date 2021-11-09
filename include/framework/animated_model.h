@@ -6,6 +6,7 @@
 #include <framework/model.h>
 #include <framework/skeleton.h>
 #include <framework/animator.h>
+#include <framework/pather.h>
 
 namespace Sandbox {
 
@@ -18,13 +19,16 @@ namespace Sandbox {
 
             [[nodiscard]] Animator* GetAnimator() const;
             [[nodiscard]] Skeleton* GetSkeleton() const;
+            [[nodiscard]] Pather* GetPather() const;
 
             void SetAnimator(Animator* animator);
             void SetSkeleton(Skeleton* skeleton);
+            void SetPather(Pather* pather);
 
         private:
             Animator* _animator;
             Skeleton* _skeleton;
+            Pather* pather_;
     };
 
 }

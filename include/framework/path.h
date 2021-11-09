@@ -11,11 +11,11 @@ namespace Sandbox {
             Path();
             ~Path();
 
-            void OnImGui();
-
             void AddControlPoint(const glm::dvec2& point);
 
             [[nodiscard]] bool IsValid() const;
+
+            void Clear();
             void Recompute();
 
             // p = P(u)
@@ -29,12 +29,16 @@ namespace Sandbox {
 
             // u = G^-1(s)
             // Returns normalized interpolation parameter based on path arc length s.
-            [[nodiscard]] float GetInterpolatingParameter(float s) const;
+            [[nodiscard]] float GetInterpolationParameter(float s) const;
 
-            [[nodiscard]] const std::vector<glm::dvec2>& GetControlPoints() const;
+            [[nodiscard]] std::vector<glm::dvec2> GetControlPoints() const;
+            void SetControlPoints(const std::vector<glm::dvec2>& controlPoints);
+
             [[nodiscard]] const std::vector<glm::dvec2>& GetCurveApproximation() const;
 
         private:
+            void Reset();
+
             void InterpolatingSplines();
             void ComputeArcLengthTable();
 
@@ -53,8 +57,6 @@ namespace Sandbox {
             int curveLOD_; // Number of intermediate curve points between control points.
             int maxNumPoints_;
             std::vector<glm::dvec2> curveApproximation_;
-            std::vector<double> curveXCoordinates_;
-            std::vector<double> curveYCoordinates_;
             std::vector<glm::vec2> arcLengthTable_; // Pairing: (value of t at this point of the curve, arc length)
 
             bool isDirty_;

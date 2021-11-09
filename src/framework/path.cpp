@@ -12,59 +12,6 @@ namespace Sandbox {
     Path::~Path() {
     }
 
-    void Path::OnImGui() {
-        if (ImGui::Begin("Path Outliner")) {
-            if (ImGui::Button("Clear")) {
-                controlPoints_.clear();
-                Recompute();
-            }
-
-            ImGui::SameLine();
-
-            if (ImGui::Button("Recompute")) {
-                Recompute();
-            }
-
-            const auto widgetWidth = (ImGui::GetContentRegionAvailWidth() - ImGui::CalcTextSize("X Scale").x * 2) / 3;
-            if (ImPlot::BeginPlot("##pathOutliner", ImVec2(-1, 0), ImPlotFlags_CanvasOnly)) {
-                // Axes.
-                ImPlot::SetupAxesLimits(-15, 15, -15, 15);
-                ImPlot::SetupAxis(ImAxis_Y1, "Z", ImPlotAxisFlags_Invert);
-                ImPlot::SetupAxis(ImAxis_X1, "X", ImPlotAxisFlags_None);
-
-                if (ImGui::IsItemHovered()) {
-                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                        ImPlotPoint newPointPosition = ImPlot::GetPlotMousePos();
-
-                        // Emplace new point and recompute new curve.
-                        glm::dvec2 point(newPointPosition.x, newPointPosition.y);
-                        AddControlPoint(point);
-                    }
-                }
-
-                // Visualize control points.
-                for (int i = 0; i < controlPoints_.size(); ++i) {
-                    glm::dvec2 &point = controlPoints_[i];
-                    if (ImPlot::DragPoint(i, &point.x, &point.y, ImVec4(1, 1, 1, 1))) {
-                        isDirty_ = true;
-                        Recompute();
-                    }
-                }
-
-                // Draw curve.
-                if (IsValid()) {
-                    ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1, 1, 1, 1));
-                    ImPlot::PlotLine("Path", curveXCoordinates_.data(), curveYCoordinates_.data(),
-                                     curveApproximation_.size());
-                }
-
-                ImPlot::EndPlot();
-            }
-        }
-
-        ImGui::End();
-    }
-
     void Path::AddControlPoint(const glm::dvec2 &point) {
         if (controlPoints_.size() < maxNumPoints_) {
             controlPoints_.push_back(point);
@@ -76,20 +23,10 @@ namespace Sandbox {
 
     void Path::Recompute() {
         if (isDirty_) {
-            polynomial_.clear();
-            curveApproximation_.clear();
-            curveXCoordinates_.clear();
-            curveYCoordinates_.clear();
-            arcLengthTable_.clear();
+            Reset();
 
             // Recompute curve.
             InterpolatingSplines();
-
-            // Separate x and y coordinates for ImPlot rendering.
-            for (const glm::dvec2 &point : curveApproximation_) {
-                curveXCoordinates_.push_back(point.x);
-                curveYCoordinates_.push_back(point.y);
-            }
 
             // Compute arc length table.
             ComputeArcLengthTable();
@@ -99,7 +36,7 @@ namespace Sandbox {
 //
 //            for (int i = 0; i < (int)steps; ++i) {
 //                float s = GetArcLength((float)i * step);
-//                float u = GetInterpolatingParameter(s);
+//                float u = GetInterpolationParameter(s);
 //
 //                std::cout << "at arc length: " << s << ", interpolation parameter: " << u << std::endl;
 //            }
@@ -107,11 +44,13 @@ namespace Sandbox {
 //            std::cout << std::endl;
 //            std::cout << std::endl;
 //
-//            isDirty_ = false;
+            isDirty_ = false;
         }
     }
 
     glm::dvec2 Path::Evaluate(float u) const {
+        u *= (controlPoints_.size() - 1);
+
         glm::dvec2 value(0.0f);
 
         // a0 = 1
@@ -140,7 +79,7 @@ namespace Sandbox {
         return value;
     }
 
-    const std::vector<glm::dvec2> &Path::GetControlPoints() const {
+    std::vector<glm::dvec2> Path::GetControlPoints() const {
         return controlPoints_;
     }
 
@@ -255,7 +194,7 @@ namespace Sandbox {
         float alpha = static_cast<float>(numPoints - 1) / static_cast<float>(steps);
 
         for (int i = 0; i <= steps; ++i) {
-            curveApproximation_.push_back(Evaluate(alpha * static_cast<float>(i)));
+            curveApproximation_.push_back(Evaluate(alpha * static_cast<float>(i) / (float)(numPoints - 1)));
         }
     }
 
@@ -360,6 +299,11 @@ namespace Sandbox {
                 arcLengthTable_.emplace_back(t, arcLengthTable_[i - 1].y + glm::length(from - to));
             }
         }
+
+        // Normalize.
+        for (int i = 0; i < numCurvePoints; ++i) {
+            arcLengthTable_[i].x /= (float)(numControlPoints - 1);
+        }
     }
 
     float Path::GetArcLength(float u) const {
@@ -370,19 +314,22 @@ namespace Sandbox {
             float du = 1.0f / static_cast<float>(numCurvePoints - 1);
 
             // Get bounds within the curve points for given value of t
-            int index = glm::max(static_cast<int>(u / du) - 1, 0);
+            int index = glm::max(static_cast<int>(std::ceil(u / du)) - 1, 0);
             float ui = arcLengthTable_[index].x;
+
+            float si = arcLengthTable_[index].y;
+            float sii = arcLengthTable_[index + 1].y;
 
             // Compute actual position of point in arc length by interpolating between bounds of t.
             float k = (u - ui) / du;
-            return arcLengthTable_[index].y + k * (arcLengthTable_[index + 1].y - arcLengthTable_[index].y);
+            return si + k * (sii - si);
         }
         else {
             return 0.0f;
         }
     }
 
-    float Path::GetInterpolatingParameter(float s) const {
+    float Path::GetInterpolationParameter(float s) const {
         if (IsValid()) {
             std::size_t numCurvePoints = curveApproximation_.size();
 
@@ -413,6 +360,23 @@ namespace Sandbox {
             return 0.0f;
         }
 
+    }
+
+    void Path::Clear() {
+        controlPoints_.clear();
+        Reset();
+    }
+
+    void Path::SetControlPoints(const std::vector<glm::dvec2> &controlPoints) {
+        controlPoints_ = controlPoints;
+        isDirty_= true;
+    }
+
+    void Path::Reset() {
+        polynomial_.clear();
+        curveApproximation_.clear();
+        arcLengthTable_.clear();
+        isDirty_ = true;
     }
 
 }

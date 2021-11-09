@@ -135,32 +135,8 @@ namespace Sandbox {
         for (Model *model : _modelManager.GetModels()) {
             if (AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model); animatedModel) {
                 RenderSkeletonBones(animatedModel);
+                RenderAnimatedModelPath(animatedModel->GetPather());
                 break;
-            }
-        }
-
-        // Path.
-        const float height = 1.0f;
-
-        // Control points.
-        const std::vector<glm::dvec2>& controlPoints = _path.GetControlPoints();
-        for (const glm::dvec2& controlPoint : controlPoints) {
-            ddVec3 point { static_cast<float>(controlPoint.x), height, static_cast<float>(controlPoint.y) };
-            dd::sphere(point, gray, 0.1f);
-        }
-
-        // Interpolated curve.
-        if (_path.IsValid()) {
-            const std::vector<glm::dvec2>& curve = _path.GetCurveApproximation();
-
-            for (int i = 0; i < curve.size() - 1; ++i) {
-                const glm::dvec2& start = curve[i];
-                const glm::dvec2& end = curve[i + 1];
-
-                ddVec3 lineStart = { static_cast<float>(start.x), height, static_cast<float>(start.y) };
-                ddVec3 lineEnd = { static_cast<float>(end.x), height, static_cast<float>(end.y) };
-
-                dd::line(lineStart, lineEnd, gray);
             }
         }
 
@@ -214,12 +190,7 @@ namespace Sandbox {
         // ImGui log output.
         log.OnImGui();
 
-        // Materials.
-        materialLibrary.OnImGui();
-
         _modelManager.OnImGui();
-
-        _path.OnImGui();
     }
 
     void SceneProject2::OnShutdown() {
@@ -291,6 +262,8 @@ namespace Sandbox {
         walkingMan->GetTransform().SetScale(glm::vec3(2.0f));
 
         walkingMan->GetAnimator()->PlayAnimation(0);
+
+        walkingMan->SetPather(new Pather());
     }
 
     void SceneProject2::ConstructFBO() {
@@ -374,6 +347,35 @@ namespace Sandbox {
         // Render child bones from the end of this bone.
         for (std::size_t i = 0; i < skeleton->_bones[root]._children.size(); ++i) {
             RenderSkeletonBone(skeleton, animator, parentTransform, end, skeleton->_bones[root]._children[i]);
+        }
+    }
+
+    void SceneProject2::RenderAnimatedModelPath(Pather* pather) const {
+        // Path.
+        const float height = pather->GetPathHeight();
+        Path& path = pather->GetPath();
+        ddVec3 gray = {0.2f, 0.2f, 0.2f};
+
+        // Control points.
+        const std::vector<glm::dvec2>& controlPoints = path.GetControlPoints();
+        for (const glm::dvec2& controlPoint : controlPoints) {
+            ddVec3 point { static_cast<float>(controlPoint.x), height, static_cast<float>(controlPoint.y) };
+            dd::sphere(point, gray, 0.1f);
+        }
+
+        // Interpolated curve.
+        if (path.IsValid()) {
+            const std::vector<glm::dvec2>& curve = path.GetCurveApproximation();
+
+            for (int i = 0; i < curve.size() - 1; ++i) {
+                const glm::dvec2& start = curve[i];
+                const glm::dvec2& end = curve[i + 1];
+
+                ddVec3 lineStart = { static_cast<float>(start.x), height, static_cast<float>(start.y) };
+                ddVec3 lineEnd = { static_cast<float>(end.x), height, static_cast<float>(end.y) };
+
+                dd::line(lineStart, lineEnd, gray);
+            }
         }
     }
 

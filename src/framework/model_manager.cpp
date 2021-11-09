@@ -31,6 +31,7 @@ namespace Sandbox {
                     DrawModelMeshImgui(model);
                     DrawModelSkeletonImGui(model);
                     DrawModelAnimatorImGui(model);
+                    DrawModelPatherImGui(model);
 
                     ImGui::TreePop();
                 }
@@ -120,9 +121,12 @@ namespace Sandbox {
             return;
         }
 
-        if (ImGui::TreeNode("Animator")) {
-            Animator* animator = animatedModel->GetAnimator();
+        Animator* animator = animatedModel->GetAnimator();
+        if (!animator) {
+            return;
+        }
 
+        if (ImGui::TreeNode("Animator")) {
             // Animation name.
             ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
                 ImGui::Text("Current Animation: %s", animator->GetCurrentAnimation()->_name.c_str());
@@ -199,6 +203,92 @@ namespace Sandbox {
             float playbackSpeed = animator->GetPlaybackSpeed();
             if (ImGui::DragFloat("##playbackSpeed", &playbackSpeed, 0.05f, 0.0f, 2.0f)) {
                 animator->SetPlaybackSpeed(playbackSpeed);
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
+    void ModelManager::DrawModelPatherImGui(Model *model) const {
+        AnimatedModel* animatedModel = dynamic_cast<AnimatedModel*>(model);
+        if (!animatedModel) {
+            return;
+        }
+
+        Pather* pather = animatedModel->GetPather();
+        if (!pather) {
+            return;
+        }
+
+        Path& path = pather->GetPath();
+
+        if (ImGui::TreeNode("Pather")) {
+            // Animation name.
+            ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
+            ImGui::PopStyleColor();
+
+            if (ImGui::Button("Clear")) {
+                path.Clear();
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Recompute")) {
+                path.Recompute();
+            }
+
+            const auto widgetWidth = (ImGui::GetContentRegionAvailWidth() - ImGui::CalcTextSize("X Scale").x * 2) / 3;
+            if (ImPlot::BeginPlot("##pathOutliner", ImVec2(-1, 0), ImPlotFlags_CanvasOnly)) {
+                // Axes.
+                ImPlot::SetupAxesLimits(-15, 15, -15, 15);
+                ImPlot::SetupAxis(ImAxis_Y1, "Z", ImPlotAxisFlags_Invert);
+                ImPlot::SetupAxis(ImAxis_X1, "X", ImPlotAxisFlags_None);
+
+                if (ImGui::IsItemHovered()) {
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                        ImPlotPoint newPointPosition = ImPlot::GetPlotMousePos();
+
+                        // Emplace new point and recompute new curve.
+                        glm::dvec2 point(newPointPosition.x, newPointPosition.y);
+                        path.AddControlPoint(point);
+
+                        path.Recompute();
+                    }
+                }
+
+                // Visualize control points.
+                std::vector<glm::dvec2> controlPoints = path.GetControlPoints();
+                bool invalidated = false;
+
+                for (int i = 0; i < controlPoints.size(); ++i) {
+                    glm::dvec2 &point = controlPoints[i];
+                    if (ImPlot::DragPoint(i, &point.x, &point.y, ImVec4(1, 1, 1, 1))) {
+                        invalidated = true;
+                    }
+                }
+
+                if (invalidated) {
+                    path.SetControlPoints(controlPoints);
+                    path.Recompute();
+                }
+
+                // Draw curve.
+                if (path.IsValid()) {
+                    const std::vector<glm::dvec2>& curve = path.GetCurveApproximation();
+
+                    std::vector<double> curveXCoordinates;
+                    std::vector<double> curveYCoordinates;
+
+                    for (const glm::dvec2& point : curve) {
+                        curveXCoordinates.push_back(point.x);
+                        curveYCoordinates.push_back(point.y);
+                    }
+
+                    ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1, 1, 1, 1));
+                    ImPlot::PlotLine("Path", curveXCoordinates.data(), curveYCoordinates.data(), curve.size());
+                }
+
+                ImPlot::EndPlot();
             }
 
             ImGui::TreePop();

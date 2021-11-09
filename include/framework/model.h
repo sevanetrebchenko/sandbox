@@ -27,7 +27,7 @@ namespace Sandbox {
             void SetMesh(Mesh* mesh);
             void AddMaterial(Material* material);
 
-        private:
+        protected:
             std::string _name;
             std::vector<Material*> _materialList;
             Mesh* _mesh;
