@@ -284,6 +284,10 @@ namespace Sandbox {
         std::size_t numCurvePoints = curveApproximation_.size();
         std::size_t numControlPoints = controlPoints_.size();
 
+        if (numControlPoints == 1) {
+        	return;
+        }
+
         for (int i = 0; i < numCurvePoints; ++i) {
             float t = ((float) i / (float) (numCurvePoints - 1)) * (float) (numControlPoints - 1);
 
@@ -300,8 +304,10 @@ namespace Sandbox {
         }
 
         // Normalize.
+        float arcLength = arcLengthTable_.back().y;
         for (int i = 0; i < numCurvePoints; ++i) {
             arcLengthTable_[i].x /= (float)(numControlPoints - 1);
+            arcLengthTable_[i].y /= arcLength;
         }
     }
 

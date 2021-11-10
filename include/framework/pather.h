@@ -30,7 +30,7 @@ namespace Sandbox {
             void Update(float dt);
 
             void SetCompletionTime(float cycleTime);
-            void SetLookAheadDistance(float distance);
+            void SetLookAheadDistance(int distance);
             void SetOrbitFocus(glm::dvec2 orbitFocus);
             void SetCenterOfInterestMode(CenterOfInterestMode mode);
             void SetVelocityTimeFunction(VelocityTimeFunction function);
@@ -42,7 +42,8 @@ namespace Sandbox {
             [[nodiscard]] float GetPathHeight() const;
             [[nodiscard]] Path& GetPath();
             [[nodiscard]] float GetCompletionTime() const;
-            [[nodiscard]] float GetLookAheadDistance() const;
+            [[nodiscard]] int GetLookAheadDistance() const;
+            [[nodiscard]] int GetMaxLookingDistance() const;
             [[nodiscard]] glm::vec2 GetOrbitFocus() const;
             [[nodiscard]] CenterOfInterestMode GetCenterOfInterestMode() const;
             [[nodiscard]] VelocityTimeFunction GetVelocityTimeFunction() const;
@@ -62,7 +63,8 @@ namespace Sandbox {
             glm::vec2 orbitFocus_;
 
             // Forward.
-            float lookAheadDistance_;
+            int lookAheadDistance_;
+            int maxLookDistance_;
 
             float time_;
             float cycleTime_;

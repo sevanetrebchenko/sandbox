@@ -266,9 +266,10 @@ namespace Sandbox {
 					break;
 				}
 				case CenterOfInterestMode::FORWARD: {
-					float lookAheadDistance = pather->GetLookAheadDistance();
+					int lookAheadDistance = pather->GetLookAheadDistance();
+					int maxLookDistance = pather->GetMaxLookingDistance();
 					ImGui::Text("Look Ahead Distance:");
-					if (ImGui::DragFloat("##lookahead", &lookAheadDistance, 0.05f, -10.0f, 10.0f)) {
+					if (ImGui::DragInt("##lookahead", &lookAheadDistance, 1, -maxLookDistance, maxLookDistance)) {
 						pather->SetLookAheadDistance(lookAheadDistance);
 					}
 					break;

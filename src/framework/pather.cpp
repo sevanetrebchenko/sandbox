@@ -9,7 +9,8 @@ namespace Sandbox {
               pathHeight_(1.0f),
               time_(0.0f),
               cycleTime_(10.0f),
-              lookAheadDistance_(5.0f),
+              lookAheadDistance_(5),
+              maxLookDistance_(20),
               orbitFocus_(glm::vec2(0.0f))
               {
     }
@@ -58,7 +59,9 @@ namespace Sandbox {
 
 				case CenterOfInterestMode::FORWARD: {
 					// Compute position of focus object.
-					float targetDistance = glm::clamp(distance_ + lookAheadDistance_, 0.0f, arcLength);
+					float step = 1.0f / static_cast<float>(maxLookDistance_);
+
+					float targetDistance = glm::clamp(distance_ + (static_cast<float>(lookAheadDistance_) * step), 0.0f, arcLength);
 					float tu = path_.GetInterpolationParameter(targetDistance);
 					targetPosition = path_.Evaluate(tu);
 					break;
@@ -69,7 +72,8 @@ namespace Sandbox {
 
 			// Compute orientation vector.
 			glm::dvec2 viewDirection = -glm::normalize(targetPosition - glm::dvec2(position_.x, position_.z));
-            orientation_ = glm::vec3(static_cast<float>(-viewDirection.y), 0.0f, static_cast<float>(viewDirection.x));
+            orientation_ = glm::vec3(static_cast<float>(-viewDirection.y), 0.0f, static_cast<float>(viewDirection.x
+            ));
         }
     }
 
@@ -101,11 +105,11 @@ namespace Sandbox {
 		cycleTime_ = cycleTime;
 	}
 
-	void Pather::SetLookAheadDistance(float distance) {
+	void Pather::SetLookAheadDistance(int distance) {
 		lookAheadDistance_ = distance;
 	}
 
-	float Pather::GetLookAheadDistance() const {
+	int Pather::GetLookAheadDistance() const {
 		return lookAheadDistance_;
 	}
 
@@ -131,6 +135,10 @@ namespace Sandbox {
 
 	VelocityTimeFunction Pather::GetVelocityTimeFunction() const {
 		return velocityFunction_;
+	}
+
+	int Pather::GetMaxLookingDistance() const {
+		return maxLookDistance_;
 	}
 
 	std::string ToString(VelocityTimeFunction function) {
