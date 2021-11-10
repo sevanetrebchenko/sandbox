@@ -60,11 +60,16 @@ namespace Sandbox {
             float pathHeight_;
             float distance_;
 
+            // Focus point for Orbit Center of Interest mode.
             glm::vec2 orbitFocus_;
 
             // Forward.
             int lookAheadDistance_;
             int maxLookDistance_;
+
+            // Parabolic.
+            float t1_;
+            float t2_;
 
             float time_;
             float cycleTime_;

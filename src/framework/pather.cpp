@@ -3,55 +3,75 @@
 
 namespace Sandbox {
 
-    Pather::Pather(VelocityTimeFunction velocityFunction, CenterOfInterestMode centerOfInterestMode)
-            : velocityFunction_(velocityFunction),
-              centerOfInterestMode_(centerOfInterestMode),
-              pathHeight_(1.0f),
-              time_(0.0f),
-              cycleTime_(10.0f),
-              lookAheadDistance_(5),
-              maxLookDistance_(20),
-              orbitFocus_(glm::vec2(0.0f))
-              {
-    }
+	Pather::Pather(VelocityTimeFunction velocityFunction, CenterOfInterestMode centerOfInterestMode)
+		: velocityFunction_(velocityFunction),
+		  centerOfInterestMode_(centerOfInterestMode),
+		  pathHeight_(1.0f),
+		  time_(0.0f),
+		  cycleTime_(10.0f),
+		  lookAheadDistance_(5),
+		  maxLookDistance_(20),
+		  orbitFocus_(glm::vec2(0.0f)),
+		  t1_(0.3f),
+		  t2_(0.7f)
+		  {
+	}
 
-    Pather::~Pather() {
-    }
+	Pather::~Pather() {
+	}
 
-    void Pather::Update(float dt) {
-        if (path_.IsValid()) {
-            // Update timestep.
-            time_ += dt;
-            time_ = std::fmod(time_, cycleTime_);
+	void Pather::Update(float dt) {
+		if (path_.IsValid()) {
+			// Update timestep.
+			time_ += dt;
+			time_ = std::fmod(time_, cycleTime_);
 
-            float arcLength = path_.GetArcLength(1.0f);
+			float arcLength = path_.GetArcLength(1.0f);
 
-            switch (velocityFunction_) {
-                case VelocityTimeFunction::CONSTANT: {
-                	float velocity = arcLength / cycleTime_;
+			switch (velocityFunction_) {
+				case VelocityTimeFunction::CONSTANT: {
+					float velocity = arcLength / cycleTime_;
 
-                	distance_ += velocity * dt;
-                	distance_ = std::fmod(distance_, arcLength);
-
-                	// Interpolating parameter at the end of the path will always be 1.
-                	float u = path_.GetInterpolationParameter(distance_);
-
-                	// Compute position along the curve.
-                	glm::dvec2 position = path_.Evaluate(u);
-                	position_ = glm::vec3(static_cast<float>(position.x), 0.0f, static_cast<float>(position.y));
-
-                	break;
-                }
-				case VelocityTimeFunction::EASE_IN_OUT:
+					distance_ += velocity * dt;
+					distance_ = std::fmod(distance_, arcLength);
 					break;
+				}
+				case VelocityTimeFunction::EASE_IN_OUT: {
+					// Interpolant.
+					float t = time_ / cycleTime_;
+
+					// Final constant velocity.
+					float v0 = 2.0f / (1.0f - t1_ + t2_);
+
+					if (0.0f <= t && t <= t1_) {
+						distance_ = (v0 / (2.0f * t1_)) * (t * t);
+					}
+					else if (t1_ < t && t < t2_) {
+						distance_ = v0 * (t - (t1_ / 2.0f));
+					}
+					else if (t2_ <= t && t < 1.0f) {
+						distance_ = ((v0 * (t - t2_)) / (2.0f * (1.0f - t2_))) * (2.0f - t - t2_) + (v0 * (t2_ - (t1_ / 2.0f)));
+					}
+
+					break;
+				}
 
 				case VelocityTimeFunction::USER_DEFINED:
+					// Not implemented.
 					break;
-            }
+			}
 
-            glm::dvec2 targetPosition;
+			// Interpolating parameter at the end of the path will always be 1.
+			float u = path_.GetInterpolationParameter(distance_);
 
-            switch (centerOfInterestMode_) {
+			// Compute position along the curve.
+			glm::dvec2 position = path_.Evaluate(u);
+			position_ = glm::vec3(static_cast<float>(position.x), 0.0f, static_cast<float>(position.y));
+
+
+			glm::dvec2 targetPosition;
+
+			switch (centerOfInterestMode_) {
 				case CenterOfInterestMode::ORBIT: {
 					targetPosition = orbitFocus_;
 					break;
@@ -61,7 +81,8 @@ namespace Sandbox {
 					// Compute position of focus object.
 					float step = 1.0f / static_cast<float>(maxLookDistance_);
 
-					float targetDistance = glm::clamp(distance_ + (static_cast<float>(lookAheadDistance_) * step), 0.0f, arcLength);
+					float targetDistance = glm::clamp(
+						distance_ + (static_cast<float>(lookAheadDistance_) * step), 0.0f, arcLength);
 					float tu = path_.GetInterpolationParameter(targetDistance);
 					targetPosition = path_.Evaluate(tu);
 					break;
@@ -72,30 +93,29 @@ namespace Sandbox {
 
 			// Compute orientation vector.
 			glm::dvec2 viewDirection = -glm::normalize(targetPosition - glm::dvec2(position_.x, position_.z));
-            orientation_ = glm::vec3(static_cast<float>(-viewDirection.y), 0.0f, static_cast<float>(viewDirection.x
-            ));
-        }
-    }
+			orientation_ = glm::vec3(static_cast<float>(-viewDirection.y), 0.0f, static_cast<float>(viewDirection.x));
+		}
+	}
 
-    const glm::vec3 &Pather::GetCurrentPosition() const {
-        return position_;
-    }
+	const glm::vec3& Pather::GetCurrentPosition() const {
+		return position_;
+	}
 
-    const glm::vec3 &Pather::GetCurrentPointOfInterest() const {
-        return lookAt_;
-    }
+	const glm::vec3& Pather::GetCurrentPointOfInterest() const {
+		return lookAt_;
+	}
 
-    const glm::vec3 &Pather::GetCurrentOrientation() const {
-        return orientation_;
-    }
+	const glm::vec3& Pather::GetCurrentOrientation() const {
+		return orientation_;
+	}
 
-    float Pather::GetPathHeight() const {
-        return pathHeight_;
-    }
+	float Pather::GetPathHeight() const {
+		return pathHeight_;
+	}
 
-    Path &Pather::GetPath() {
-        return path_;
-    }
+	Path& Pather::GetPath() {
+		return path_;
+	}
 
 	float Pather::GetCompletionTime() const {
 		return cycleTime_;
@@ -142,24 +162,24 @@ namespace Sandbox {
 	}
 
 	std::string ToString(VelocityTimeFunction function) {
-    	switch (function) {
-			case VelocityTimeFunction::CONSTANT:
-				return "Constant";
-			case VelocityTimeFunction::EASE_IN_OUT:
-				return "Ease In / Ease Out";
-			case VelocityTimeFunction::USER_DEFINED:
-				return "User Defined";
-			}
+		switch (function) {
+		case VelocityTimeFunction::CONSTANT:
+			return "Constant";
+		case VelocityTimeFunction::EASE_IN_OUT:
+			return "Ease In / Ease Out";
+		case VelocityTimeFunction::USER_DEFINED:
+			return "User Defined";
+		}
 
 		return "";
 	}
 
 	std::string ToString(CenterOfInterestMode mode) {
 		switch (mode) {
-			case CenterOfInterestMode::ORBIT:
-				return "Orbit";
-			case CenterOfInterestMode::FORWARD:
-				return "Forward";
+		case CenterOfInterestMode::ORBIT:
+			return "Orbit";
+		case CenterOfInterestMode::FORWARD:
+			return "Forward";
 		}
 
 		return "";
