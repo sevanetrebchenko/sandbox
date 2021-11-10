@@ -7,11 +7,13 @@ namespace Sandbox {
 		: velocityFunction_(velocityFunction),
 		  centerOfInterestMode_(centerOfInterestMode),
 		  pathHeight_(1.0f),
+		  distance_(0.0f),
+		  u_(0.0f),
 		  time_(0.0f),
 		  cycleTime_(10.0f),
 		  lookAheadDistance_(5),
 		  maxLookDistance_(20),
-		  orbitFocus_(glm::vec2(0.0f)),
+		  orbitFocus_(glm::dvec2(0.0f)),
 		  t1_(0.3f),
 		  t2_(0.7f)
 		  {
@@ -33,7 +35,6 @@ namespace Sandbox {
 					float velocity = arcLength / cycleTime_;
 
 					distance_ += velocity * dt;
-					distance_ = std::fmod(distance_, arcLength);
 					break;
 				}
 				case VelocityTimeFunction::EASE_IN_OUT: {
@@ -43,14 +44,14 @@ namespace Sandbox {
 					// Final constant velocity.
 					float v0 = 2.0f / (1.0f - t1_ + t2_);
 
-					if (0.0f <= t && t <= t1_) {
+					if (t >= 0.0f && t <= t1_) {
 						distance_ = (v0 / (2.0f * t1_)) * (t * t);
 					}
-					else if (t1_ < t && t < t2_) {
+					else if (t > t1_ && t < t2_) {
 						distance_ = v0 * (t - (t1_ / 2.0f));
 					}
-					else if (t2_ <= t && t < 1.0f) {
-						distance_ = ((v0 * (t - t2_)) / (2.0f * (1.0f - t2_))) * (2.0f - t - t2_) + (v0 * (t2_ - (t1_ / 2.0f)));
+					else if (t >= t2_ && t <= 1.0f) {
+						distance_ = ((v0 * (t - t2_)) / (2.0f * (1.0f - t2_))) * (2.0f - t - t2_) + v0 * (t2_ - (t1_ / 2.0f));
 					}
 
 					break;
@@ -61,11 +62,13 @@ namespace Sandbox {
 					break;
 			}
 
+			distance_ = std::fmod(distance_, arcLength);
+
 			// Interpolating parameter at the end of the path will always be 1.
-			float u = path_.GetInterpolationParameter(distance_);
+			u_ = path_.GetInterpolationParameter(distance_);
 
 			// Compute position along the curve.
-			glm::dvec2 position = path_.Evaluate(u);
+			glm::dvec2 position = path_.Evaluate(u_);
 			position_ = glm::vec3(static_cast<float>(position.x), 0.0f, static_cast<float>(position.y));
 
 
@@ -81,8 +84,7 @@ namespace Sandbox {
 					// Compute position of focus object.
 					float step = 1.0f / static_cast<float>(maxLookDistance_);
 
-					float targetDistance = glm::clamp(
-						distance_ + (static_cast<float>(lookAheadDistance_) * step), 0.0f, arcLength);
+					float targetDistance = glm::clamp(distance_ + (static_cast<float>(lookAheadDistance_) * step), 0.0f, arcLength);
 					float tu = path_.GetInterpolationParameter(targetDistance);
 					targetPosition = path_.Evaluate(tu);
 					break;
@@ -123,6 +125,8 @@ namespace Sandbox {
 
 	void Pather::SetCompletionTime(float cycleTime) {
 		cycleTime_ = cycleTime;
+		time_ = 0.0f;
+		distance_ = 0.0f;
 	}
 
 	void Pather::SetLookAheadDistance(int distance) {
@@ -137,16 +141,20 @@ namespace Sandbox {
 		orbitFocus_ = orbitFocus;
 	}
 
-	glm::vec2 Pather::GetOrbitFocus() const {
+	glm::dvec2 Pather::GetOrbitFocus() const {
 		return orbitFocus_;
 	}
 
 	void Pather::SetCenterOfInterestMode(CenterOfInterestMode mode) {
 		centerOfInterestMode_ = mode;
+		time_ = 0.0f;
+		distance_ = 0.0f;
 	}
 
 	void Pather::SetVelocityTimeFunction(VelocityTimeFunction function) {
 		velocityFunction_ = function;
+		time_ = 0.0f;
+		distance_ = 0.0f;
 	}
 
 	CenterOfInterestMode Pather::GetCenterOfInterestMode() const {
@@ -159,6 +167,34 @@ namespace Sandbox {
 
 	int Pather::GetMaxLookingDistance() const {
 		return maxLookDistance_;
+	}
+
+	float Pather::GetCurrentArcLength() const {
+		return distance_;
+	}
+
+	float Pather::GetCurrentInterpolationParameter() const {
+		return u_;
+	}
+
+	float Pather::GetT1() const {
+		return t1_;
+	}
+
+	float Pather::GetT2() const {
+		return t2_;
+	}
+
+	void Pather::SetT1(float t1) {
+		t1_ = t1;
+		time_ = 0.0f;
+		distance_ = 0.0f;
+	}
+
+	void Pather::SetT2(float t2) {
+		t2_ = t2;
+		time_ = 0.0f;
+		distance_ = 0.0f;
 	}
 
 	std::string ToString(VelocityTimeFunction function) {

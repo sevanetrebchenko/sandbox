@@ -55,7 +55,7 @@ namespace Sandbox {
     }
 
     void SceneProject2::OnPreRender() {
-        Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    	Backend::Core::ClearColor(glm::vec4(20.0f, 30.0f, 80.0f, 255.0f) / glm::vec4(255.0f));
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
@@ -127,8 +127,11 @@ namespace Sandbox {
         glUseProgram(_debugRenderer->linePointProgram);
         _debugRenderer->mvpMatrix = _camera.GetMatrix();
 
+        Backend::Core::EnableFlag(GL_LINE_SMOOTH);
+        glLineWidth(2.0f);
+
         // Grid.
-        ddVec3 gray = {0.2f, 0.2f, 0.2f};
+        ddVec3 gray = {0.5f, 0.5f, 0.5f};
         dd::xzSquareGrid(-20.0f, 20.0f, 0.0f, 1.f, &gray[0]);
 
         // Model skeleton.
@@ -253,8 +256,9 @@ namespace Sandbox {
         AnimatedModel *walkingMan = dynamic_cast<AnimatedModel *>(_modelManager.AddModelFromFile("walking man",
                                                                                                  "assets/models/CesiumMan.glb"));
         Material *material = materialLibrary.GetMaterialInstance("Phong");
-        material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+        material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.08f));
         material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.3f));
+        material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
         walkingMan->AddMaterial(material);
 
         // Values hard-coded for this model.
@@ -290,25 +294,48 @@ namespace Sandbox {
     }
 
     void SceneProject2::ConfigureLights() {
-        Light one;
-        Transform &oneTransform = one.GetTransform();
-        oneTransform.SetPosition(glm::vec3(2.0f, 0.0f, 0.0f));
-        _lightingManager.AddLight(one);
+    	{
+    		Light light;
+    		Transform &transform = light.GetTransform();
+    		transform.SetPosition(glm::vec3(10.0f, 20.0f, 0.0f));
+    		_lightingManager.AddLight(light);
+    	}
 
-        Light two;
-        Transform &twoTransform = two.GetTransform();
-        twoTransform.SetPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
-        _lightingManager.AddLight(two);
+    	{
+    		Light light;
+    		Transform &transform = light.GetTransform();
+    		transform.SetPosition(glm::vec3(-10.0f, 20.0f, 0.0f));
+    		_lightingManager.AddLight(light);
+    	}
 
-        Light three;
-        Transform &threeTransform = three.GetTransform();
-        threeTransform.SetPosition(glm::vec3(0.0f, 2.0f, 0.0f));
-        _lightingManager.AddLight(three);
+    	{
+    		Light light;
+    		Transform &transform = light.GetTransform();
+    		transform.SetPosition(glm::vec3(0.0f, 20.0f, 10.0f));
+    		_lightingManager.AddLight(light);
+    	}
+
+    	{
+    		Light light;
+    		Transform &transform = light.GetTransform();
+    		transform.SetPosition(glm::vec3(0.0f, 20.0f, -10.0f));
+    		_lightingManager.AddLight(light);
+    	}
+
+    	{
+    		Light light;
+    		Transform &transform = light.GetTransform();
+    		transform.SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+    		_lightingManager.AddLight(light);
+    	}
+
     }
 
     void SceneProject2::RenderSkeletonBones(AnimatedModel *animatedModel) const {
         Skeleton *skeleton = animatedModel->GetSkeleton();
         Animator *animator = animatedModel->GetAnimator();
+
+        glLineWidth(3.0f);
 
         if (skeleton->_drawSkeleton) {
             for (int root : skeleton->_roots) {
@@ -354,13 +381,18 @@ namespace Sandbox {
         // Path.
         const float height = pather->GetPathHeight();
         Path& path = pather->GetPath();
-        ddVec3 gray = {0.2f, 0.2f, 0.2f};
+
+        glLineWidth(3.0f);
+
+        ddVec3 orange = {1.0f, 0.5f, 0.0f};
+        ddVec3 green = {0.0f, 1.0f, 0.0f};
+        ddVec3 white = {1.0f, 1.0f, 1.0f};
 
         // Control points.
         const std::vector<glm::dvec2>& controlPoints = path.GetControlPoints();
         for (const glm::dvec2& controlPoint : controlPoints) {
             ddVec3 point { static_cast<float>(controlPoint.x), height, static_cast<float>(controlPoint.y) };
-            dd::sphere(point, gray, 0.1f);
+            dd::sphere(point, orange, 0.1f);
         }
 
         // Interpolated curve.
@@ -374,14 +406,14 @@ namespace Sandbox {
                 ddVec3 lineStart = { static_cast<float>(start.x), height, static_cast<float>(start.y) };
                 ddVec3 lineEnd = { static_cast<float>(end.x), height, static_cast<float>(end.y) };
 
-                dd::line(lineStart, lineEnd, gray);
+                dd::line(lineStart, lineEnd, white);
             }
 
             // Draw sphere for POI.
             glm::vec3 poi = pather->GetCurrentPointOfInterest();
 
             ddVec3 point { static_cast<float>(poi.x), height, static_cast<float>(poi.z) };
-            dd::sphere(point, gray, 0.1f);
+            dd::sphere(point, green, 0.1f);
         }
     }
 

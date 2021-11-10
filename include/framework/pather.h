@@ -34,6 +34,8 @@ namespace Sandbox {
             void SetOrbitFocus(glm::dvec2 orbitFocus);
             void SetCenterOfInterestMode(CenterOfInterestMode mode);
             void SetVelocityTimeFunction(VelocityTimeFunction function);
+            void SetT1(float t1);
+            void SetT2(float t2);
 
             [[nodiscard]] const glm::vec3& GetCurrentPosition() const;
             [[nodiscard]] const glm::vec3& GetCurrentPointOfInterest() const;
@@ -44,9 +46,14 @@ namespace Sandbox {
             [[nodiscard]] float GetCompletionTime() const;
             [[nodiscard]] int GetLookAheadDistance() const;
             [[nodiscard]] int GetMaxLookingDistance() const;
-            [[nodiscard]] glm::vec2 GetOrbitFocus() const;
+            [[nodiscard]] glm::dvec2 GetOrbitFocus() const;
             [[nodiscard]] CenterOfInterestMode GetCenterOfInterestMode() const;
             [[nodiscard]] VelocityTimeFunction GetVelocityTimeFunction() const;
+
+            [[nodiscard]] float GetCurrentArcLength() const;
+            [[nodiscard]] float GetCurrentInterpolationParameter() const;
+            [[nodiscard]] float GetT1() const;
+            [[nodiscard]] float GetT2() const;
 
         private:
             Path path_;
@@ -59,9 +66,10 @@ namespace Sandbox {
 
             float pathHeight_;
             float distance_;
+            float u_;
 
             // Focus point for Orbit Center of Interest mode.
-            glm::vec2 orbitFocus_;
+            glm::dvec2 orbitFocus_;
 
             // Forward.
             int lookAheadDistance_;

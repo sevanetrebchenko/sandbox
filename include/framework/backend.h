@@ -21,6 +21,8 @@ namespace Sandbox {
             void WriteDepth(bool mask);
 
             void ClearColor(float r, float g, float b, float a);
+            void ClearColor(glm::vec4 color);
+
             void ClearFlag(GLuint flags);
         }
 

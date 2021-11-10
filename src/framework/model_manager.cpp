@@ -223,10 +223,6 @@ namespace Sandbox {
         Path& path = pather->GetPath();
 
         if (ImGui::TreeNode("Pather")) {
-            // Animation name.
-            ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
-            ImGui::PopStyleColor();
-
             // Center of interest mode.
             {
 				std::vector<std::string> methods = { "Forward", "Orbit" };
@@ -257,19 +253,13 @@ namespace Sandbox {
             }
 
             switch (pather->GetCenterOfInterestMode()) {
-				case CenterOfInterestMode::ORBIT: {
-					glm::vec2 orbitFocus = pather->GetOrbitFocus();
-					ImGui::Text("Orbit Focus:");
-					if (ImGui::DragFloat2("##orbitFocus", &orbitFocus.x, 0.05f, -10.0f, 10.0f)) {
-						pather->SetOrbitFocus(orbitFocus);
-					}
+				case CenterOfInterestMode::ORBIT:
 					break;
-				}
 				case CenterOfInterestMode::FORWARD: {
 					int lookAheadDistance = pather->GetLookAheadDistance();
 					int maxLookDistance = pather->GetMaxLookingDistance();
 					ImGui::Text("Look Ahead Distance:");
-					if (ImGui::DragInt("##lookahead", &lookAheadDistance, 1, -maxLookDistance, maxLookDistance)) {
+					if (ImGui::DragInt("##lookahead", &lookAheadDistance, 1, 1, maxLookDistance)) {
 						pather->SetLookAheadDistance(lookAheadDistance);
 					}
 					break;
@@ -305,14 +295,51 @@ namespace Sandbox {
             	}
             }
 
+            switch (pather->GetVelocityTimeFunction()) {
+				case VelocityTimeFunction::CONSTANT:
+					break;
+				case VelocityTimeFunction::EASE_IN_OUT: {
+					float t1 = pather->GetT1();
+					float t2 = pather->GetT2();
+
+					ImGui::Text("Ease in time (t1):");
+					if (ImGui::DragFloat("##t1", &t1, 0.01f, 0.0f, t2)) {
+						pather->SetT1(t1);
+					}
+
+					ImGui::Text("Ease out time (t2):");
+					if (ImGui::DragFloat("##t2", &t2, 0.01f, t1, 1.0f)) {
+						pather->SetT2(t2);
+					}
+
+					break;
+				}
+				case VelocityTimeFunction::USER_DEFINED:
+					// Unsupported.
+					break;
+			}
 
             float cycleTime = pather->GetCompletionTime();
-            ImGui::Text("Path Cycle Time (seconds):");
+            ImGui::Text("Path Cycle Time:");
             if (ImGui::DragFloat("##cycleTime", &cycleTime, 0.05f, 0.01f, 100.0f)) {
             	pather->SetCompletionTime(cycleTime);
             }
 
+            ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
+            	// S.
+            	ImGui::Text("(Normalized) Arc Length: %f", pather->GetCurrentArcLength());
+            	// U.
+            	ImGui::Text("Interpolation parameter: %f", pather->GetCurrentInterpolationParameter());
+            ImGui::PopStyleColor();
+
             ImGui::Separator();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
+            ImGui::Text("Points in ORANGE are curve control points.");
+            if (pather->GetCenterOfInterestMode() == CenterOfInterestMode::ORBIT) {
+            	ImGui::Text("Orbit point for Center of Interest is GREEN.");
+            }
+            ImGui::PopStyleColor();
 
             if (ImGui::Button("Clear")) {
                 path.Clear();
@@ -326,13 +353,16 @@ namespace Sandbox {
 
             if (ImPlot::BeginPlot("##pathOutliner", ImVec2(-1, 0), ImPlotFlags_CanvasOnly)) {
                 // Axes.
-                ImPlot::SetupAxesLimits(-15, 15, -15, 15);
-                ImPlot::SetupAxis(ImAxis_Y1, "Z", ImPlotAxisFlags_Invert);
-                ImPlot::SetupAxis(ImAxis_X1, "X", ImPlotAxisFlags_None);
+                ImPlot::SetupAxesLimits(-20, 20, -20, 20);
+                ImPlot::SetupAxis(ImAxis_Y1, "Z", ImPlotAxisFlags_Invert | ImPlotAxisFlags_Lock);
+                ImPlot::SetupAxis(ImAxis_X1, "X", ImPlotAxisFlags_None | ImPlotAxisFlags_Lock);
 
                 if (ImGui::IsItemHovered()) {
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                         ImPlotPoint newPointPosition = ImPlot::GetPlotMousePos();
+
+                        newPointPosition.x = glm::clamp(newPointPosition.x, -20.0, 20.0);
+                        newPointPosition.y = glm::clamp(newPointPosition.y, -20.0, 20.0);
 
                         // Emplace new point and recompute new curve.
                         glm::dvec2 point(newPointPosition.x, newPointPosition.y);
@@ -348,7 +378,7 @@ namespace Sandbox {
 
                 for (int i = 0; i < controlPoints.size(); ++i) {
                     glm::dvec2 &point = controlPoints[i];
-                    if (ImPlot::DragPoint(i, &point.x, &point.y, ImVec4(1, 1, 1, 1))) {
+                    if (ImPlot::DragPoint(i, &point.x, &point.y, ImVec4(1.0f, 0.5f, 0.0f, 1.0f))) {
                         invalidated = true;
                     }
                 }
@@ -372,6 +402,15 @@ namespace Sandbox {
 
                     ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1, 1, 1, 1));
                     ImPlot::PlotLine("Path", curveXCoordinates.data(), curveYCoordinates.data(), curve.size());
+                    ImPlot::PopStyleColor();
+                }
+
+                // Draw focus point.
+                if (pather->GetCenterOfInterestMode() == CenterOfInterestMode::ORBIT) {
+					glm::dvec2 point = pather->GetOrbitFocus();
+                	if (ImPlot::DragPoint(controlPoints.size(), &point.x, &point.y, ImVec4(0.0f, 1.0f, 0.0f, 1.0f))) {
+                		pather->SetOrbitFocus(point);
+                	}
                 }
 
                 ImPlot::EndPlot();

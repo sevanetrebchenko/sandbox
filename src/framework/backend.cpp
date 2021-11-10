@@ -26,6 +26,10 @@ namespace Sandbox {
                 glClearColor(r, g, b, a);
             }
 
+            void ClearColor(glm::vec4 color) {
+            	glClearColor(color.r, color.g, color.b, color.a);
+            }
+
             void ClearFlag(GLuint flag) {
                 glClear(flag);
             }

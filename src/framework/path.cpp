@@ -31,19 +31,6 @@ namespace Sandbox {
 			// Compute arc length table.
 			ComputeArcLengthTable();
 
-//            float steps = 1000.0f;
-//            float step = 1.0f / steps;
-//
-//            for (int i = 0; i < (int)steps; ++i) {
-//                float s = GetArcLength((float)i * step);
-//                float u = GetInterpolationParameter(s);
-//
-//                std::cout << "at arc length: " << s << ", interpolation parameter: " << u << std::endl;
-//            }
-//
-//            std::cout << std::endl;
-//            std::cout << std::endl;
-//
 			isDirty_ = false;
 		}
 	}
@@ -192,7 +179,7 @@ namespace Sandbox {
 		// Calculate curve.
 		float alpha = 1.0f / static_cast<float>(curveLOD_);
 
-		for (int i = 0; i < curveLOD_; ++i) {
+		for (int i = 0; i <= curveLOD_; ++i) {
 			curveApproximation_.push_back(Evaluate(alpha * static_cast<float>(i)));
 		}
 	}
@@ -354,7 +341,6 @@ namespace Sandbox {
 			float ui = arcLengthTable_[end].x; // Interpolation parameter.
 			float si = arcLengthTable_[end].y; // Arc length.
 
-			float uii = arcLengthTable_[start].x; // Interpolation parameter.
 			float sii = arcLengthTable_[start].y; // Arc length.
 
 			// Solve for parameter value using linear interpolation.
