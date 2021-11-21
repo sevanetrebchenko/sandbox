@@ -44,6 +44,9 @@ namespace Sandbox {
 
                 InterpolateBone(boneIndex);
 
+                // IK...
+                // Blending...
+
                 // Compute final transformation for this bone.
                 VQS parentTransform { };
                 if (bone._parentIndex != -1) {

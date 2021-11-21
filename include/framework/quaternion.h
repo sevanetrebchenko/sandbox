@@ -10,8 +10,8 @@ namespace Sandbox {
         public:
             Quaternion();
             Quaternion(float s, float x, float y, float z);
-            Quaternion(float s, const glm::vec3& v);
             Quaternion(const glm::mat4& matrix);
+            Quaternion(const glm::vec3& axis, float angle);
             ~Quaternion();
 
             [[nodiscard]] static Quaternion Identity();

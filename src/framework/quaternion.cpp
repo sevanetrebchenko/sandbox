@@ -13,10 +13,6 @@ namespace Sandbox {
 
     }
 
-    Quaternion::Quaternion(float s, const glm::vec3 &v) : quat(v, s)
-                                                          {
-    }
-
     Quaternion::Quaternion(const glm::mat4 &matrix) {
         quat.w = 0.5f * std::sqrt(matrix[0][0] + matrix[1][1] + matrix[2][2] + 1.0f);
 
@@ -26,10 +22,22 @@ namespace Sandbox {
         quat.z = (matrix[0][1] - matrix[1][0]) * denominator;
     }
 
+    Quaternion::Quaternion(const glm::vec3 &axis, float angle) {
+        float radians = glm::radians(angle);
+
+        glm::vec3 a = glm::normalize(axis);
+        float s = glm::sin(0.5f * radians);
+
+        quat.w = glm::cos(0.5f * radians);
+        quat.x = a.x * s;
+        quat.y = a.y * s;
+        quat.z = a.z * s;
+    }
+
     Quaternion::~Quaternion() = default;
 
     Quaternion Quaternion::Identity() {
-        static Quaternion identity(1.0f, glm::vec3(0.0f));
+        static Quaternion identity(1.0f, 0.0f, 0.0f, 0.0f);
         return identity;
     }
 
@@ -112,7 +120,7 @@ namespace Sandbox {
         float scalar = quat.w * other.quat.w - glm::dot(v0, v1);
         glm::vec3 vector = quat.w * v1 + other.quat.w * v0 + glm::cross(v0, v1);
 
-        return { scalar, vector };
+        return { scalar, vector.x, vector.y, vector.z };
     }
 
     Quaternion Quaternion::Conjugate(const Quaternion& quaternion) {

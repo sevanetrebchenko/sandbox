@@ -56,6 +56,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/debug.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/path.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/pather.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/ik.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})
