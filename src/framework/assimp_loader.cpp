@@ -28,7 +28,7 @@ namespace Sandbox {
     AssimpLoader::~AssimpLoader() {
     }
 
-    AnimatedModel* AssimpLoader::LoadFromFile(const std::string &filepath) {
+    AnimatedModel* AssimpLoader::LoadFromFile(const std::string& modelName, const std::string &filepath) {
         // Read via Assimp.
         Assimp::Importer importer;
         importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
@@ -73,7 +73,7 @@ namespace Sandbox {
         animator->SetTarget(skeleton);
         LoadSceneAnimations(modelScene, skeleton, animator);
 
-        AnimatedModel* model = new AnimatedModel(filepath);
+        AnimatedModel* model = new AnimatedModel(modelName);
         model->SetAnimator(animator);
         model->SetSkeleton(skeleton);
         model->SetMesh(mesh);

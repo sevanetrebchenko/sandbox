@@ -15,7 +15,7 @@ namespace Sandbox {
         public:
             static AssimpLoader& GetInstance();
 
-            [[nodiscard]] AnimatedModel* LoadFromFile(const std::string& filepath);
+            [[nodiscard]] AnimatedModel* LoadFromFile(const std::string& modelName, const std::string& filepath);
 
         private:
             AssimpLoader();

@@ -52,6 +52,21 @@ namespace Sandbox {
         }
 
         _modelManager.Update(dt);
+
+        // Update target sphere position.
+        Model* walkingMan = _modelManager.GetNamedModel("walking man");
+        if (walkingMan) {
+            AnimatedModel* animated = dynamic_cast<AnimatedModel*>(walkingMan);
+            if (animated) {
+                Animator* animator = animated->GetAnimator();
+                Model* sphere = _modelManager.GetNamedModel("sphere");
+
+                if (animator && sphere) {
+                    sphere->GetTransform().SetPosition(animator->GetIKTargetPosition());
+                }
+            }
+        }
+
     }
 
     void SceneProject3::OnPreRender() {
@@ -313,7 +328,7 @@ namespace Sandbox {
             material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
             sphere->AddMaterial(material);
 
-            sphere->GetTransform().SetScale(glm::vec3(1.0f));
+            sphere->GetTransform().SetScale(glm::vec3(0.2f));
         }
     }
 

@@ -205,6 +205,34 @@ namespace Sandbox {
                 animator->SetPlaybackSpeed(playbackSpeed);
             }
 
+            // IK Section.
+
+            if (ImPlot::BeginPlot("##targetPosition", ImVec2(-1, 0), ImPlotFlags_CanvasOnly)) {
+                // Axes.
+                ImPlot::SetupAxesLimits(-20, 20, -20, 20);
+                ImPlot::SetupAxis(ImAxis_Y1, "Z", ImPlotAxisFlags_Invert | ImPlotAxisFlags_Lock);
+                ImPlot::SetupAxis(ImAxis_X1, "X", ImPlotAxisFlags_None | ImPlotAxisFlags_Lock);
+
+                const glm::vec3& targetPosition = animator->GetIKTargetPosition();
+                glm::dvec2 point = glm::dvec2(targetPosition.x, targetPosition.z);
+                if (ImPlot::DragPoint(0, &point.x, &point.y, ImVec4(1.0f, 1.0f, 1.0f, 1.0f))) {
+
+                    // Clamp point position to grid.
+                    point = glm::clamp(point, glm::dvec2(-20.0), glm::dvec2(20.0));
+
+                    animator->SetIKTargetPosition(glm::vec3(point.x, targetPosition.y, point.y));
+                }
+
+                ImPlot::EndPlot();
+            }
+
+            // Height slider for target position.
+            glm::vec3 targetPosition = animator->GetIKTargetPosition();
+            ImGui::Text("Target Position Height: ");
+            if (ImGui::DragFloat("##height", &targetPosition.y, 0.1f, 0.0f, 10.0f)) {
+                animator->SetIKTargetPosition(targetPosition);
+            }
+
             ImGui::TreePop();
         }
     }
@@ -449,7 +477,7 @@ namespace Sandbox {
 
             // Load in mesh and set up buffers.
             AssimpLoader& objLoader = AssimpLoader::GetInstance();
-            AnimatedModel* model = objLoader.LoadFromFile(filepath);
+            AnimatedModel* model = objLoader.LoadFromFile(modelName, filepath);
 
             log.LogTrace("Finished loading model: '%s'.", modelName.c_str());
 
