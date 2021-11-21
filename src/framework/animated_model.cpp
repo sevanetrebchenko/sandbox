@@ -22,7 +22,18 @@ namespace Sandbox {
         Model::Update(dt);
 
         if (_animator) {
-            _animator->Update(dt);
+            if (_animator->ProcessBindPose()) {
+                // Compute local (hierarchical) transformations for this model.
+                _animator->ComputeLocalBoneTransformations(dt);
+
+                // IK...
+                ikSolver_.SolveChain(_animator->GetIKChain(), _animator->GetIKTargetPosition());
+
+                // Blending...
+
+                // Compute final transformations - ready to send to GPU.
+                _animator->ComputeFinalBoneTransformations();
+            }
         }
 
         if (pather_ && pather_->GetPath().IsValid()) {

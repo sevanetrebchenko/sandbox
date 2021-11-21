@@ -8,11 +8,14 @@ namespace Sandbox {
                            maxIterations_(15) {
     }
 
-    IKSolver::~IKSolver() {
-    }
+    IKSolver::~IKSolver() = default;
 
-    std::vector<VQS> IKSolver::SolveChain(const std::vector<VQS> &pose, const glm::vec3 &goalPosition) {
-        const glm::vec3 &endEffectorPosition = pose[0].GetTranslation();
+    void IKSolver::SolveChain(const std::vector<VQS*> &pose, const glm::vec3 &goalPosition) const {
+        if (pose.empty()) {
+            return;
+        }
+
+        const glm::vec3 &endEffectorPosition = pose[0]->GetTranslation();
 
         // Get the final (!) position of the end effector, given supplied goal position.
         glm::vec3 targetPosition = glm::mix(endEffectorPosition, goalPosition, weight_);
@@ -24,7 +27,8 @@ namespace Sandbox {
             // CCD algorithm.
             // First bone is connected to the end effector.
             for (int i = 1; i < pose.size(); ++i) {
-                const glm::vec3 &currentJointPosition = pose[i].GetTranslation();
+                const glm::vec3 &currentJointPosition = pose[i]->GetTranslation();
+                const Quaternion& currentJointOrientation = pose[i]->GetOrientation();
 
                 glm::vec3 toEffector = endEffectorPosition - currentJointPosition;
                 glm::vec3 toGoal = goalPosition - currentJointPosition;
@@ -36,7 +40,7 @@ namespace Sandbox {
                 Quaternion rotation(glm::cross(toEffector, toGoal), degrees);
 
                 // Hierarchically apply the rotation to the chain.
-                // TODO
+                pose[i]->SetOrientation(rotation * currentJointOrientation);
             }
 
             ++iterationCount;

@@ -7,6 +7,7 @@
 #include <framework/skeleton.h>
 #include <framework/animator.h>
 #include <framework/pather.h>
+#include <framework/ik.h>
 
 namespace Sandbox {
 
@@ -29,6 +30,8 @@ namespace Sandbox {
             Animator* _animator;
             Skeleton* _skeleton;
             Pather* pather_;
+
+            IKSolver ikSolver_;
     };
 
 }

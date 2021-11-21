@@ -96,7 +96,7 @@ namespace Sandbox {
             if (AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model); animatedModel) {
                 // Bind animated model uniforms.
                 Animator *animator = animatedModel->GetAnimator();
-                const std::vector<VQS> &boneTransforms = animator->GetFinalBoneTransformations();
+                const std::vector<VQS> &boneTransforms = animator->GetBoneTransformations();
                 int numBones = boneTransforms.size();
 
                 phongShader->SetUniform("numBones", numBones);
@@ -347,7 +347,7 @@ namespace Sandbox {
 
     void SceneProject2::RenderSkeletonBone(Skeleton *skeleton, Animator *animator, const glm::mat4 &parentTransform,
                                            const glm::vec3 &origin, int root) const {
-        const std::vector<VQS> &finalTransformations = animator->GetFinalBoneTransformations();
+        const std::vector<VQS> &finalTransformations = animator->GetBoneTransformations();
 
         glm::vec3 start = origin;
         glm::vec3 end = glm::vec3(parentTransform * glm::vec4(

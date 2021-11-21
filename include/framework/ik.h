@@ -12,7 +12,7 @@ namespace Sandbox {
             IKSolver();
             ~IKSolver();
 
-            std::vector<VQS> SolveChain(const std::vector<VQS>& pose, const glm::vec3& targetLocation);
+            void SolveChain(const std::vector<VQS*>& pose, const glm::vec3& targetLocation) const;
 
         private:
             float weight_;
