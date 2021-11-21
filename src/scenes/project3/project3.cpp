@@ -402,18 +402,24 @@ namespace Sandbox {
         if (skeleton->_drawSkeleton) {
             for (int root : skeleton->_roots) {
                 RenderSkeletonBone(skeleton, animator, animatedModel->GetTransform().GetMatrix(),
-                                   animatedModel->GetTransform().GetPosition(), root);
+                                   animatedModel->GetTransform().GetPosition(), root, dd::colors::Orange);
+            }
+
+            // Clear hovered tags.
+            for (Bone& bone : skeleton->_bones) {
+                bone.hovered = false;
             }
         }
     }
 
     void SceneProject3::RenderSkeletonBone(Skeleton *skeleton, Animator *animator, const glm::mat4 &parentTransform,
-                                           const glm::vec3 &origin, int root) const {
+                                           const glm::vec3 &origin, int root, const float color[3]) const {
         const std::vector<VQS> &finalTransformations = animator->GetBoneTransformations();
 
+        const Bone& bone = skeleton->_bones[root];
+
         glm::vec3 start = origin;
-        glm::vec3 end = glm::vec3(parentTransform * glm::vec4(
-                finalTransformations[root] * skeleton->_bones[root]._modelToBoneVQS.GetTranslation(), 1.0f));
+        glm::vec3 end = glm::vec3(parentTransform * glm::vec4(finalTransformations[root] * bone._modelToBoneVQS.GetTranslation(), 1.0f));
         glm::vec3 direction = start - end;
 
         // Don't render the base root node.
@@ -427,15 +433,29 @@ namespace Sandbox {
 
         // Render bone.
         if (!isBoneBaseRoot) {
-            dd::line(static_cast<const float *>(&start[0]), static_cast<const float *>(&end[0]), dd::colors::Orange, 0,
-                     false);
-            dd::cone(static_cast<const float *>(&end[0]), static_cast<const float *>(&direction[0]), dd::colors::Orange,
+            dd::sphere(static_cast<const float*>(&end[0]), color, 0.03f, 0, false);
+            dd::cone(static_cast<const float *>(&end[0]), static_cast<const float *>(&direction[0]), color,
                      0.025f, 0.0f, 0, false);
         }
 
-        // Render child bones from the end of this bone.
-        for (std::size_t i = 0; i < skeleton->_bones[root]._children.size(); ++i) {
-            RenderSkeletonBone(skeleton, animator, parentTransform, end, skeleton->_bones[root]._children[i]);
+        if (bone.hovered) {
+            color = dd::colors::LimeGreen;
+        }
+
+        if (bone.selected) {
+            animator->SetEndEffectorBoneIndex(root);
+            color = dd::colors::White;
+        }
+
+        if (!skeleton->_bones[root]._children.empty()) {
+            // Render child bones from the end of this bone.
+            for (std::size_t i = 0; i < skeleton->_bones[root]._children.size(); ++i) {
+                RenderSkeletonBone(skeleton, animator, parentTransform, end, skeleton->_bones[root]._children[i], color);
+            }
+        }
+        else {
+            // Render leaf node.
+            dd::sphere(static_cast<const float*>(&end[0]), color, 0.03f, 0, false);
         }
     }
 

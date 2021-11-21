@@ -42,7 +42,7 @@ namespace Sandbox {
             void ConstructFBO();
 
             void RenderSkeletonBones(AnimatedModel* animatedModel) const;
-            void RenderSkeletonBone(Skeleton* skeleton, Animator* animator, const glm::mat4& parentTransform, const glm::vec3& origin, int root) const;
+            void RenderSkeletonBone(Skeleton* skeleton, Animator* animator, const glm::mat4& parentTransform, const glm::vec3& origin, int root, const float color[3]) const;
 
             void RenderAnimatedModelPath(Pather* pather) const;
 

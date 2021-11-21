@@ -288,8 +288,10 @@ namespace Sandbox {
     }
 
     void Animator::SetEndEffectorBoneIndex(int index) {
-        endEffectorIndex_ = index;
-        ComputeIKChain();
+        if (endEffectorIndex_ != index) {
+            endEffectorIndex_ = index;
+            ComputeIKChain();
+        }
     }
 
     const std::vector<VQS*>& Animator::GetIKChain() const {
@@ -302,7 +304,7 @@ namespace Sandbox {
 
         // Emplace chain starting at end effector and ending at the root.
         int index = endEffectorIndex_;
-        if (index != -1) {
+        while (index != -1) {
             Bone& bone = _target->_bones[index];
             index = bone._parentIndex;
             chain_.emplace_back(&boneVQSTransformations_[index]);

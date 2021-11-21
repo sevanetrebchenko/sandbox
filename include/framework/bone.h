@@ -9,13 +9,18 @@ namespace Sandbox {
 
     struct Bone {
         Bone() : _index(-1),
-                 _parentIndex(-1)
+                 _parentIndex(-1),
+                 hovered(false),
+                 selected(false)
                  {
         }
 
         std::string _name;
         int _index;
         int _parentIndex;
+
+        bool hovered;
+        bool selected;
 
         std::vector<int> _children;
 

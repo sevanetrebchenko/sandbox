@@ -4,6 +4,7 @@
 
 #include <sandbox_pch.h>
 #include <framework/vqs.h>
+#include <framework/skeleton.h>
 
 namespace Sandbox {
 
@@ -12,7 +13,7 @@ namespace Sandbox {
             IKSolver();
             ~IKSolver();
 
-            void SolveChain(const std::vector<VQS*>& pose, const glm::vec3& targetLocation) const;
+            void SolveChain(const std::vector<VQS *> &pose, const glm::vec3 &goalPosition) const;
 
         private:
             float weight_;
