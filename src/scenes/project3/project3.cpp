@@ -55,7 +55,7 @@ namespace Sandbox {
     }
 
     void SceneProject3::OnPreRender() {
-    	Backend::Core::ClearColor(glm::vec4(20.0f, 30.0f, 80.0f, 255.0f) / glm::vec4(255.0f));
+        Backend::Core::ClearColor(glm::vec4(20.0f, 30.0f, 80.0f, 255.0f) / glm::vec4(255.0f));
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
@@ -68,49 +68,64 @@ namespace Sandbox {
         _fbo.DrawBuffers();
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        Shader *phongShader = shaderLibrary.GetShader("Phong");
-        phongShader->Bind();
-
-        // Set camera uniforms.
-        phongShader->SetUniform("cameraTransform", _camera.GetMatrix());
-        phongShader->SetUniform("cameraPosition", _camera.GetEyePosition());
-        phongShader->SetUniform("viewTransform", _camera.GetViewMatrix());
-        phongShader->SetUniform("cameraNearPlane", _camera.GetNearPlaneDistance());
-        phongShader->SetUniform("cameraFarPlane", _camera.GetFarPlaneDistance());
 
         for (Model *model : _modelManager.GetModels()) {
             Transform &transform = model->GetTransform();
             const Mesh *mesh = model->GetMesh();
-            Material *material = model->GetMaterial("Phong");
+
+            Shader *shader;
+            Material* material;
+
+            AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model);
+
+            if (animatedModel) {
+                // Animated model has animated phong shader.
+                shader = shaderLibrary.GetShader("Animated Phong");
+                material = model->GetMaterial("Animated Phong");
+            }
+            else {
+                shader = shaderLibrary.GetShader("Phong");
+                material = model->GetMaterial("Phong");
+            }
+
+            shader->Bind();
 
             // Pre render stage.
             if (material) {
                 const glm::mat4 &modelTransform = transform.GetMatrix();
-                phongShader->SetUniform("modelTransform", modelTransform);
-                phongShader->SetUniform("normalTransform", glm::inverse(modelTransform));
+                shader->SetUniform("modelTransform", modelTransform);
+                shader->SetUniform("normalTransform", glm::inverse(modelTransform));
 
                 // Bind all related uniforms with this shader.
-                material->Bind(phongShader);
+                material->Bind(shader);
             }
 
-            if (AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model); animatedModel) {
-                // Bind animated model uniforms.
+            // Set camera uniforms.
+            shader->SetUniform("cameraTransform", _camera.GetMatrix());
+            shader->SetUniform("cameraPosition", _camera.GetEyePosition());
+            shader->SetUniform("viewTransform", _camera.GetViewMatrix());
+            shader->SetUniform("cameraNearPlane", _camera.GetNearPlaneDistance());
+            shader->SetUniform("cameraFarPlane", _camera.GetFarPlaneDistance());
+
+            // Bind animated model uniforms.
+            if (animatedModel) {
                 Animator *animator = animatedModel->GetAnimator();
                 const std::vector<VQS> &boneTransforms = animator->GetFinalBoneTransformations();
                 int numBones = boneTransforms.size();
 
-                phongShader->SetUniform("numBones", numBones);
+                shader->SetUniform("numBones", numBones);
 
                 for (int i = 0; i < numBones; ++i) {
                     const VQS &vqs = boneTransforms[i];
-                    phongShader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].translation",
-                                            vqs.GetTranslation());
-                    phongShader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].rotation",
-                                            vqs.GetOrientation().ToVec4());
-                    phongShader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].scale",
-                                            vqs.GetScalingFactor());
+                    shader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].translation",
+                                       vqs.GetTranslation());
+                    shader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].rotation",
+                                       vqs.GetOrientation().ToVec4());
+                    shader->SetUniform("finalBoneTransformations[" + std::to_string(i) + "].scale",
+                                       vqs.GetScalingFactor());
                 }
             }
+
 
             // Render stage.
             mesh->Bind();
@@ -118,10 +133,8 @@ namespace Sandbox {
             mesh->Unbind();
 
             // Post render stage.
+            shader->Unbind();
         }
-
-        phongShader->Unbind();
-
 
         // Debug drawing.
         glUseProgram(_debugRenderer->linePointProgram);
@@ -203,6 +216,8 @@ namespace Sandbox {
     void SceneProject3::InitializeShaders() {
         ShaderLibrary &shaderLibrary = ShaderLibrary::GetInstance();
 
+        shaderLibrary.AddShader("Animated Phong",
+                                {"assets/shaders/phong_shading_animated.vert", "assets/shaders/phong_shading.frag"});
         shaderLibrary.AddShader("Phong", {"assets/shaders/phong_shading.vert", "assets/shaders/phong_shading.frag"});
         shaderLibrary.AddShader("FSQ", {"assets/shaders/fsq.vert", "assets/shaders/fsq.frag"});
 
@@ -236,38 +251,70 @@ namespace Sandbox {
         });
         materialLibrary.AddMaterial(textureMaterial);
 
-        // Phong shading material.
-        Material *phongMaterial = new Material("Phong", {
+        // Phong shading materials.
+        {
+            Material *phongMaterial = new Material("Animated Phong", {
                 {"ambientCoefficient",  glm::vec3(0.5f)},
                 {"diffuseCoefficient",  glm::vec3(0.5f)},
                 {"specularCoefficient", glm::vec3(1.0f)},
                 {"specularExponent",    50.0f}
-        });
-        phongMaterial->GetUniform("ambientCoefficient")->UseColorPicker(true);
-        phongMaterial->GetUniform("diffuseCoefficient")->UseColorPicker(true);
-        phongMaterial->GetUniform("specularCoefficient")->UseColorPicker(true);
-        phongMaterial->GetUniform("specularExponent")->SetSliderRange(0.0f, 100.0f);
-        materialLibrary.AddMaterial(phongMaterial);
+            });
+            phongMaterial->GetUniform("ambientCoefficient")->UseColorPicker(true);
+            phongMaterial->GetUniform("diffuseCoefficient")->UseColorPicker(true);
+            phongMaterial->GetUniform("specularCoefficient")->UseColorPicker(true);
+            phongMaterial->GetUniform("specularExponent")->SetSliderRange(0.0f, 100.0f);
+            materialLibrary.AddMaterial(phongMaterial);
+        }
+
+        {
+            Material *phongMaterial = new Material("Phong", {
+                {"ambientCoefficient",  glm::vec3(0.5f)},
+                {"diffuseCoefficient",  glm::vec3(0.5f)},
+                {"specularCoefficient", glm::vec3(1.0f)},
+                {"specularExponent",    50.0f}
+            });
+            phongMaterial->GetUniform("ambientCoefficient")->UseColorPicker(true);
+            phongMaterial->GetUniform("diffuseCoefficient")->UseColorPicker(true);
+            phongMaterial->GetUniform("specularCoefficient")->UseColorPicker(true);
+            phongMaterial->GetUniform("specularExponent")->SetSliderRange(0.0f, 100.0f);
+            materialLibrary.AddMaterial(phongMaterial);
+        }
     }
 
     void SceneProject3::ConfigureModels() {
         MaterialLibrary &materialLibrary = MaterialLibrary::GetInstance();
 
-        AnimatedModel *walkingMan = dynamic_cast<AnimatedModel *>(_modelManager.AddModelFromFile("walking man",
-                                                                                                 "assets/models/CesiumMan.glb"));
-        Material *material = materialLibrary.GetMaterialInstance("Phong");
-        material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.08f));
-        material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.3f));
-        material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
-        walkingMan->AddMaterial(material);
+        // Walking man - animated model.
+        {
+            AnimatedModel *walkingMan = dynamic_cast<AnimatedModel *>(_modelManager.AddModelFromFile("walking man",
+                                                                                                     "assets/models/CesiumMan.glb"));
+            Material *material = materialLibrary.GetMaterialInstance("Animated Phong");
+            material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.08f));
+            material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.3f));
+            material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
+            walkingMan->AddMaterial(material);
 
-        // Values hard-coded for this model.
-        walkingMan->GetTransform().SetRotation(270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-        walkingMan->GetTransform().SetScale(glm::vec3(2.0f));
+            // Values hard-coded for this model.
+            walkingMan->GetTransform().SetRotation(270.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+            walkingMan->GetTransform().SetScale(glm::vec3(2.0f));
 
-        walkingMan->GetAnimator()->PlayAnimation(0);
+            walkingMan->GetAnimator()->PlayAnimation(0);
 
-        walkingMan->SetPather(new Pather());
+            walkingMan->SetPather(new Pather());
+        }
+
+        {
+            // Sphere - small target object.
+            Model *sphere = _modelManager.AddModelFromFile("sphere", "assets/models/sphere.obj");
+
+            Material *material = materialLibrary.GetMaterialInstance("Phong");
+            material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.08f));
+            material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.3f));
+            material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
+            sphere->AddMaterial(material);
+
+            sphere->GetTransform().SetScale(glm::vec3(1.0f));
+        }
     }
 
     void SceneProject3::ConstructFBO() {
@@ -294,40 +341,40 @@ namespace Sandbox {
     }
 
     void SceneProject3::ConfigureLights() {
-    	{
-    		Light light;
-    		Transform &transform = light.GetTransform();
-    		transform.SetPosition(glm::vec3(10.0f, 20.0f, 0.0f));
-    		_lightingManager.AddLight(light);
-    	}
+        {
+            Light light;
+            Transform &transform = light.GetTransform();
+            transform.SetPosition(glm::vec3(10.0f, 20.0f, 0.0f));
+            _lightingManager.AddLight(light);
+        }
 
-    	{
-    		Light light;
-    		Transform &transform = light.GetTransform();
-    		transform.SetPosition(glm::vec3(-10.0f, 20.0f, 0.0f));
-    		_lightingManager.AddLight(light);
-    	}
+        {
+            Light light;
+            Transform &transform = light.GetTransform();
+            transform.SetPosition(glm::vec3(-10.0f, 20.0f, 0.0f));
+            _lightingManager.AddLight(light);
+        }
 
-    	{
-    		Light light;
-    		Transform &transform = light.GetTransform();
-    		transform.SetPosition(glm::vec3(0.0f, 20.0f, 10.0f));
-    		_lightingManager.AddLight(light);
-    	}
+        {
+            Light light;
+            Transform &transform = light.GetTransform();
+            transform.SetPosition(glm::vec3(0.0f, 20.0f, 10.0f));
+            _lightingManager.AddLight(light);
+        }
 
-    	{
-    		Light light;
-    		Transform &transform = light.GetTransform();
-    		transform.SetPosition(glm::vec3(0.0f, 20.0f, -10.0f));
-    		_lightingManager.AddLight(light);
-    	}
+        {
+            Light light;
+            Transform &transform = light.GetTransform();
+            transform.SetPosition(glm::vec3(0.0f, 20.0f, -10.0f));
+            _lightingManager.AddLight(light);
+        }
 
-    	{
-    		Light light;
-    		Transform &transform = light.GetTransform();
-    		transform.SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
-    		_lightingManager.AddLight(light);
-    	}
+        {
+            Light light;
+            Transform &transform = light.GetTransform();
+            transform.SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+            _lightingManager.AddLight(light);
+        }
 
     }
 
@@ -377,10 +424,10 @@ namespace Sandbox {
         }
     }
 
-    void SceneProject3::RenderAnimatedModelPath(Pather* pather) const {
+    void SceneProject3::RenderAnimatedModelPath(Pather *pather) const {
         // Path.
         const float height = pather->GetPathHeight();
-        Path& path = pather->GetPath();
+        Path &path = pather->GetPath();
 
         glLineWidth(3.0f);
 
@@ -389,22 +436,22 @@ namespace Sandbox {
         ddVec3 white = {1.0f, 1.0f, 1.0f};
 
         // Control points.
-        const std::vector<glm::dvec2>& controlPoints = path.GetControlPoints();
-        for (const glm::dvec2& controlPoint : controlPoints) {
-            ddVec3 point { static_cast<float>(controlPoint.x), height, static_cast<float>(controlPoint.y) };
+        const std::vector<glm::dvec2> &controlPoints = path.GetControlPoints();
+        for (const glm::dvec2 &controlPoint : controlPoints) {
+            ddVec3 point{static_cast<float>(controlPoint.x), height, static_cast<float>(controlPoint.y)};
             dd::sphere(point, orange, 0.1f);
         }
 
         // Interpolated curve.
         if (path.IsValid()) {
-            const std::vector<glm::dvec2>& curve = path.GetCurveApproximation();
+            const std::vector<glm::dvec2> &curve = path.GetCurveApproximation();
 
             for (int i = 0; i < curve.size() - 1; ++i) {
-                const glm::dvec2& start = curve[i];
-                const glm::dvec2& end = curve[i + 1];
+                const glm::dvec2 &start = curve[i];
+                const glm::dvec2 &end = curve[i + 1];
 
-                ddVec3 lineStart = { static_cast<float>(start.x), height, static_cast<float>(start.y) };
-                ddVec3 lineEnd = { static_cast<float>(end.x), height, static_cast<float>(end.y) };
+                ddVec3 lineStart = {static_cast<float>(start.x), height, static_cast<float>(start.y)};
+                ddVec3 lineEnd = {static_cast<float>(end.x), height, static_cast<float>(end.y)};
 
                 dd::line(lineStart, lineEnd, white);
             }
@@ -412,7 +459,7 @@ namespace Sandbox {
             // Draw sphere for POI.
             glm::vec3 poi = pather->GetCurrentPointOfInterest();
 
-            ddVec3 point { static_cast<float>(poi.x), height, static_cast<float>(poi.z) };
+            ddVec3 point{static_cast<float>(poi.x), height, static_cast<float>(poi.z)};
             dd::sphere(point, green, 0.1f);
         }
     }

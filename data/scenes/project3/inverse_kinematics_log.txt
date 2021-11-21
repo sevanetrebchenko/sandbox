@@ -5,5 +5,7 @@
 [TRACE] Creating new ImGui log in location (data\scenes\project3\inverse_kinematics_log.txt).
 [TRACE] Creating new model: 'walking man' from .glb file: assets\models\CesiumMan.glb
 [TRACE] Finished loading model: 'walking man'.
+[TRACE] Creating new model: 'sphere' from .obj file: assets\models\sphere.obj
+[TRACE] Finished loading model: 'sphere'.
 [TRACE] Saving ImGui settings to: data\scenes\project3\inverse_kinematics_imgui.ini
 [TRACE] Saving ImGui log to: data\scenes\project3\inverse_kinematics_log.txt
