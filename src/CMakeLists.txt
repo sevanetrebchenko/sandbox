@@ -8,6 +8,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/scenes/deferred_rendering/deferred_rendering.cpp"
         "${PROJECT_SOURCE_DIR}/src/scenes/project1/project1.cpp"
         "${PROJECT_SOURCE_DIR}/src/scenes/project2/project2.cpp"
+        "${PROJECT_SOURCE_DIR}/src/scenes/project3/project3.cpp"
 
         # Buffer
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"
