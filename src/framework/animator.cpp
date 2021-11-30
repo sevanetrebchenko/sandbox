@@ -304,7 +304,7 @@ namespace Sandbox {
 
         // Emplace chain starting at end effector and ending at the root.
         int index = endEffectorIndex_;
-        while (index != -1) {
+        while (index != 0) {
             Bone& bone = _target->_bones[index];
             chain_.emplace_back(index);
             index = bone._parentIndex;
@@ -398,8 +398,31 @@ namespace Sandbox {
         } while (distance > epsilon && iterationCount <= numIterations);
     }
 
-    void Animator::SolveIKChainFABRIK() {
+    void Animator::SolveIKChainFABRIK(const glm::mat4& modelMatrix) {
+        glm::mat4 modelInverse = glm::inverse(modelMatrix);
+        const std::size_t numChainElements = chain_.size();
 
+        GetIKChainLength();
+
+        glm::vec3 chainOrigin = joints_[numChainElements - 1];// GetGlobalTransformation(chain_[numChainElements - 1]).GetTranslation(); // Model space.
+        glm::vec3 goalPosition = modelInverse * glm::vec4(targetPosition_, 1.0f);
+
+        const float epsilon = 0.000001f;
+        const int numIterations = 200;
+
+        for (unsigned int i = 0; i < numIterations; ++i) {
+            glm::vec3 endEffectorPosition = joints_[0];
+
+            if (glm::length(goalPosition - endEffectorPosition) < epsilon) {
+                WorldToIKChain();
+                return;
+            }
+
+            IterateBackwards(goalPosition);
+            IterateForwards(chainOrigin);
+        }
+
+        WorldToIKChain();
     }
 
     void Animator::IK(const glm::mat4& modelMatrix) {
@@ -407,7 +430,7 @@ namespace Sandbox {
             return;
         }
 
-        SolveIKChainCCD(modelMatrix);
+        SolveIKChainFABRIK(modelMatrix);
     }
 
     VQS Animator::GetGlobalTransformation(int index) {
@@ -433,21 +456,76 @@ namespace Sandbox {
         assert(chainLength > 1); // Invalid chain length.
 
         // Get joints in world space.
-        std::vector<glm::vec3> joints(chainLength);
+        joints_.clear();
+        joints_.resize(chainLength);
 
-        for (int i = 0; i < chainLength; ++i) {
-            joints[i] = GetGlobalTransformation(chain_[i]).GetTranslation(); // Model space.
+        distances_.clear();
+        distances_.resize(chainLength);
+        distances_[0] = 0.0f;
+
+        for (int i = (int)chainLength - 1; i >= 0; --i) {
+            joints_[i] = GetGlobalTransformation(chain_[i]).GetTranslation(); // Model space.
+
+            if (i < (int)chainLength - 1) {
+                distances_[i] = glm::length(joints_[i] - joints_[i + 1]);
+            }
         }
 
-        float distance = 0.0f;
-        for (int i = 0; i < chainLength - 1; ++i) {
-            const glm::vec3& start = joints[i];
-            const glm::vec3& end = joints[i + 1];
+        return distances_[chainLength - 1];
+    }
 
-            distance += glm::distance(start, end);
+    void Animator::WorldToIKChain() {
+        const std::size_t numChainElements = chain_.size();
+
+        for (int i = (int)numChainElements - 1; i >= 1; --i) {
+            int indexCurrent = i;
+            int indexNext = i - 1;
+
+            int jointIndexCurrent = chain_[indexCurrent];
+            int jointIndexNext = chain_[indexNext];
+
+            // Model space.
+            VQS current = GetGlobalTransformation(jointIndexCurrent);
+            VQS next = GetGlobalTransformation(jointIndexNext);
+
+            glm::vec3 toNext = glm::normalize(next.GetTranslation() - current.GetTranslation());
+            toNext = Quaternion::Invert(current.GetOrientation()) * toNext;
+
+            // From model position before solving to solved model position.
+            glm::vec3 toDesired = glm::normalize(joints_[indexNext] - current.GetTranslation());
+            toDesired = Quaternion::Invert(current.GetOrientation()) * toDesired;
+
+            Quaternion delta = glm::rotation(toNext, toDesired);
+
+            // Always take the smallest path to interpolate over.
+            if (Quaternion::DotProduct(boneVQSTransformations_[jointIndexCurrent].GetOrientation(), delta) < 0.0f) {
+                delta *= -1.0f;
+            }
+
+            boneVQSTransformations_[jointIndexCurrent].SetOrientation(delta * boneVQSTransformations_[jointIndexCurrent].GetOrientation());
         }
+    }
 
-        return distance;
+    void Animator::IterateBackwards(const glm::vec3 &goalPosition) {
+        // Put the end effector at the goal position.
+        joints_[0] = goalPosition;
+
+        for (int i = 1; i < chain_.size(); ++i) {
+            glm::vec3 direction = glm::normalize(joints_[i] - joints_[i - 1]); // Further away to root.
+            joints_[i] = joints_[i - 1] + direction * distances_[i - 1];
+        }
+    }
+
+    void Animator::IterateForwards(const glm::vec3 &rootPosition) {
+        const std::size_t numChainElements = chain_.size();
+
+        // Put the root of the IK chain at the original chain origin.
+        joints_[numChainElements - 1] = rootPosition;
+
+        for (int i = (int)numChainElements - 2; i >= 0; --i) {
+            glm::vec3 direction = glm::normalize(joints_[i] - joints_[i + 1]);
+            joints_[i] = joints_[i + 1] + direction * distances_[i];
+        }
     }
 
 }

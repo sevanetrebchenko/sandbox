@@ -63,13 +63,15 @@ namespace Sandbox {
             void DefaultKeyInterpolation(int boneIndex);
             void IncrementalKeyInterpolation(int boneIndex);
 
-            void SolveIKChainFABRIK();
-
+            void SolveIKChainFABRIK(const glm::mat4& modelMatrix);
+            void WorldToIKChain(); // Converts world position IK chain back into local space.
+            void IterateBackwards(const glm::vec3& goalPosition);
+            void IterateForwards(const glm::vec3& rootPosition);
 
             void SolveIKChainCCD(const glm::mat4& modelMatrix);
 
             void ComputeIKChain();
-            [[nodiscard]] float GetIKChainLength();
+            float GetIKChainLength();
 
             void ApplyRotation(const Quaternion& rotation, int boneIndex);
 
@@ -85,6 +87,9 @@ namespace Sandbox {
             std::vector<VQS> boneVQSTransformations_;
             std::vector<int> chain_;
             int endEffectorIndex_;
+
+            std::vector<glm::vec3> joints_;
+            std::vector<float> distances_;
 
             glm::vec3 targetPosition_;
 

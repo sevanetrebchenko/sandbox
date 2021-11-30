@@ -228,6 +228,13 @@ namespace Sandbox {
         return { glm::dot(from, half), axis.x, axis.y, axis.z };
     }
 
+    Quaternion::Quaternion(const glm::quat &quaternion) {
+        quat.w = quaternion.w;
+        quat.x = quaternion.x;
+        quat.y = quaternion.y;
+        quat.z = quaternion.z;
+    }
+
     Quaternion operator*(float multiplier, const Quaternion &quaternion) {
         return quaternion * multiplier;
     }

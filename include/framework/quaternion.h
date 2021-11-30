@@ -11,6 +11,7 @@ namespace Sandbox {
             Quaternion();
             Quaternion(float s, float x, float y, float z);
             Quaternion(const glm::mat4& matrix);
+            Quaternion(const glm::quat& quaternion);
             Quaternion(const glm::vec3& axis, float angle);
             ~Quaternion();
 
