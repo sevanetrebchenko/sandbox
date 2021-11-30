@@ -128,18 +128,23 @@ namespace Sandbox {
             const Quaternion& first = start.orientation;
             const Quaternion& second = end.orientation;
 
-            // Normalize the distance between the two keyframes.
-            float length = endTime - startTime;
-            float current = glm::clamp(_currentTime - startTime, 0.0f, _selectedAnimation->_duration);
-            float t = current / length;
+            if (glm::all(glm::epsilonEqual(first.ToVec4(), second.ToVec4(), std::numeric_limits<float>::epsilon()))) {
+                finalVQS.SetOrientation(first);
+            }
+            else {
+                // Normalize the distance between the two keyframes.
+                float length = endTime - startTime;
+                float current = glm::clamp(_currentTime - startTime, 0.0f, _selectedAnimation->_duration);
+                float t = current / length;
 
-            switch (_quaternionInterpolationMethod) {
-                case QuaternionInterpolationMethod::LERP:
-                    finalVQS.SetOrientation(Lerp(first, second, t));
-                    break;
-                case QuaternionInterpolationMethod::SLERP:
-                    finalVQS.SetOrientation(Slerp(first, second, t));
-                    break;
+                switch (_quaternionInterpolationMethod) {
+                    case QuaternionInterpolationMethod::LERP:
+                        finalVQS.SetOrientation(Lerp(first, second, t));
+                        break;
+                        case QuaternionInterpolationMethod::SLERP:
+                            finalVQS.SetOrientation(Slerp(first, second, t));
+                            break;
+                }
             }
         }
 
@@ -149,15 +154,20 @@ namespace Sandbox {
             const KeyPosition& start = positionKeys.first;
             const KeyPosition& end = positionKeys.second;
 
-            float startTime = start.dt;
-            float endTime = end.dt;
+            if (glm::all(glm::epsilonEqual(start.position, end.position, std::numeric_limits<float>::epsilon()))) {
+                finalVQS.SetTranslation(start.position);
+            }
+            else {
+                float startTime = start.dt;
+                float endTime = end.dt;
 
-            // Normalize the distance between the two keyframes.
-            float length = endTime - startTime;
-            float current = glm::clamp(_currentTime - startTime, 0.0f, _selectedAnimation->_duration);
-            float t = current / length;
+                // Normalize the distance between the two keyframes.
+                float length = endTime - startTime;
+                float current = glm::clamp(_currentTime - startTime, 0.0f, _selectedAnimation->_duration);
+                float t = current / length;
 
-            finalVQS.SetTranslation((1.0f - t) * start.position + t * end.position); // Lerp.
+                finalVQS.SetTranslation((1.0f - t) * start.position + t * end.position); // Lerp.
+            }
         }
 
         boneVQSTransformations_[boneIndex] = finalVQS;
@@ -253,12 +263,6 @@ namespace Sandbox {
             // Apply parent transformation on top of bone local transformation.
             boneVQSTransformations_[boneIndex] = parentTransform * boneVQSTransformations_[boneIndex];
         }
-
-        // Shift bone to proper position AFTER calculating ALL bone matrices.
-        for (Bone& bone : _target->_bones) {
-            int boneIndex = bone._index;
-            boneVQSTransformations_[boneIndex] = boneVQSTransformations_[boneIndex] * bone._boneToModelVQS;
-        }
     }
 
     bool Animator::ProcessBindPose() {
@@ -294,10 +298,6 @@ namespace Sandbox {
         }
     }
 
-    const std::vector<VQS*>& Animator::GetIKChain() const {
-        return chain_;
-    }
-
     void Animator::ComputeIKChain() {
         // Find desired end-effector bone index.
         chain_.clear();
@@ -306,8 +306,8 @@ namespace Sandbox {
         int index = endEffectorIndex_;
         while (index != -1) {
             Bone& bone = _target->_bones[index];
+            chain_.emplace_back(index);
             index = bone._parentIndex;
-            chain_.emplace_back(&boneVQSTransformations_[index]);
         }
     }
 
@@ -317,6 +317,137 @@ namespace Sandbox {
 
     void Animator::SetIKTargetPosition(const glm::vec3& targetPosition) {
         targetPosition_ = targetPosition;
+    }
+
+    void Animator::SolveIKChainCCD(const glm::mat4& modelMatrix) {
+        glm::mat4 modelInverse = glm::inverse(modelMatrix);
+        const std::size_t numChainElements = chain_.size();
+
+        glm::vec3 chainOrigin = GetGlobalTransformation(chain_[numChainElements - 1]).GetTranslation(); // Model space.
+        glm::vec3 endEffectorPosition = modelInverse * glm::vec4(GetGlobalTransformation(chain_[0]).GetTranslation(), 1.0f); // Model space.
+
+        const float bias = 0.75f; // In case bones cannot fully extend.
+        float chainLength = GetIKChainLength() * bias;
+
+        glm::vec3 goalPosition = modelInverse * glm::vec4(targetPosition_, 1.0f);
+
+//        // Place goal position within reach of the IK chain.
+//        if (glm::distance(chainOrigin, targetPosition_) > chainLength) {
+//            glm::vec3 direction = glm::normalize(targetPosition_ - chainOrigin);
+//            goalPosition = chainOrigin + direction * chainLength;
+//        }
+
+        dd::sphere(static_cast<const float*>(&goalPosition[0]), dd::colors::Magenta, 0.1f, 0, false);
+
+        const float epsilon = 0.2f;
+        const int numIterations = 10;
+
+        float distance = glm::length(endEffectorPosition - goalPosition);
+
+        // End effector is already at the goal position.
+        if (distance < epsilon) {
+            return;
+        }
+
+        int iterationCount = 0;
+        do {
+            // CCD algorithm.
+            // First bone is connected to the end effector.
+            // Last bone is the root.
+            int limit = 2;
+
+            while (limit != chain_.size()) {
+                for (int i = 1; i < limit; ++i) {
+                    int boneIndex = chain_[i];
+                    VQS currentJointTransformation = GetGlobalTransformation(boneIndex);
+                    glm::vec3 currentJointPosition = currentJointTransformation.GetTranslation(); // Model space.
+
+                    glm::vec3 toEffector = glm::normalize(endEffectorPosition - currentJointPosition);
+                    glm::vec3 toGoal = glm::normalize(goalPosition - currentJointPosition);
+
+                    float angle = glm::degrees(glm::acos(glm::dot(toEffector, toGoal)));
+                    glm::vec3 axis = glm::cross(toEffector, toGoal);
+
+                    Quaternion rotation { axis, angle }; // Rotation to get from current to desired orientation.
+
+                    const Quaternion& current = boneVQSTransformations_[boneIndex].GetOrientation();
+                    float cosTheta = Quaternion::DotProduct(current, rotation);
+
+                    // Always take the smallest path to interpolate over.
+                    if (cosTheta < 0.0f) {
+                        rotation *= -1.0f;
+                    }
+
+                    // Apply rotation to this bone + all nested children bones.
+                    boneVQSTransformations_[boneIndex].SetOrientation(rotation * current);
+
+                    // Recalculate end effector position, taking into account the new transformed chain.
+                    endEffectorPosition = GetGlobalTransformation(chain_[0]).GetTranslation(); // Model space.
+
+                    distance = glm::length(endEffectorPosition - goalPosition);
+
+                    if (distance < epsilon) {
+                        return;
+                    }
+                }
+
+                ++limit;
+            }
+
+            ++iterationCount;
+        } while (distance > epsilon && iterationCount <= numIterations);
+    }
+
+    void Animator::SolveIKChainFABRIK() {
+
+    }
+
+    void Animator::IK(const glm::mat4& modelMatrix) {
+        if (chain_.empty() || !_target) {
+            return;
+        }
+
+        SolveIKChainCCD(modelMatrix);
+    }
+
+    VQS Animator::GetGlobalTransformation(int index) {
+        int startIndex = index;
+        VQS out { };
+
+        while (index != -1) {
+            out = boneVQSTransformations_[index] * out;
+            index = _target->_bones[index]._parentIndex;
+        }
+
+        return out;
+    }
+
+    void Animator::ApplyRotation(const Quaternion &rotation, int boneIndex) {
+        // Apply rotation to this bone.
+        VQS& transform = boneVQSTransformations_[boneIndex];
+        transform.SetOrientation(rotation * transform.GetOrientation());
+    }
+
+    float Animator::GetIKChainLength() {
+        const std::size_t chainLength = chain_.size();
+        assert(chainLength > 1); // Invalid chain length.
+
+        // Get joints in world space.
+        std::vector<glm::vec3> joints(chainLength);
+
+        for (int i = 0; i < chainLength; ++i) {
+            joints[i] = GetGlobalTransformation(chain_[i]).GetTranslation(); // Model space.
+        }
+
+        float distance = 0.0f;
+        for (int i = 0; i < chainLength - 1; ++i) {
+            const glm::vec3& start = joints[i];
+            const glm::vec3& end = joints[i + 1];
+
+            distance += glm::distance(start, end);
+        }
+
+        return distance;
     }
 
 }

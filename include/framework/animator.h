@@ -19,6 +19,13 @@ namespace Sandbox {
             [[nodiscard]] bool ProcessBindPose();
             void ComputeLocalBoneTransformations(float dt);
             void ComputeFinalBoneTransformations();
+            void ShiftBones() {
+                // Shift bone to proper position AFTER calculating ALL bone matrices.
+                for (Bone& bone : _target->_bones) {
+                    int boneIndex = bone._index;
+                    boneVQSTransformations_[boneIndex] = boneVQSTransformations_[boneIndex] * bone._boneToModelVQS;
+                }
+            }
 
             void SetTarget(Skeleton* skeleton);
             void AddAnimation(Animation* animation);
@@ -43,8 +50,7 @@ namespace Sandbox {
             void SetQuaternionInterpolationMethod(QuaternionInterpolationMethod method);
 
             // IK.
-            // Returns a chain starting from the end effector and going to the root.
-            [[nodiscard]] const std::vector<VQS*>& GetIKChain() const;
+            void IK(const glm::mat4& modelMatrix);
 
             [[nodiscard]] int GetEndEffectorBoneIndex() const;
             void SetEndEffectorBoneIndex(int index);
@@ -57,7 +63,17 @@ namespace Sandbox {
             void DefaultKeyInterpolation(int boneIndex);
             void IncrementalKeyInterpolation(int boneIndex);
 
+            void SolveIKChainFABRIK();
+
+
+            void SolveIKChainCCD(const glm::mat4& modelMatrix);
+
             void ComputeIKChain();
+            [[nodiscard]] float GetIKChainLength();
+
+            void ApplyRotation(const Quaternion& rotation, int boneIndex);
+
+            VQS GetGlobalTransformation(int index);
 
             Skeleton* _target;
             Animation* _selectedAnimation;
@@ -67,7 +83,7 @@ namespace Sandbox {
             QuaternionInterpolationMethod _quaternionInterpolationMethod;
 
             std::vector<VQS> boneVQSTransformations_;
-            std::vector<VQS*> chain_;
+            std::vector<int> chain_;
             int endEffectorIndex_;
 
             glm::vec3 targetPosition_;

@@ -30,6 +30,10 @@ namespace Sandbox {
         Quaternion q0 = Quaternion::Normalize(start);
         Quaternion q1 = Quaternion::Normalize(end);
 
+        if (glm::all(glm::epsilonEqual(q0.ToVec4(), q1.ToVec4(), std::numeric_limits<float>::epsilon()))) {
+            return q0;
+        }
+
         float cosTheta = Quaternion::DotProduct(q0, q1);
 
         // Always take the smallest path to interpolate over.
@@ -48,6 +52,10 @@ namespace Sandbox {
         Quaternion q0 = Quaternion::Normalize(start);
         Quaternion q1 = Quaternion::Normalize(end);
 
+        if (glm::all(glm::epsilonEqual(q0.ToVec4(), q1.ToVec4(), std::numeric_limits<float>::epsilon()))) {
+            return q0;
+        }
+
         // Always take the smallest path to interpolate over.
         if (cosTheta < 0.0f) {
             q1 *= -1.0f;
@@ -64,6 +72,10 @@ namespace Sandbox {
         // Slerp gives back unit quaternion if start / end are unit quaternions.
         Quaternion q0 = Quaternion::Normalize(start);
         Quaternion q1 = Quaternion::Normalize(end);
+
+        if (glm::all(glm::epsilonEqual(q0.ToVec4(), q1.ToVec4(), std::numeric_limits<float>::epsilon()))) {
+            return q0;
+        }
 
         float cosTheta = Quaternion::DotProduct(start, end);
 
@@ -92,6 +104,10 @@ namespace Sandbox {
         // Slerp gives back unit quaternion if start / end are unit quaternions.
         Quaternion q0 = Quaternion::Normalize(start);
         Quaternion qn = Quaternion::Normalize(end);
+
+        if (glm::all(glm::epsilonEqual(q0.ToVec4(), qn.ToVec4(), std::numeric_limits<float>::epsilon()))) {
+            return q0;
+        }
 
         float cosTheta = Quaternion::DotProduct(start, end);
 

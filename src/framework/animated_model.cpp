@@ -27,12 +27,13 @@ namespace Sandbox {
                 _animator->ComputeLocalBoneTransformations(dt);
 
                 // IK...
-                ikSolver_.SolveChain(_animator->GetIKChain(), _animator->GetIKTargetPosition());
+                _animator->IK(_transform.GetMatrix());
 
                 // Blending...
 
                 // Compute final transformations - ready to send to GPU.
                 _animator->ComputeFinalBoneTransformations();
+                _animator->ShiftBones();
             }
         }
 

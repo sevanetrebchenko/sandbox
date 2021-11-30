@@ -444,7 +444,7 @@ namespace Sandbox {
 
         if (bone.selected) {
             animator->SetEndEffectorBoneIndex(root);
-            color = dd::colors::White;
+            color = dd::colors::Red;
         }
 
         if (!skeleton->_bones[root]._children.empty()) {

@@ -123,6 +123,20 @@ namespace Sandbox {
         return { scalar, vector.x, vector.y, vector.z };
     }
 
+    Quaternion Quaternion::Invert(const Quaternion& quaternion) {
+        float length = glm::dot(quaternion.quat, quaternion.quat);
+        if (length < std::numeric_limits<float>::epsilon()) {
+            return { };
+        }
+
+        return {
+            quaternion.quat.w / length,
+            -quaternion.quat.x / length,
+            -quaternion.quat.y / length,
+            -quaternion.quat.z / length,
+        };
+    }
+
     Quaternion Quaternion::Conjugate(const Quaternion& quaternion) {
         return { quaternion.quat.w, -quaternion.quat.x, -quaternion.quat.y, -quaternion.quat.z };
     }
@@ -189,6 +203,29 @@ namespace Sandbox {
 
     Quaternion &Quaternion::operator/=(float divisor) {
         return this->operator*=(1.0f / divisor);
+    }
+
+    Quaternion Quaternion::FromTo(glm::vec3 from, glm::vec3 to) {
+        from = glm::normalize(from);
+        to = glm::normalize(to);
+
+        // Check to make sure vectors are not opposite.
+        if (from == -to) {
+            // 180-degree rotation around any orthogonal vector.
+            float x = abs(from.x);
+            float y = abs(from.y);
+            float z = abs(from.z);
+
+            glm::vec3 other = x < y ? (x < z ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 0.0f, 1.0f)) : (y < z ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(0.0f, 0.0f, 1.0f));
+            glm::vec3 axis = glm::cross(from, other);
+
+            return { 0.0f, axis.x, axis.y, axis.z };
+        }
+
+        glm::vec3 half = glm::normalize(from + to);
+        glm::vec3 axis = glm::cross(from, half);
+
+        return { glm::dot(from, half), axis.x, axis.y, axis.z };
     }
 
     Quaternion operator*(float multiplier, const Quaternion &quaternion) {

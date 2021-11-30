@@ -1,6 +1,6 @@
 [TRACE] Vendor: NVIDIA Corporation
 [TRACE] Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
-[TRACE] OpenGL Version: 4.6.0 NVIDIA 471.41
+[TRACE] OpenGL Version: 4.6.0 NVIDIA 496.76
 [TRACE] Found existing ImGui layout (data\scenes\project3\inverse_kinematics_imgui.ini).
 [TRACE] Creating new ImGui log in location (data\scenes\project3\inverse_kinematics_log.txt).
 [TRACE] Creating new model: 'walking man' from .glb file: assets\models\CesiumMan.glb

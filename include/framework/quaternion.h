@@ -15,7 +15,6 @@ namespace Sandbox {
             ~Quaternion();
 
             [[nodiscard]] static Quaternion Identity();
-
             [[nodiscard]] float GetScalar() const;
             [[nodiscard]] glm::vec3 GetVector() const;
 
@@ -30,9 +29,10 @@ namespace Sandbox {
             Quaternion& operator/=(float divisor);
 
             [[nodiscard]] static Quaternion Normalize(const Quaternion& quaternion);
-            // [[nodiscard]] static Quaternion Invert(const Quaternion& quaternion);
+            [[nodiscard]] static Quaternion Invert(const Quaternion& quaternion);
             [[nodiscard]] static Quaternion Conjugate(const Quaternion& quaternion);
             [[nodiscard]] static float DotProduct(const Quaternion& first, const Quaternion& second);
+            [[nodiscard]] static Quaternion FromTo(glm::vec3 from, glm::vec3 to);
 
             [[nodiscard]] Quaternion operator*(const Quaternion& other) const; // Quaternion product.
 

@@ -220,7 +220,8 @@ namespace Sandbox {
                     // Clamp point position to grid.
                     point = glm::clamp(point, glm::dvec2(-20.0), glm::dvec2(20.0));
 
-                    animator->SetIKTargetPosition(glm::vec3(point.x, targetPosition.y, point.y));
+
+                    animator->SetIKTargetPosition(  glm::vec3(point.x, targetPosition.y, point.y));
                 }
 
                 ImPlot::EndPlot();

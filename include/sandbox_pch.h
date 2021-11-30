@@ -27,6 +27,7 @@
 #include <thread>
 #include <cstdio>
 #include <variant>
+#include <stack>
 
 // Third-party
 #include <glm/glm.hpp>

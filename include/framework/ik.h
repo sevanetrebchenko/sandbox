@@ -13,9 +13,13 @@ namespace Sandbox {
             IKSolver();
             ~IKSolver();
 
-            void SolveChain(const std::vector<VQS *> &pose, const glm::vec3 &goalPosition) const;
+            void SetSkeleton(Skeleton* skeleton);
+
+            void SolveChain(const std::vector<std::pair<const Bone&, VQS*>> &pose, std::vector<VQS> transforms, const glm::vec3 &goalPosition) const;
 
         private:
+            Skeleton* skeleton_;
+
             float weight_;
             float error_;
 
