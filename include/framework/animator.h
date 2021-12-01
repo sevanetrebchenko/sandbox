@@ -27,8 +27,6 @@ namespace Sandbox {
                 }
             }
 
-            bool CloseEnough(const glm::vec3& targetPosition);
-
             void SetTarget(Skeleton* skeleton);
             void AddAnimation(Animation* animation);
 
@@ -60,6 +58,12 @@ namespace Sandbox {
             [[nodiscard]] const glm::vec3& GetIKTargetPosition() const;
             void SetIKTargetPosition(const glm::vec3& targetPosition);
 
+            void UseIK(bool useIK);
+            [[nodiscard]] bool Initialized() const;
+
+            float GetIKChainLength();
+            glm::vec3 GetEndEffectorPosition(const glm::mat4& modelMatrix) const;
+
         private:
             void InterpolateBone(int boneIndex);
             void DefaultKeyInterpolation(int boneIndex);
@@ -73,7 +77,6 @@ namespace Sandbox {
             void SolveIKChainCCD(const glm::mat4& modelMatrix);
 
             void ComputeIKChain();
-            float GetIKChainLength();
 
             void ApplyRotation(const Quaternion& rotation, int boneIndex);
 
@@ -97,6 +100,8 @@ namespace Sandbox {
 
             float _currentTime;
             float _playbackSpeed;
+
+            bool init;
 
             bool _useBindPose;
             bool _reset;

@@ -11,7 +11,7 @@ namespace Sandbox {
                            _keyInterpolationMethod(KeyInterpolationMethod::DEFAULT),
                            _quaternionInterpolationMethod(QuaternionInterpolationMethod::SLERP),
                            endEffectorIndex_(16),
-                           targetPosition_(glm::vec3(0.0f)),
+                           targetPosition_(glm::vec3(15.0f)),
                            _currentTime(0.0f),
                            _playbackSpeed(1.0f),
                            _useBindPose(false),
@@ -23,6 +23,8 @@ namespace Sandbox {
 
     void Animator::SetTarget(Skeleton *skeleton) {
     	_target = skeleton;
+    	_target->_drawSkeleton = true;
+    	_target->_bones[endEffectorIndex_].selected = true;
 
         std::size_t numBones = skeleton->_bones.size();
         boneVQSTransformations_.resize(numBones);
@@ -247,8 +249,10 @@ namespace Sandbox {
         _currentTime = std::fmod(_currentTime, _selectedAnimation->_duration);
 
         // Computes local transformations.
-        for (Bone& bone : _target->_bones) {
-            InterpolateBone(bone._index);
+        if (!_useBindPose) {
+            for (Bone& bone : _target->_bones) {
+                InterpolateBone(bone._index);
+            }
         }
     }
 
@@ -407,18 +411,19 @@ namespace Sandbox {
         GetIKChainLength();
 
         glm::vec3 chainOrigin = joints_[numChainElements - 1];// GetGlobalTransformation(chain_[numChainElements - 1]).GetTranslation(); // Model space.
+        glm::vec3 endEffectorPosition = joints_[0];
         glm::vec3 goalPosition = modelInverse * glm::vec4(targetPosition_, 1.0f);
 
         const float epsilon = 0.000001f;
-        const int numIterations = 200;
+        const int numIterations = 400;
 
         for (unsigned int i = 0; i < numIterations; ++i) {
-            glm::vec3 endEffectorPosition = joints_[0];
+            endEffectorPosition = joints_[0];
 
-            if (glm::length(goalPosition - endEffectorPosition) < epsilon) {
-                WorldToIKChain();
-                return;
-            }
+//            if (glm::length(goalPosition - endEffectorPosition) < epsilon) {
+//                WorldToIKChain();
+//                return;
+//            }
 
             IterateBackwards(goalPosition);
             IterateForwards(chainOrigin);
@@ -530,8 +535,17 @@ namespace Sandbox {
         }
     }
 
-	bool Animator::CloseEnough(const glm::vec3& targetPosition) {
+    void Animator::UseIK(bool useIK) {
+        init = useIK;
+    }
 
-	}
+    bool Animator::Initialized() const {
+        return init;
+    }
+
+    glm::vec3 Animator::GetEndEffectorPosition(const glm::mat4& modelMatrix) const {
+        return modelMatrix * glm::vec4(joints_[0], 1.0f);
+    }
+
 
 }

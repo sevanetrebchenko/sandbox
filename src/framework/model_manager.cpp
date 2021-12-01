@@ -214,6 +214,8 @@ namespace Sandbox {
 
             // IK Section.
             static glm::dvec2 point = glm::dvec2(15.0f);
+            static bool isDirty = true;
+            static bool initialized = false;
 
             if (ImPlot::BeginPlot("##targetPosition", ImVec2(-1, 0), ImPlotFlags_CanvasOnly)) {
             	// Axes.
@@ -228,6 +230,7 @@ namespace Sandbox {
             	if (ImPlot::DragPoint(1, &point.x, &point.y, ImVec4(1.0f, 1.0f, 1.0f, 1.0f))) {
             		// Clamp point position to grid.
             		point = glm::clamp(point, glm::dvec2(-20.0), glm::dvec2(20.0));
+            		isDirty = true;
             	}
 
             	// Draw path.
@@ -242,9 +245,11 @@ namespace Sandbox {
             			curveYCoordinates.push_back(p.y);
             		}
 
-            		ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1, 1, 1, 1));
-            		ImPlot::PlotLine("Path", curveXCoordinates.data(), curveYCoordinates.data(), curve.size());
-            		ImPlot::PopStyleColor();
+            		if (!isDirty) {
+            		    ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1, 1, 1, 1));
+            		    ImPlot::PlotLine("Path", curveXCoordinates.data(), curveYCoordinates.data(), curve.size());
+            		    ImPlot::PopStyleColor();
+            		}
             	}
 
             	ImPlot::EndPlot();
@@ -252,7 +257,7 @@ namespace Sandbox {
 
             glm::vec3 targetPosition = animator->GetIKTargetPosition();
 
-            if (ImGui::Button("Recalculate")) {
+            if (ImGui::Button("Recalculate") || !initialized) {
             	animator->SetIKTargetPosition(  glm::vec3(point.x, targetPosition.y, point.y));
 
             	path.Clear();
@@ -261,7 +266,13 @@ namespace Sandbox {
             	path.AddControlPoint(point);
 
             	path.Recompute();
+            	pather->Reset();
+            	isDirty = false;
+
+            	initialized = true;
             }
+
+            animator->UseIK(true);
 
             ImGui::TreePop();
         }

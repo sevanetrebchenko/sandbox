@@ -21,24 +21,26 @@ namespace Sandbox {
     void AnimatedModel::Update(float dt) {
         Model::Update(dt);
 
-        if (_animator) {
-            if (_animator->ProcessBindPose()) {
-                // Compute local (hierarchical) transformations for this model.
-                _animator->ComputeLocalBoneTransformations(dt);
+        if (_animator && _animator->ProcessBindPose()) {
+            // Compute local (hierarchical) transformations for this model.
+            _animator->ComputeLocalBoneTransformations(dt);
 
-                // IK...
+            // IK...
+            if (_animator->Initialized()) {
                 _animator->IK(_transform.GetMatrix());
-
-                // Blending...
-
-                // Compute final transformations - ready to send to GPU.
-                _animator->ComputeFinalBoneTransformations();
-                _animator->ShiftBones();
             }
+
+            // Blending...
+
+            // Compute final transformations - ready to send to GPU.
+            _animator->ComputeFinalBoneTransformations();
+            _animator->ShiftBones();
         }
 
         if (pather_ && pather_->GetPath().IsValid()) {
-            pather_->Update(dt);
+            if (_animator->Initialized()) {
+                pather_->Update(dt);
+            }
 
             // Apply values to transform.
             _transform.SetPosition(pather_->GetCurrentPosition());

@@ -62,7 +62,7 @@ namespace Sandbox {
 					break;
 			}
 
-			distance_ = std::fmod(distance_, arcLength);
+			distance_ = std::clamp(distance_, 0.0f, arcLength - 0.025f);
 
 			// Interpolating parameter at the end of the path will always be 1.
 			u_ = path_.GetInterpolationParameter(distance_);
@@ -197,7 +197,11 @@ namespace Sandbox {
 		distance_ = 0.0f;
 	}
 
-	std::string ToString(VelocityTimeFunction function) {
+    void Pather::Reset() {
+        distance_ = 0;
+    }
+
+    std::string ToString(VelocityTimeFunction function) {
 		switch (function) {
 		case VelocityTimeFunction::CONSTANT:
 			return "Constant";

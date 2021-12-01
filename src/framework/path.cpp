@@ -291,10 +291,10 @@ namespace Sandbox {
 		}
 
 		// Normalize.
-		float arcLength = arcLengthTable_.back().y;
+		unnormalized = arcLengthTable_.back().y;
 		for (int i = 0; i < numCurvePoints; ++i) {
 			arcLengthTable_[i].x /= (float)(numControlPoints - 1);
-			arcLengthTable_[i].y /= arcLength;
+			arcLengthTable_[i].y /= unnormalized;
 		}
 	}
 
@@ -370,6 +370,10 @@ namespace Sandbox {
 		arcLengthTable_.clear();
 		isDirty_ = true;
 	}
+
+    float Path::GetGlobalArcLength() const {
+        return unnormalized;
+    }
 
 }
 

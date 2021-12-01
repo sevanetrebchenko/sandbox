@@ -54,7 +54,7 @@ namespace Sandbox {
         _modelManager.Update(dt);
 
         static float accumulator = 0.0f;
-        accumulator += dt;
+        accumulator += 2.0f * dt;
 
         // Update target sphere position.
         Model* walkingMan = _modelManager.GetNamedModel("walking man");
@@ -68,7 +68,7 @@ namespace Sandbox {
                     sphere->GetTransform().SetPosition(animator->GetIKTargetPosition());
 
                     glm::vec3 pos = sphere->GetTransform().GetPosition();
-//                    sphere->GetTransform().SetPosition(glm::vec3(pos.x, 3.0f * std::sin(accumulator), pos.z));
+                    sphere->GetTransform().SetPosition(glm::vec3(pos.x, 0.05f, pos.z));
 
                     animator->SetIKTargetPosition(sphere->GetTransform().GetPosition());
                 }
@@ -336,6 +336,7 @@ namespace Sandbox {
             sphere->AddMaterial(material);
 
             sphere->GetTransform().SetScale(glm::vec3(0.2f));
+            sphere->GetTransform().SetPosition(glm::vec3(15.0f));
         }
     }
 
@@ -429,21 +430,10 @@ namespace Sandbox {
         glm::vec3 end = glm::vec3(parentTransform * glm::vec4(finalTransformations[root] * bone._modelToBoneVQS.GetTranslation(), 1.0f));
         glm::vec3 direction = start - end;
 
-        // Don't render the base root node.
-        bool isBoneBaseRoot = false;
-        for (int currentID : skeleton->_roots) {
-            if (root == currentID) {
-                isBoneBaseRoot = true;
-                break;
-            }
-        }
-
         // Render bone.
-        if (!isBoneBaseRoot) {
-            dd::sphere(static_cast<const float*>(&end[0]), color, 0.03f, 0, false);
-            dd::cone(static_cast<const float *>(&end[0]), static_cast<const float *>(&direction[0]), color,
-                     0.025f, 0.0f, 0, false);
-        }
+        dd::sphere(static_cast<const float*>(&end[0]), color, 0.03f, 0, false);
+        dd::cone(static_cast<const float *>(&end[0]), static_cast<const float *>(&direction[0]), color,
+                 0.025f, 0.0f, 0, false);
 
         if (bone.hovered) {
             color = dd::colors::LimeGreen;

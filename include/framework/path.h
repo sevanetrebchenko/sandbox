@@ -26,6 +26,7 @@ namespace Sandbox {
             // Value should be passed in the range [0.0, 1.0].
             // Returns arc length approximation up until this point.
             [[nodiscard]] float GetArcLength(float u) const;
+            [[nodiscard]] float GetGlobalArcLength() const;
 
             // u = G^-1(s)
             // Returns normalized interpolation parameter based on path arc length s.
@@ -58,6 +59,7 @@ namespace Sandbox {
             int maxNumPoints_;
             std::vector<glm::dvec2> curveApproximation_;
             std::vector<glm::vec2> arcLengthTable_; // Pairing: (value of t at this point of the curve, arc length)
+            float unnormalized;
 
             bool isDirty_;
     };

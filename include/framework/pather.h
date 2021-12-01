@@ -55,6 +55,8 @@ namespace Sandbox {
             [[nodiscard]] float GetT1() const;
             [[nodiscard]] float GetT2() const;
 
+            void Reset();
+
         private:
             Path path_;
             VelocityTimeFunction velocityFunction_;
