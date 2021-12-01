@@ -31,7 +31,7 @@ namespace Sandbox {
                     DrawModelMeshImgui(model);
                     DrawModelSkeletonImGui(model);
                     DrawModelAnimatorImGui(model);
-                    DrawModelPatherImGui(model);
+//                    DrawModelPatherImGui(model);
 
                     ImGui::TreePop();
                 }
@@ -126,6 +126,13 @@ namespace Sandbox {
             return;
         }
 
+        Pather* pather = animatedModel->GetPather();
+        if (!pather) {
+        	return;
+        }
+
+        Path& path = pather->GetPath();
+
         if (ImGui::TreeNode("Animator")) {
             // Animation name.
             ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
@@ -206,32 +213,54 @@ namespace Sandbox {
             }
 
             // IK Section.
+            static glm::dvec2 point = glm::dvec2(15.0f);
 
             if (ImPlot::BeginPlot("##targetPosition", ImVec2(-1, 0), ImPlotFlags_CanvasOnly)) {
-                // Axes.
-                ImPlot::SetupAxesLimits(-20, 20, -20, 20);
-                ImPlot::SetupAxis(ImAxis_Y1, "Z", ImPlotAxisFlags_Invert | ImPlotAxisFlags_Lock);
-                ImPlot::SetupAxis(ImAxis_X1, "X", ImPlotAxisFlags_None | ImPlotAxisFlags_Lock);
+            	// Axes.
+            	ImPlot::SetupAxesLimits(-20, 20, -20, 20);
+            	ImPlot::SetupAxis(ImAxis_Y1, "Z", ImPlotAxisFlags_Invert | ImPlotAxisFlags_Lock);
+            	ImPlot::SetupAxis(ImAxis_X1, "X", ImPlotAxisFlags_None | ImPlotAxisFlags_Lock);
 
-                const glm::vec3& targetPosition = animator->GetIKTargetPosition();
-                glm::dvec2 point = glm::dvec2(targetPosition.x, targetPosition.z);
-                if (ImPlot::DragPoint(0, &point.x, &point.y, ImVec4(1.0f, 1.0f, 1.0f, 1.0f))) {
+            	glm::dvec2 origin = glm::dvec2(0.0f);
+            	ImPlot::DragPoint(0, &origin.x, &origin.y, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-                    // Clamp point position to grid.
-                    point = glm::clamp(point, glm::dvec2(-20.0), glm::dvec2(20.0));
+            	const glm::vec3& targetPosition = animator->GetIKTargetPosition();
+            	if (ImPlot::DragPoint(1, &point.x, &point.y, ImVec4(1.0f, 1.0f, 1.0f, 1.0f))) {
+            		// Clamp point position to grid.
+            		point = glm::clamp(point, glm::dvec2(-20.0), glm::dvec2(20.0));
+            	}
 
+            	// Draw path.
+            	if (path.IsValid()) {
+            		const std::vector<glm::dvec2>& curve = path.GetCurveApproximation();
 
-                    animator->SetIKTargetPosition(  glm::vec3(point.x, targetPosition.y, point.y));
-                }
+            		std::vector<double> curveXCoordinates;
+            		std::vector<double> curveYCoordinates;
 
-                ImPlot::EndPlot();
+            		for (const glm::dvec2& p : curve) {
+            			curveXCoordinates.push_back(p.x);
+            			curveYCoordinates.push_back(p.y);
+            		}
+
+            		ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1, 1, 1, 1));
+            		ImPlot::PlotLine("Path", curveXCoordinates.data(), curveYCoordinates.data(), curve.size());
+            		ImPlot::PopStyleColor();
+            	}
+
+            	ImPlot::EndPlot();
             }
 
-            // Height slider for target position.
             glm::vec3 targetPosition = animator->GetIKTargetPosition();
-            ImGui::Text("Target Position Height: ");
-            if (ImGui::DragFloat("##height", &targetPosition.y, 0.1f, 0.0f, 10.0f)) {
-                animator->SetIKTargetPosition(targetPosition);
+
+            if (ImGui::Button("Recalculate")) {
+            	animator->SetIKTargetPosition(  glm::vec3(point.x, targetPosition.y, point.y));
+
+            	path.Clear();
+
+            	path.AddControlPoint(glm::dvec2(0.0f, 0.0f));
+            	path.AddControlPoint(point);
+
+            	path.Recompute();
             }
 
             ImGui::TreePop();

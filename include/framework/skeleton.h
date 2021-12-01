@@ -52,26 +52,26 @@ namespace Sandbox {
                     ImGui::TreePop();
                 }
 
-                ImGui::PopStyleColor();
-                    if (bone.selected) {
-                        ImGui::Text("Currently Selected!");
-                    }
-                    else {
-                        if (ImGui::Button(std::string("Select##" + std::to_string(nodeIndex)).c_str())) {
-                            // Clear all other bones from being selected.
-                            ClearSelected();
-
-                            bone.selected = true;
-                        }
-
-                        if (ImGui::IsItemHovered()) {
-                            bone.hovered = true;
-                        }
-                        else {
-                            bone.hovered = false;
-                        }
-                    }
-                ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
+//                ImGui::PopStyleColor();
+//                    if (bone.selected) {
+//                        ImGui::Text("Currently Selected!");
+//                    }
+//                    else {
+//                        if (ImGui::Button(std::string("Select##" + std::to_string(nodeIndex)).c_str())) {
+//                            // Clear all other bones from being selected.
+//                            ClearSelected();
+//
+//                            bone.selected = true;
+//                        }
+//
+//                        if (ImGui::IsItemHovered()) {
+//                            bone.hovered = true;
+//                        }
+//                        else {
+//                            bone.hovered = false;
+//                        }
+//                    }
+//                ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
             }
 
             void ClearSelected() {

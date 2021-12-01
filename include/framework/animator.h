@@ -27,6 +27,8 @@ namespace Sandbox {
                 }
             }
 
+            bool CloseEnough(const glm::vec3& targetPosition);
+
             void SetTarget(Skeleton* skeleton);
             void AddAnimation(Animation* animation);
 

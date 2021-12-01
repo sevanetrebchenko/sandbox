@@ -53,6 +53,9 @@ namespace Sandbox {
 
         _modelManager.Update(dt);
 
+        static float accumulator = 0.0f;
+        accumulator += dt;
+
         // Update target sphere position.
         Model* walkingMan = _modelManager.GetNamedModel("walking man");
         if (walkingMan) {
@@ -63,10 +66,14 @@ namespace Sandbox {
 
                 if (animator && sphere) {
                     sphere->GetTransform().SetPosition(animator->GetIKTargetPosition());
+
+                    glm::vec3 pos = sphere->GetTransform().GetPosition();
+//                    sphere->GetTransform().SetPosition(glm::vec3(pos.x, 3.0f * std::sin(accumulator), pos.z));
+
+                    animator->SetIKTargetPosition(sphere->GetTransform().GetPosition());
                 }
             }
         }
-
     }
 
     void SceneProject3::OnPreRender() {
@@ -490,12 +497,6 @@ namespace Sandbox {
 
                 dd::line(lineStart, lineEnd, white);
             }
-
-            // Draw sphere for POI.
-            glm::vec3 poi = pather->GetCurrentPointOfInterest();
-
-            ddVec3 point{static_cast<float>(poi.x), height, static_cast<float>(poi.z)};
-            dd::sphere(point, green, 0.1f);
         }
     }
 

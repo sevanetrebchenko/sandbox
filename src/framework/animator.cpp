@@ -10,7 +10,7 @@ namespace Sandbox {
                            _selectedAnimation(nullptr),
                            _keyInterpolationMethod(KeyInterpolationMethod::DEFAULT),
                            _quaternionInterpolationMethod(QuaternionInterpolationMethod::SLERP),
-                           endEffectorIndex_(-1),
+                           endEffectorIndex_(16),
                            targetPosition_(glm::vec3(0.0f)),
                            _currentTime(0.0f),
                            _playbackSpeed(1.0f),
@@ -22,10 +22,12 @@ namespace Sandbox {
     Animator::~Animator() = default;
 
     void Animator::SetTarget(Skeleton *skeleton) {
-        _target = skeleton;
+    	_target = skeleton;
 
         std::size_t numBones = skeleton->_bones.size();
         boneVQSTransformations_.resize(numBones);
+
+        ComputeIKChain();
     }
 
     void Animator::AddAnimation(Animation *animation) {
@@ -527,5 +529,9 @@ namespace Sandbox {
             joints_[i] = joints_[i + 1] + direction * distances_[i];
         }
     }
+
+	bool Animator::CloseEnough(const glm::vec3& targetPosition) {
+
+	}
 
 }
