@@ -337,7 +337,7 @@ namespace Sandbox {
 
         glm::vec3 goalPosition = modelInverse * glm::vec4(targetPosition_, 1.0f);
 
-//        // Place goal position within reach of the IK chain.
+        // Place goal position within reach of the IK chain.
 //        if (glm::distance(chainOrigin, targetPosition_) > chainLength) {
 //            glm::vec3 direction = glm::normalize(targetPosition_ - chainOrigin);
 //            goalPosition = chainOrigin + direction * chainLength;
@@ -420,10 +420,10 @@ namespace Sandbox {
         for (unsigned int i = 0; i < numIterations; ++i) {
             endEffectorPosition = joints_[0];
 
-//            if (glm::length(goalPosition - endEffectorPosition) < epsilon) {
-//                WorldToIKChain();
-//                return;
-//            }
+            if (glm::length(goalPosition - endEffectorPosition) < epsilon) {
+                WorldToIKChain();
+                return;
+            }
 
             IterateBackwards(goalPosition);
             IterateForwards(chainOrigin);
@@ -546,6 +546,5 @@ namespace Sandbox {
     glm::vec3 Animator::GetEndEffectorPosition(const glm::mat4& modelMatrix) const {
         return modelMatrix * glm::vec4(joints_[0], 1.0f);
     }
-
 
 }

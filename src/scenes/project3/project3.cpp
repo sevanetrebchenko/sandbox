@@ -68,7 +68,7 @@ namespace Sandbox {
                     sphere->GetTransform().SetPosition(animator->GetIKTargetPosition());
 
                     glm::vec3 pos = sphere->GetTransform().GetPosition();
-                    sphere->GetTransform().SetPosition(glm::vec3(pos.x, 3.0f + 1.5f * std::sin(accumulator), pos.z));
+                    sphere->GetTransform().SetPosition(glm::vec3(pos.x, 2.5f + 1.5f * std::sin(accumulator), pos.z));
 
                     animator->SetIKTargetPosition(sphere->GetTransform().GetPosition());
                 }
@@ -431,7 +431,7 @@ namespace Sandbox {
         glm::vec3 direction = start - end;
 
         // Render bone.
-        dd::sphere(static_cast<const float*>(&end[0]), color, 0.03f, 0, false);
+        dd::point(static_cast<const float*>(&end[0]), color, 15.0f, 0, false);
         dd::cone(static_cast<const float *>(&end[0]), static_cast<const float *>(&direction[0]), color,
                  0.025f, 0.0f, 0, false);
 
@@ -452,7 +452,7 @@ namespace Sandbox {
         }
         else {
             // Render leaf node.
-            dd::sphere(static_cast<const float*>(&end[0]), color, 0.03f, 0, false);
+            dd::point(static_cast<const float*>(&end[0]), color, 15.0f, 0, false);
         }
     }
 

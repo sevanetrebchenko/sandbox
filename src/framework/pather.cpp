@@ -62,7 +62,10 @@ namespace Sandbox {
 					break;
 			}
 
-			distance_ = std::clamp(distance_, 0.0f, arcLength - (0.8f / path_.GetGlobalArcLength()));
+			if (distance_ > arcLength - (0.5f / path_.GetGlobalArcLength())) {
+
+				distance_ = std::clamp(distance_, 0.0f, arcLength - (0.5f / path_.GetGlobalArcLength()));
+			}
 
 			// Interpolating parameter at the end of the path will always be 1.
 			u_ = path_.GetInterpolationParameter(distance_);

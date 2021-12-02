@@ -33,54 +33,43 @@ namespace Sandbox {
 
     template<typename T>
     void ShaderUniform::TrySetData(const T &data) {
-        try {
-            std::get<T>(_uniformData); // If this line passes, data in underlying variant is of the correct type.
+        if (const T* type = std::get_if<T>(&_uniformData)) {
             _uniformData = data;
-        }
-        catch (std::bad_variant_access& accessException) {
-            // Since constructor ensures data has been set before this point, this is an error.
-            throw std::runtime_error("Data type of underlying ShaderUniform does not match provided data to ShaderUniform::SetData.");
         }
     }
 
     template<typename T1, typename T2, typename... T3>
     void ShaderUniform::BindHelper(Shader *shaderProgram) const {
-        try {
-            shaderProgram->SetUniform(_uniformName, std::get<T1>(_uniformData));
+        if (const T1* type = std::get_if<T1>(&_uniformData)) {
+            shaderProgram->SetUniform(_uniformName, *type);
         }
-        catch (std::bad_variant_access& accessException) {
+        else {
             BindHelper<T2, T3...>(shaderProgram);
         }
     }
 
     template <typename T>
     void ShaderUniform::BindHelper(Shader* shaderProgram) const {
-        try {
-            shaderProgram->SetUniform(_uniformName, std::get<T>(_uniformData));
-        }
-        catch (std::bad_variant_access& accessException) {
-            throw std::runtime_error("Uniform data type is unsupported.");
+        if (const T* type = std::get_if<T>(&_uniformData)) {
+            shaderProgram->SetUniform(_uniformName, *type);
         }
     }
 
     // bool, int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4
     template<typename T1, typename T2, typename... T3>
     void ShaderUniform::OnImGuiHelper() {
-        try {
-            OnImGuiForType(std::get<T1>(_uniformData));
+        if (const T1* type = std::get_if<T1>(&_uniformData)) {
+            OnImGuiForType<T1>(*type);
         }
-        catch (std::bad_variant_access& accessException) {
+        else {
             OnImGuiHelper<T2, T3...>();
         }
     }
 
     template <typename T>
     void ShaderUniform::OnImGuiHelper() {
-        try {
-            OnImGuiForType(std::get<T>(_uniformData));
-        }
-        catch (std::bad_variant_access& accessException) {
-            // Do nothing.
+        if (const T* type = std::get_if<T>(&_uniformData)) {
+            OnImGuiForType(*type);
         }
     }
 
