@@ -10,7 +10,7 @@ namespace Sandbox {
                            _selectedAnimation(nullptr),
                            _keyInterpolationMethod(KeyInterpolationMethod::DEFAULT),
                            _quaternionInterpolationMethod(QuaternionInterpolationMethod::SLERP),
-                           endEffectorIndex_(16),
+                           endEffectorIndex_(12),
                            targetPosition_(glm::vec3(15.0f)),
                            _currentTime(0.0f),
                            _playbackSpeed(1.0f),

@@ -68,7 +68,7 @@ namespace Sandbox {
                     sphere->GetTransform().SetPosition(animator->GetIKTargetPosition());
 
                     glm::vec3 pos = sphere->GetTransform().GetPosition();
-                    sphere->GetTransform().SetPosition(glm::vec3(pos.x, 0.05f, pos.z));
+                    sphere->GetTransform().SetPosition(glm::vec3(pos.x, 3.0f + 1.5f * std::sin(accumulator), pos.z));
 
                     animator->SetIKTargetPosition(sphere->GetTransform().GetPosition());
                 }
