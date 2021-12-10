@@ -27,8 +27,13 @@ namespace Sandbox {
 
     // Points have a mass of 1.0.
     struct Point {
+        Point();
+        ~Point() = default;
+
         glm::vec3 modelPosition_; // Offset relative to parent (RigidBody).
         glm::vec3 worldPosition_;
+
+        bool isFixed_;
     };
 
     class RigidBody;
@@ -128,16 +133,11 @@ namespace Sandbox {
             [[nodiscard]] const glm::mat3& GetInverseInertiaTensorModel() const;
             [[nodiscard]] const glm::mat3& GetInverseInertiaTensorWorld() const;
 
-            [[nodiscard]] bool IsFixed() const;
-            void SetFixed(bool fixed);
-
             [[nodiscard]] Shape& GetShape();
 
         private:
             State state_;
             Shape shape_;
-
-            bool isFixed_;
     };
 
 }

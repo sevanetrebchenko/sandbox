@@ -51,12 +51,12 @@ namespace Sandbox {
             log.LogError("Shader recompilation failed: %s", err.what());
         }
 
-//        static bool initialized = false;
-//        if (!initialized) {
-//            RigidBody& rb = _modelManager.GetNamedModel("cube")->GetRigidBody();
-//            rb.AddForceAt(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-//            initialized = true;
-//        }
+        static bool initialized = false;
+        if (!initialized) {
+            RigidBody& rb = _modelManager.GetNamedModel("cube")->GetRigidBody();
+            rb.AddForce(glm::vec3(2.0f, 0.0f, 0.0f));
+            initialized = true;
+        }
 
         _modelManager.Update(dt);
     }
@@ -241,7 +241,7 @@ namespace Sandbox {
         // Sphere - small target object.
         Model *sphere = _modelManager.AddModelFromFile("cube", "assets/models/cube2.obj");
 
-        sphere->GetTransform().SetScale(glm::vec3(3.0f));
+        sphere->GetTransform().SetScale(glm::vec3(2.0f));
 
         Material *material = materialLibrary.GetMaterialInstance("Phong");
         material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.08f));

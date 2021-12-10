@@ -19,10 +19,17 @@ namespace Sandbox {
 
     }
 
+    Point::Point() : modelPosition_(0.0f),
+                     worldPosition_(0.0f),
+                     isFixed_(false)
+                     {
+
+    }
+
     Spring::Spring(RigidBody *parent, Point *first, Point *second) : parent_(parent),
                                                                      first_(first),
                                                                      second_(second),
-                                                                     springCoefficient_(1.0f) {
+                                                                     springCoefficient_(0.5f) {
         assert(parent_ && first_ && second_);
         restDistance_ = glm::distance(first_->worldPosition_, second_->worldPosition_);
     }
@@ -39,12 +46,12 @@ namespace Sandbox {
         float magnitude = -springCoefficient_ * d / 2.0f;
         {
             glm::vec3 direction = glm::normalize(first_->worldPosition_ - second_->worldPosition_);
-            parent_->AddForceAt(direction * magnitude, second_->worldPosition_);
+            parent_->AddForceAt(-direction * magnitude, second_->worldPosition_);
         }
 
         {
             glm::vec3 direction = glm::normalize(second_->worldPosition_ - first_->worldPosition_);
-            parent_->AddForceAt(direction * magnitude, first_->worldPosition_);
+            parent_->AddForceAt(-direction * magnitude, first_->worldPosition_);
         }
     }
 
@@ -57,7 +64,7 @@ namespace Sandbox {
     Shape::~Shape() = default;
 
     void Shape::Update() {
-        for (Spring& spring : connections_) {
+        for (Spring &spring : connections_) {
             spring.Constrain();
         }
     }
@@ -70,14 +77,16 @@ namespace Sandbox {
         for (int x = 0; x < dimensions_.x; ++x) {
             for (int y = 0; y < dimensions_.y; ++y) {
                 for (int z = 0; z < dimensions_.z; ++z) {
-                    dd::sphere(static_cast<float*>(&structure_[Index(x, y, z)].worldPosition_.x), dd::colors::Orange, 0.05f, 0.0f, false);
+                    dd::sphere(static_cast<float *>(&structure_[Index(x, y, z)].worldPosition_.x), dd::colors::Orange,
+                               0.05f, 0.0f, false);
                 }
             }
         }
 
         // Draw connections.
-        for (Spring& spring : connections_) {
-            dd::line(static_cast<float*>(&spring.first_->worldPosition_.x), static_cast<float*>(&spring.second_->worldPosition_.x), dd::colors::Orange, 0.0f, false);
+        for (Spring &spring : connections_) {
+            dd::line(static_cast<float *>(&spring.first_->worldPosition_.x),
+                     static_cast<float *>(&spring.second_->worldPosition_.x), dd::colors::Orange, 0.0f, false);
         }
     }
 
@@ -107,6 +116,7 @@ namespace Sandbox {
     }
 
     void Shape::GeneratePointStructure() {
+        // Compute local space.
         for (int x = 0; x < dimensions_.x; ++x) {
             for (int y = 0; y < dimensions_.y; ++y) {
                 for (int z = 0; z < dimensions_.z; ++z) {
@@ -115,6 +125,14 @@ namespace Sandbox {
                 }
             }
         }
+
+        // Compute world space.
+        for (Point& point : structure_) {
+            point.worldPosition_ = parent_->GetOrientation() * point.modelPosition_ + parent_->GetPosition();
+        }
+
+        // Fix points.
+        structure_[0].isFixed_ = true;
     }
 
     void Shape::GenerateConnectingSprings() {
@@ -190,17 +208,13 @@ namespace Sandbox {
 
 
     RigidBody::RigidBody(const glm::vec3 &position, const glm::mat3 &rotation) : state_(),
-                                                                                 shape_(this),
-                                                                                 isFixed_(false) {
+                                                                                 shape_(this)
+                                                                                 {
         SetPosition(position);
         SetOrientation(rotation);
     }
 
     void RigidBody::Update(float dt) {
-        if (IsFixed()) {
-            return;
-        }
-
         PrintVec3("force accumulator", state_.forceAccumulator);
         PrintVec3("torque accumulator", state_.torqueAccumulator);
 
@@ -257,11 +271,13 @@ namespace Sandbox {
         state_.torqueAccumulator = glm::vec3(0.0f);
 
         // Recompute shape internal vertices.
-        for (Point& point : shape_.structure_) {
-            point.worldPosition_ = state_.rotation * point.modelPosition_ + state_.position;
+        for (Point &point : shape_.structure_) {
+            if (!point.isFixed_) {
+                point.worldPosition_ = state_.rotation * point.modelPosition_ + state_.position;
+            }
         }
 
-        // state_.inverseInertiaTensorWorld = state_.rotation * shape_.inverseInertiaTensorModel * glm::transpose(state_.rotation);
+        state_.inverseInertiaTensorWorld = state_.rotation * shape_.inverseInertiaTensorModel * glm::transpose(state_.rotation);
 
         std::cout << "finished frame" << std::endl;
         std::cout << std::endl;
@@ -360,8 +376,7 @@ namespace Sandbox {
 
     void RigidBody::AddForceAt(const glm::vec3 &force, const glm::vec3 &offset) {
         glm::vec3 relativePosition = offset - state_.position;
-        state_.torqueAccumulator += glm::cross(relativePosition,
-                                               force); // Force at a point translates into rotation (torque).
+        state_.torqueAccumulator += glm::cross(relativePosition, force); // Force at a point translates into rotation (torque).
     }
 
     const glm::vec3 &RigidBody::GetTotalTorque() const {
@@ -386,14 +401,6 @@ namespace Sandbox {
 
     const glm::mat3 &RigidBody::GetInverseInertiaTensorWorld() const {
         return state_.inverseInertiaTensorWorld;
-    }
-
-    bool RigidBody::IsFixed() const {
-        return isFixed_;
-    }
-
-    void RigidBody::SetFixed(bool fixed) {
-        isFixed_ = fixed;
     }
 
     Shape &RigidBody::GetShape() {
