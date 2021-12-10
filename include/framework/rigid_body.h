@@ -25,70 +25,6 @@ namespace Sandbox {
         glm::mat3 inverseInertiaTensorWorld;
     };
 
-    // Points have a mass of 1.0.
-    struct Point {
-        Point();
-        ~Point() = default;
-
-        glm::vec3 modelPosition_; // Offset relative to parent (RigidBody).
-        glm::vec3 worldPosition_;
-
-        bool isFixed_;
-    };
-
-    class RigidBody;
-
-    // Connects/Constrains two points.
-    struct Spring {
-        Spring(RigidBody* parent, Point* first, Point* second);
-        ~Spring() = default;
-
-        void Constrain() const;
-
-        // Apply spring forces to the parent the spring belongs to.
-        RigidBody* parent_;
-
-        // Spring has no ownership over points, just references them.
-        Point* first_;
-        Point* second_;
-
-        float restDistance_;
-        float springCoefficient_;
-    };
-
-    class Shape {
-        public:
-            Shape(RigidBody* parent);
-            ~Shape();
-
-            void Update();
-            void Render();
-
-            void Preallocate(const glm::vec3& scale);
-
-            // Index into 1-D array helper.
-            [[nodiscard]] const Point& GetPoint(int x, int y, int z) const;
-
-            RigidBody* parent_;
-
-            float mass; // Assumes uniform mass distribution across all points.
-            float inverseMass;
-            glm::mat3 inverseInertiaTensorModel;
-
-            std::vector<Point> structure_;    // Internal points of the shape.
-            std::vector<Spring> connections_; // Connections to keep model rigidity.
-
-        private:
-            void ComputeModelInertiaTensor();
-
-            [[nodiscard]] int Index(int x, int y, int z) const;
-            void GeneratePointStructure();
-            void GenerateConnectingSprings();
-
-            glm::vec3 scale_;
-            glm::ivec3 dimensions_; // Number of Points per axis.
-    };
-
     class RigidBody {
         public:
             RigidBody(const glm::vec3& position = glm::vec3(0.0f), const glm::mat3& rotation = glm::mat3(1.0f));
@@ -133,11 +69,58 @@ namespace Sandbox {
             [[nodiscard]] const glm::mat3& GetInverseInertiaTensorModel() const;
             [[nodiscard]] const glm::mat3& GetInverseInertiaTensorWorld() const;
 
-            [[nodiscard]] Shape& GetShape();
+            [[nodiscard]] bool IsFixed() const;
+            void SetFixed(bool isFixed);
 
         private:
+            float mass; // Assumes uniform mass distribution across all points.
+            float inverseMass;
+            glm::mat3 inverseInertiaTensorModel;
+
+            bool isFixed_;
+
             State state_;
-            Shape shape_;
+    };
+
+    // Connects/Constrains two points.
+    struct Spring {
+        Spring(RigidBody* first, RigidBody* second);
+        ~Spring() = default;
+
+        void Constrain() const;
+
+        // Apply spring forces to the parent the spring belongs to.
+        // Spring has no ownership over rigid bodies, just references them.
+        RigidBody* start_;
+        RigidBody* end_;
+
+        float restDistance_;
+        float springCoefficient_;
+    };
+
+    class RigidBodyCollection {
+        public:
+            RigidBodyCollection();
+            ~RigidBodyCollection();
+
+            void Update(float dt);
+            void Render();
+
+            void Preallocate(const glm::vec3& scale);
+
+            // Index into 1-D array helper.
+            [[nodiscard]] const RigidBody& GetRB(int x, int y, int z) const;
+
+            std::vector<RigidBody> structure_;    // Internal points of the shape.
+            std::vector<Spring> connections_; // Connections to keep model rigidity.
+
+        private:
+            [[nodiscard]] int Index(int x, int y, int z) const;
+            void GeneratePointStructure();
+            void GenerateConnectingSprings();
+
+            glm::vec3 scale_;
+            glm::ivec3 dimensions_; // Number of Points per axis.
     };
 
 }

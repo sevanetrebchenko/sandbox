@@ -3,7 +3,5 @@
 [TRACE] OpenGL Version: 4.6.0 NVIDIA 496.76
 [TRACE] Found existing ImGui layout (data\scenes\project4\physically-based_modeling_imgui.ini).
 [TRACE] Creating new ImGui log in location (data\scenes\project4\physically-based_modeling_log.txt).
-[TRACE] Creating new model: 'cube' from .obj file: assets\models\cube2.obj
-[TRACE] Finished loading model: 'cube'.
 [TRACE] Saving ImGui settings to: data\scenes\project4\physically-based_modeling_imgui.ini
 [TRACE] Saving ImGui log to: data\scenes\project4\physically-based_modeling_log.txt

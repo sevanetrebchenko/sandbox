@@ -7,7 +7,6 @@
 #include <framework/mesh.h>
 #include <framework/shader.h>
 #include <framework/material.h>
-#include <framework/rigid_body.h>
 
 namespace Sandbox {
 
@@ -23,7 +22,6 @@ namespace Sandbox {
             [[nodiscard]] const Mesh* GetMesh() const;
             [[nodiscard]] Transform& GetTransform();
             [[nodiscard]] Material* GetMaterial(const std::string& materialName);
-            [[nodiscard]] RigidBody& GetRigidBody();
             [[nodiscard]] const std::vector<Material*>& GetMaterialsList() const;
 
             void SetMesh(Mesh* mesh);
@@ -34,7 +32,6 @@ namespace Sandbox {
             std::vector<Material*> _materialList;
             Mesh* _mesh;
             Transform _transform;
-            RigidBody rigidBody_;
     };
 
 }

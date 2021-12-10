@@ -51,14 +51,9 @@ namespace Sandbox {
             log.LogError("Shader recompilation failed: %s", err.what());
         }
 
-        static bool initialized = false;
-        if (!initialized) {
-            RigidBody& rb = _modelManager.GetNamedModel("cube")->GetRigidBody();
-            rb.AddForce(glm::vec3(2.0f, 0.0f, 0.0f));
-            initialized = true;
-        }
-
         _modelManager.Update(dt);
+
+        rb_.Update(dt);
     }
 
     void SceneProject4::OnPreRender() {
@@ -115,7 +110,7 @@ namespace Sandbox {
 //
 //        shader->Unbind();
 
-        _modelManager.GetNamedModel("cube")->GetRigidBody().GetShape().Render();
+        rb_.Render();
 
         // Debug drawing.
         glUseProgram(_debugRenderer->linePointProgram);
@@ -236,21 +231,28 @@ namespace Sandbox {
     }
 
     void SceneProject4::ConfigureModels() {
-        MaterialLibrary &materialLibrary = MaterialLibrary::GetInstance();
-
-        // Sphere - small target object.
-        Model *sphere = _modelManager.AddModelFromFile("cube", "assets/models/cube2.obj");
-
-        sphere->GetTransform().SetScale(glm::vec3(2.0f));
-
-        Material *material = materialLibrary.GetMaterialInstance("Phong");
-        material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.08f));
-        material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.3f));
-        material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
-        sphere->AddMaterial(material);
+//        MaterialLibrary &materialLibrary = MaterialLibrary::GetInstance();
+//
+//        // Sphere - small target object.
+//        Model *sphere = _modelManager.AddModelFromFile("cube", "assets/models/cube2.obj");
+//
+//        sphere->GetTransform().SetScale(glm::vec3(2.0f));
+//
+//        Material *material = materialLibrary.GetMaterialInstance("Phong");
+//        material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.08f));
+//        material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.3f));
+//        material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
+//        sphere->AddMaterial(material);
 
         // Configure shape of rigid body internals.
-        sphere->GetRigidBody().GetShape().Preallocate(sphere->GetTransform().GetScale());
+//        rb_.Preallocate(glm::vec3(1.0f));
+        RigidBody anchor { glm::vec3(0.0f, 1.0f, 0.0f) };
+        anchor.SetFixed(true);
+
+        rb_.structure_.emplace_back(anchor);
+        rb_.structure_.emplace_back();
+
+        rb_.connections_.emplace_back(&rb_.structure_[0], &rb_.structure_[1]);
     }
 
     void SceneProject4::ConstructFBO() {

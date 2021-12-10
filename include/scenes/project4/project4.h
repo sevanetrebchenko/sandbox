@@ -7,11 +7,8 @@
 #include <framework/buffer/ubo.h>
 #include <framework/lighting_manager.h>
 
-#include <framework/animation.h>
-#include <framework/animator.h>
+#include <framework/rigid_body.h>
 #include <framework/debug.h>
-#include <framework/animated_model.h>
-#include <framework/path.h>
 
 namespace Sandbox {
 
@@ -43,6 +40,8 @@ namespace Sandbox {
 
             FrameBufferObject _fbo;
             DDRenderInterfaceCoreGL* _debugRenderer;
+
+            RigidBodyCollection rb_;
     };
 
 }
