@@ -9,6 +9,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/scenes/project1/project1.cpp"
         "${PROJECT_SOURCE_DIR}/src/scenes/project2/project2.cpp"
         "${PROJECT_SOURCE_DIR}/src/scenes/project3/project3.cpp"
+        "${PROJECT_SOURCE_DIR}/src/scenes/project4/project4.cpp"
 
         # Buffer
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"
@@ -57,6 +58,7 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/path.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/pather.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/ik.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/rigid_body.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})
