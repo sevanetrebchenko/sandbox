@@ -75,45 +75,45 @@ namespace Sandbox {
         _fbo.DrawBuffers();
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        Shader *shader = shaderLibrary.GetShader("Phong");
-        shader->Bind();
-
-        // Set camera uniforms.
-        shader->SetUniform("cameraTransform", _camera.GetMatrix());
-        shader->SetUniform("cameraPosition", _camera.GetEyePosition());
-        shader->SetUniform("viewTransform", _camera.GetViewMatrix());
-        shader->SetUniform("cameraNearPlane", _camera.GetNearPlaneDistance());
-        shader->SetUniform("cameraFarPlane", _camera.GetFarPlaneDistance());
-
-        for (Model *model : _modelManager.GetModels()) {
-            Transform &transform = model->GetTransform();
-            const Mesh *mesh = model->GetMesh();
-
-            Material* material;
-
-            AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model);
-
-            material = model->GetMaterial("Phong");
-
-            // Pre render stage.
-            if (material) {
-                const glm::mat4 &modelTransform = transform.GetMatrix();
-                shader->SetUniform("modelTransform", modelTransform);
-                shader->SetUniform("normalTransform", glm::inverse(modelTransform));
-
-                // Bind all related uniforms with this shader.
-                material->Bind(shader);
-            }
-
-            // Render stage.
-            mesh->Bind();
-            Backend::Rendering::DrawIndexed(mesh->GetVAO(), mesh->GetRenderingPrimitive());
-            mesh->Unbind();
-
-            // Post render stage.
-        }
-
-        shader->Unbind();
+//        Shader *shader = shaderLibrary.GetShader("Phong");
+//        shader->Bind();
+//
+//        // Set camera uniforms.
+//        shader->SetUniform("cameraTransform", _camera.GetMatrix());
+//        shader->SetUniform("cameraPosition", _camera.GetEyePosition());
+//        shader->SetUniform("viewTransform", _camera.GetViewMatrix());
+//        shader->SetUniform("cameraNearPlane", _camera.GetNearPlaneDistance());
+//        shader->SetUniform("cameraFarPlane", _camera.GetFarPlaneDistance());
+//
+//        for (Model *model : _modelManager.GetModels()) {
+//            Transform &transform = model->GetTransform();
+//            const Mesh *mesh = model->GetMesh();
+//
+//            Material* material;
+//
+//            AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model);
+//
+//            material = model->GetMaterial("Phong");
+//
+//            // Pre render stage.
+//            if (material) {
+//                const glm::mat4 &modelTransform = transform.GetMatrix();
+//                shader->SetUniform("modelTransform", modelTransform);
+//                shader->SetUniform("normalTransform", glm::inverse(modelTransform));
+//
+//                // Bind all related uniforms with this shader.
+//                material->Bind(shader);
+//            }
+//
+//            // Render stage.
+//            mesh->Bind();
+//            Backend::Rendering::DrawIndexed(mesh->GetVAO(), mesh->GetRenderingPrimitive());
+//            mesh->Unbind();
+//
+//            // Post render stage.
+//        }
+//
+//        shader->Unbind();
 
         _modelManager.GetNamedModel("cube")->GetRigidBody().GetShape().Render();
 

@@ -66,12 +66,18 @@ namespace Sandbox {
         glm::vec3 base = parent_->GetPosition();
         glm::vec3 position;
 
+        // Draw masses.
         for (int x = 0; x < dimensions_.x; ++x) {
             for (int y = 0; y < dimensions_.y; ++y) {
                 for (int z = 0; z < dimensions_.z; ++z) {
                     dd::sphere(static_cast<float*>(&structure_[Index(x, y, z)].worldPosition_.x), dd::colors::Orange, 0.05f, 0.0f, false);
                 }
             }
+        }
+
+        // Draw connections.
+        for (Spring& spring : connections_) {
+            dd::line(static_cast<float*>(&spring.first_->worldPosition_.x), static_cast<float*>(&spring.second_->worldPosition_.x), dd::colors::Orange, 0.0f, false);
         }
     }
 
@@ -116,7 +122,51 @@ namespace Sandbox {
             for (int y = 0; y < dimensions_.y - 1; ++y) {
                 for (int z = 0; z < dimensions_.z - 1; ++z) {
 
+                    int index0 = Index(x, y, z);
+                    int index1 = Index(x + 1, y, z);
+                    int index2 = Index(x, y + 1, z);
+                    int index3 = Index(x + 1, y + 1, z);
+                    int index4 = Index(x, y, z + 1);
+                    int index5 = Index(x + 1, y, z + 1);
+                    int index6 = Index(x, y + 1, z + 1);
+                    int index7 = Index(x + 1, y + 1, z + 1);
 
+                    // Generate cube corner connectors.
+                    connections_.emplace_back(parent_, &structure_[index0], &structure_[index1]);
+                    connections_.emplace_back(parent_, &structure_[index0], &structure_[index2]);
+                    connections_.emplace_back(parent_, &structure_[index2], &structure_[index3]);
+                    connections_.emplace_back(parent_, &structure_[index1], &structure_[index3]);
+
+                    connections_.emplace_back(parent_, &structure_[index0], &structure_[index4]);
+                    connections_.emplace_back(parent_, &structure_[index1], &structure_[index5]);
+                    connections_.emplace_back(parent_, &structure_[index2], &structure_[index6]);
+                    connections_.emplace_back(parent_, &structure_[index3], &structure_[index7]);
+
+                    connections_.emplace_back(parent_, &structure_[index4], &structure_[index5]);
+                    connections_.emplace_back(parent_, &structure_[index4], &structure_[index6]);
+                    connections_.emplace_back(parent_, &structure_[index6], &structure_[index7]);
+                    connections_.emplace_back(parent_, &structure_[index5], &structure_[index7]);
+
+                    // Generate cube face diagonal connectors.
+                    connections_.emplace_back(parent_, &structure_[index0], &structure_[index5]);
+                    connections_.emplace_back(parent_, &structure_[index1], &structure_[index4]);
+
+                    connections_.emplace_back(parent_, &structure_[index1], &structure_[index7]);
+                    connections_.emplace_back(parent_, &structure_[index3], &structure_[index5]);
+
+                    connections_.emplace_back(parent_, &structure_[index0], &structure_[index6]);
+                    connections_.emplace_back(parent_, &structure_[index2], &structure_[index4]);
+
+                    connections_.emplace_back(parent_, &structure_[index0], &structure_[index3]);
+                    connections_.emplace_back(parent_, &structure_[index1], &structure_[index2]);
+
+                    connections_.emplace_back(parent_, &structure_[index4], &structure_[index7]);
+                    connections_.emplace_back(parent_, &structure_[index5], &structure_[index6]);
+
+                    connections_.emplace_back(parent_, &structure_[index3], &structure_[index6]);
+                    connections_.emplace_back(parent_, &structure_[index2], &structure_[index7]);
+
+                    // Generate cube internal diagonal connectors.
 
                 }
             }
@@ -217,7 +267,7 @@ namespace Sandbox {
         std::cout << std::endl;
 
         // Update
-//        shape_.Update();
+        shape_.Update();
     }
 
     const glm::vec3 &RigidBody::GetPosition() const {
