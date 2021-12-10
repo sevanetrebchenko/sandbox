@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <variant>
 #include <stack>
+#include <cassert>
 
 // Third-party
 #include <glm/glm.hpp>

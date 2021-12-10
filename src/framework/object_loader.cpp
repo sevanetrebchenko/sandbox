@@ -135,7 +135,7 @@ namespace Sandbox {
 
         // Scale the mesh to range [-1 1] on all axes.
         float maxDimension = std::max(boundingBoxDimensions.x, std::max(boundingBoxDimensions.y, boundingBoxDimensions.z));
-        glm::mat4 uniformScale = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / maxDimension));
+        glm::mat4 uniformScale = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / maxDimension)) / 2.0f;
 
         for (glm::vec3& vertex : vertices) {
             vertex = uniformScale * glm::vec4(vertex, 1.0f);

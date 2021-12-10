@@ -3,7 +3,7 @@
 
 namespace Sandbox {
 
-    void PrintVec3(std::string preface, const glm::vec3& vector) {
+    void PrintVec3(const std::string &preface, const glm::vec3 &vector) {
         std::cout << preface << ": (" << vector.x << ", " << vector.y << ", " << vector.z << ")" << std::endl;
     }
 
@@ -19,13 +19,118 @@ namespace Sandbox {
 
     }
 
-    Shape::Shape() : mass(8.0f),
-                     inverseMass(1.0f / 8.0f), // Assume mass of 1.0 per vertex.
-                     inverseInertiaTensorModel(1.0f) {
-        // Assume cube of length 1 unit per side.
-        float x = 1.0f;
-        float y = 1.0f;
-        float z = 1.0f;
+    Spring::Spring(RigidBody *parent, Point *first, Point *second) : parent_(parent),
+                                                                     first_(first),
+                                                                     second_(second),
+                                                                     springCoefficient_(1.0f) {
+        assert(parent_ && first_ && second_);
+        restDistance_ = glm::distance(first_->worldPosition_, second_->worldPosition_);
+    }
+
+    void Spring::Constrain() const {
+        assert(parent_ && first_ && second_);
+
+        // Get updated distance to constrain by.
+        // Positive force if greater than rest distance.
+        float d = restDistance_ - glm::distance(first_->worldPosition_, second_->worldPosition_);
+
+        // F = -k * d.
+        // Apply half of pulling force to both vertices.
+        float magnitude = -springCoefficient_ * d / 2.0f;
+        {
+            glm::vec3 direction = glm::normalize(first_->worldPosition_ - second_->worldPosition_);
+            parent_->AddForceAt(direction * magnitude, second_->worldPosition_);
+        }
+
+        {
+            glm::vec3 direction = glm::normalize(second_->worldPosition_ - first_->worldPosition_);
+            parent_->AddForceAt(direction * magnitude, first_->worldPosition_);
+        }
+    }
+
+    Shape::Shape(RigidBody *parent) : parent_(parent),
+                                      mass(-1.0f),
+                                      inverseMass(-1.0f),
+                                      inverseInertiaTensorModel(0.0f) {
+    }
+
+    Shape::~Shape() = default;
+
+    void Shape::Update() {
+        for (Spring& spring : connections_) {
+            spring.Constrain();
+        }
+    }
+
+    void Shape::Render() {
+        glm::vec3 base = parent_->GetPosition();
+        glm::vec3 position;
+
+        for (int x = 0; x < dimensions_.x; ++x) {
+            for (int y = 0; y < dimensions_.y; ++y) {
+                for (int z = 0; z < dimensions_.z; ++z) {
+                    dd::sphere(static_cast<float*>(&structure_[Index(x, y, z)].worldPosition_.x), dd::colors::Orange, 0.05f, 0.0f, false);
+                }
+            }
+        }
+    }
+
+    void Shape::Preallocate(const glm::vec3 &scale) {
+        assert(scale.x > 0 && scale.y > 0 && scale.z > 0);
+        scale_ = scale;
+        dimensions_ = scale + glm::vec3(1.0f);
+
+        int totalNumPoints = dimensions_[0] * dimensions_[1] * dimensions_[2];
+        structure_.resize(totalNumPoints);
+
+        // Generate points.
+        GeneratePointStructure();
+
+        // Generate connections.
+        GenerateConnectingSprings();
+
+        mass = static_cast<float>(totalNumPoints);
+        inverseMass = 1.0f / mass;
+        ComputeModelInertiaTensor();
+    }
+
+    const Point &Shape::GetPoint(int x, int y, int z) const {
+        int index = Index(x, y, z);
+        assert(index >= 0 && index < structure_.size()); // Validate.
+        return structure_[Index(x, y, z)];
+    }
+
+    void Shape::GeneratePointStructure() {
+        for (int x = 0; x < dimensions_.x; ++x) {
+            for (int y = 0; y < dimensions_.y; ++y) {
+                for (int z = 0; z < dimensions_.z; ++z) {
+                    glm::vec3 pos = glm::vec3(x, y, z) - scale_ / 2.0f;
+                    structure_[Index(x, y, z)].modelPosition_ = pos;
+                }
+            }
+        }
+    }
+
+    void Shape::GenerateConnectingSprings() {
+        for (int x = 0; x < dimensions_.x - 1; ++x) {
+            for (int y = 0; y < dimensions_.y - 1; ++y) {
+                for (int z = 0; z < dimensions_.z - 1; ++z) {
+
+
+
+                }
+            }
+        }
+    }
+
+    int Shape::Index(int x, int y, int z) const {
+        return (z * dimensions_.z * dimensions_.y) + (y * dimensions_.x) + x;
+    }
+
+    void Shape::ComputeModelInertiaTensor() {
+        float x = (float) dimensions_.x;
+        float y = (float) dimensions_.y;
+        float z = (float) dimensions_.z;
 
         // Construct the inertia tensor (in object space).
         inverseInertiaTensorModel[0][0] = mass * (y * y) + (z * z);
@@ -33,8 +138,9 @@ namespace Sandbox {
         inverseInertiaTensorModel[2][2] = mass * (x * x) + (y * y);
     }
 
+
     RigidBody::RigidBody(const glm::vec3 &position, const glm::mat3 &rotation) : state_(),
-                                                                                 shape_(),
+                                                                                 shape_(this),
                                                                                  isFixed_(false) {
         SetPosition(position);
         SetOrientation(rotation);
@@ -100,8 +206,18 @@ namespace Sandbox {
         state_.forceAccumulator = glm::vec3(0.0f);
         state_.torqueAccumulator = glm::vec3(0.0f);
 
+        // Recompute shape internal vertices.
+        for (Point& point : shape_.structure_) {
+            point.worldPosition_ = state_.rotation * point.modelPosition_ + state_.position;
+        }
+
+        // state_.inverseInertiaTensorWorld = state_.rotation * shape_.inverseInertiaTensorModel * glm::transpose(state_.rotation);
+
         std::cout << "finished frame" << std::endl;
         std::cout << std::endl;
+
+        // Update
+//        shape_.Update();
     }
 
     const glm::vec3 &RigidBody::GetPosition() const {
@@ -228,6 +344,10 @@ namespace Sandbox {
 
     void RigidBody::SetFixed(bool fixed) {
         isFixed_ = fixed;
+    }
+
+    Shape &RigidBody::GetShape() {
+        return shape_;
     }
 
 }

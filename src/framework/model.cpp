@@ -17,10 +17,11 @@ namespace Sandbox {
 
     void Model::Update(float dt) {
         // Update rigid body properties.
-//        rigidBody_.SetPosition(_transform.GetPosition());
-//        rigidBody_.SetOrientation(toMat4(_transform.GetRotation()));
+        rigidBody_.SetPosition(_transform.GetPosition());
+        rigidBody_.SetOrientation(toMat4(_transform.GetRotation()));
         rigidBody_.Update(dt);
 
+        // Apply rigidbody physics back to transform.
         _transform.SetPosition(rigidBody_.GetPosition());
         _transform.SetRotation(rigidBody_.GetOrientation());
         _transform.Clean();
