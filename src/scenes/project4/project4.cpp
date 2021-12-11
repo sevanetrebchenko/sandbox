@@ -35,8 +35,8 @@ namespace Sandbox {
         dd::initialize(_debugRenderer);
 
         // Initialize camera position.
-        _camera.SetEyePosition(glm::vec3(2.5f));
-        _camera.SetLookAtDirection(glm::normalize(glm::vec3(-2.5f, -1.0f, -2.5f)));
+        _camera.SetEyePosition(glm::vec3(-4.0f, 2.0f, 4.0f));
+        _camera.SetLookAtDirection(glm::normalize(glm::vec3(2.5f, -1.5f, -2.5f)));
     }
 
     void SceneProject4::OnUpdate(float dt) {
@@ -133,8 +133,6 @@ namespace Sandbox {
 
         // ImGui log output.
         log.OnImGui();
-
-        _modelManager.OnImGui();
 
         rb_.OnImGui();
     }

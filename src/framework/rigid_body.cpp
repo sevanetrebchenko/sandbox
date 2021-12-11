@@ -441,13 +441,13 @@ namespace Sandbox {
     		ImGui::Checkbox("##gravity", &useGravity_);
 
     		// Anchor positions.
-    		ImGui::Text("Anchor 1 Position: ");
+    		ImGui::Text("Bottom Anchor Position: ");
     		glm::vec3 anchor1Position = structure_[0].GetPosition();
     		if (ImGui::DragFloat3("##anchor1", &anchor1Position.x, 0.05, -10.0f, 10.0f)) {
     			structure_[0].SetPosition(anchor1Position);
     		}
 
-    		ImGui::Text("Anchor 2 Position: ");
+    		ImGui::Text("Top Anchor Position: ");
     		glm::vec3 anchor2Position = structure_[structure_.size() - 1].GetPosition();
     		if (ImGui::DragFloat3("##anchor2", &anchor2Position.x, 0.05, -10.0f, 10.0f)) {
     			structure_[structure_.size() - 1].SetPosition(anchor2Position);
