@@ -4,6 +4,24 @@
 
 namespace Sandbox {
 
+	// Vector tilde operator.
+	glm::mat3 operator~(const glm::vec3& input) {
+		glm::mat3 rotation(0.0f);
+		rotation[0][0] = 0.0f;
+		rotation[0][1] = input.z;
+		rotation[0][2] = -input.y;
+
+		rotation[1][0] = -input.z;
+		rotation[1][1] = 0.0f;
+		rotation[1][2] = input.x;
+
+		rotation[2][0] = input.y;
+		rotation[2][1] = -input.x;
+		rotation[2][2] = 0.0f;
+
+		return rotation;
+	}
+
     State::State() : position(0.0f),
                      rotation(1.0f),
                      linearVelocity(0.0f),
@@ -46,11 +64,28 @@ namespace Sandbox {
         }
     }
 
-    RigidBody::RigidBody(const glm::vec3 &position, const glm::mat3 &rotation) : mass(1.0f),
+    // Assumes rigid body is a uniform cube with mass 1.0 at each of the cube's corners.
+    RigidBody::RigidBody(const glm::vec3 &position, const glm::mat3 &rotation) : mass(8.0f),
                                                                                  inverseMass(1.0f / mass),
                                                                                  inverseInertiaTensorModel(1.0f),
                                                                                  isFixed_(false),
                                                                                  state_() {
+    	// Assume cube of length 1 unit per side.
+    	float x = 1.0f;
+    	float y = 1.0f;
+    	float z = 1.0f;
+
+		// Construct the inertia tensor (in object space).
+    	// Inertia tensor of a cube from: https://hepweb.ucsd.edu/ph110b/110b_notes/node26.html
+		inverseInertiaTensorModel *= mass * (x * y * z) / 6.0f;
+		inverseInertiaTensorModel = glm::inverse(inverseInertiaTensorModel);
+
+		// Inertia tensor for a stick (in the stick-spring-model).
+//		inverseInertiaTensorModel[0][0] = mass * (y * y) + (z * z);
+//		inverseInertiaTensorModel[1][1] = mass * (x * x) + (z * z);
+//		inverseInertiaTensorModel[2][2] = mass * (x * x) + (y * y);
+//		inverseInertiaTensorModel = glm::inverse(inverseInertiaTensorModel);
+
         SetPosition(position);
         SetOrientation(rotation);
     }
@@ -92,21 +127,8 @@ namespace Sandbox {
 		state_.angularVelocity = (angularVelocity1 + angularVelocity2) / 2.0f * dt;
 
         // Update rotation.
-        glm::mat3 rotation;
-
         // Construct rotation matrix from angular velocity using the tilde operator.
-        rotation[0][0] = 0.0f;
-        rotation[0][1] = state_.angularVelocity.z;
-        rotation[0][2] = -state_.angularVelocity.y;
-
-        rotation[1][0] = -state_.angularVelocity.z;
-        rotation[1][1] = 0.0f;
-        rotation[1][2] = state_.angularVelocity.x;
-
-        rotation[2][0] = state_.angularVelocity.y;
-        rotation[2][1] = -state_.angularVelocity.x;
-        rotation[2][2] = 0.0f;
-
+        glm::mat3 rotation = ~state_.angularVelocity;
         state_.rotation += rotation * state_.rotation * dt;
 
         // Orthonormalize orientation matrix.
