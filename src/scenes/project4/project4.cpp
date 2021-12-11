@@ -70,14 +70,15 @@ namespace Sandbox {
         _fbo.DrawBuffers();
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+        Backend::Core::EnableFlag(GL_LINE_SMOOTH);
+        glLineWidth(2.0f);
+
         rb_.Render();
 
         // Debug drawing.
         glUseProgram(_debugRenderer->linePointProgram);
         _debugRenderer->mvpMatrix = _camera.GetMatrix();
-
-        Backend::Core::EnableFlag(GL_LINE_SMOOTH);
-        glLineWidth(2.0f);
 
         // Grid.
         ddVec3 gray = {0.5f, 0.5f, 0.5f};

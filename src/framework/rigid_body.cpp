@@ -70,8 +70,26 @@ namespace Sandbox {
         state_.angularVelocity = state_.inverseInertiaTensorWorld * state_.angularMomentum;
 
         // Integration 2: Velocity into position.
-        // Update position.
-        state_.position += state_.linearVelocity * dt;
+
+        // Euler.
+        // state_.position += state_.linearVelocity * dt;
+
+        // RK2.
+		glm::vec3 position1 = state_.position;
+		glm::vec3 linearVelocity1 = state_.linearVelocity;
+		glm::vec3 angularVelocity1 = state_.angularVelocity;
+
+		// F = ma, therefore a = F / m
+		glm::vec3 linearAcceleration1 = state_.forceAccumulator * inverseMass;
+		glm::vec3 linearVelocity2 = linearVelocity1 + linearAcceleration1 * dt;
+
+		glm::vec3 angularAcceleration1 = state_.inverseInertiaTensorWorld * state_.torqueAccumulator;
+		glm::vec3 angularVelocity2 = angularVelocity1 + angularAcceleration1 * dt;
+
+		state_.position += (linearVelocity1 + linearVelocity2) / 2.0f * dt;
+
+		// Update angular rotation, rotation gets calculated below.
+		state_.angularVelocity = (angularVelocity1 + angularVelocity2) / 2.0f * dt;
 
         // Update rotation.
         glm::mat3 rotation;
@@ -231,7 +249,7 @@ namespace Sandbox {
         isFixed_ = isFixed;
     }
 
-	RigidBodyCollection::RigidBodyCollection() {
+	RigidBodyCollection::RigidBodyCollection() : useGravity_(false) {
     }
 
     RigidBodyCollection::~RigidBodyCollection() = default;
@@ -239,7 +257,9 @@ namespace Sandbox {
     void RigidBodyCollection::Update(float dt) {
         // Apply gravity.
         for (RigidBody& rb : structure_) {
-            rb.AddForce(glm::vec3(0.0f, 1.0f, 0.0f) * -10.0f);
+        	if (useGravity_) {
+				rb.AddForce(glm::vec3(0.0f, -10.0f, 0.0f));
+        	}
             rb.Update(dt);
         }
 
@@ -249,12 +269,26 @@ namespace Sandbox {
     }
 
     void RigidBodyCollection::Render() {
+    	ddVec3 orange = {1.0f, 0.5f, 0.0f};
+    	ddVec3 green = {0.0f, 1.0f, 0.0f};
+    	ddVec3 white = {1.0f, 1.0f, 1.0f};
+
         // Draw masses.
         for (int x = 0; x < dimensions_.x; ++x) {
             for (int y = 0; y < dimensions_.y; ++y) {
                 for (int z = 0; z < dimensions_.z; ++z) {
-                    glm::vec3 position = structure_[Index(x, y, z)].GetPosition();
-                    dd::point(static_cast<float *>(&position.x), dd::colors::Orange,20.0f, 0.0f, false);
+                	RigidBody& rb = structure_[Index(x, y, z)];
+                    glm::vec3 position = rb.GetPosition();
+
+                    if (rb.IsFixed()) {
+                    	// Draw pivots in green.
+                    	dd::point(static_cast<float *>(&position.x), green, 30.0f, 0.0f, false);
+                    }
+                    else {
+                    	// Draw other mass points in orange.
+                    	dd::point(static_cast<float *>(&position.x), orange, 30.0f, 0.0f, false);
+                    }
+
                 }
             }
         }
@@ -264,7 +298,7 @@ namespace Sandbox {
             glm::vec3 start = spring.start_->GetPosition();
             glm::vec3 end = spring.end_->GetPosition();
 
-            dd::line(static_cast<float *>(&start.x), static_cast<float *>(&end.x), dd::colors::Orange, 0.0f, false);
+            dd::line(static_cast<float *>(&start.x), static_cast<float *>(&end.x), white, 0.0f, false);
         }
     }
 
@@ -375,6 +409,15 @@ namespace Sandbox {
 				ImGui::Text("Number of Springs: %zu", connections_.size());
     		ImGui::PopStyleColor();
 
+    		if (ImGui::Button("Apply Random Force")) {
+    			// Pick random.
+    			int index = glm::linearRand(0, (int)structure_.size() - 1);
+    			structure_[index].AddForce(glm::vec3(glm::linearRand(0.5f, 1.0f) * 250.0f));
+    		}
+
+    		ImGui::Text("Apply Gravity?");
+    		ImGui::Checkbox("##gravity", &useGravity_);
+
     		// Anchor positions.
     		ImGui::Text("Anchor 1 Position: ");
     		glm::vec3 anchor1Position = structure_[0].GetPosition();
@@ -386,12 +429,6 @@ namespace Sandbox {
     		glm::vec3 anchor2Position = structure_[structure_.size() - 1].GetPosition();
     		if (ImGui::DragFloat3("##anchor2", &anchor2Position.x, 0.05, -10.0f, 10.0f)) {
     			structure_[structure_.size() - 1].SetPosition(anchor2Position);
-    		}
-
-    		if (ImGui::Button("Apply Random Force")) {
-    			// Pick random.
-    			int index = glm::linearRand(0, (int)structure_.size() - 1);
-    			structure_[index].AddForce(glm::vec3(glm::linearRand(0.5f, 1.0f) * 250.0f));
     		}
 
     		ImGui::End();

@@ -120,6 +120,8 @@ namespace Sandbox {
             void GeneratePointStructure();
             void GenerateConnectingSprings();
 
+            bool useGravity_;
+
             glm::vec3 scale_;
             glm::ivec3 dimensions_; // Number of Points per axis.
     };
