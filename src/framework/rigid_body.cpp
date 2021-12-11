@@ -1,13 +1,8 @@
 
 #include <framework/rigid_body.h>
-
-//#define DEBUG_PRINTING
+#include <glm/gtc/random.hpp>
 
 namespace Sandbox {
-
-    void PrintVec3(const std::string &preface, const glm::vec3 &vector) {
-        std::cout << preface << ": (" << vector.x << ", " << vector.y << ", " << vector.z << ")" << std::endl;
-    }
 
     State::State() : position(0.0f),
                      rotation(1.0f),
@@ -23,7 +18,7 @@ namespace Sandbox {
 
     Spring::Spring(RigidBody *first, RigidBody *second) : start_(first),
                                                           end_(second),
-                                                          springCoefficient_(2.5f)
+                                                          springCoefficient_(20.f)
                                                           {
         assert(start_ && end_);
         restDistance_ = glm::distance(start_->GetPosition(), end_->GetPosition());
@@ -36,7 +31,7 @@ namespace Sandbox {
         // Positive force if greater than rest distance.
         float d = glm::length(start_->GetPosition() - end_->GetPosition()) - restDistance_;
 
-        float damper = 0.5f;
+        float damper = 0.7f;
 
         // F = -k * d.
         float magnitude = -springCoefficient_ * d;
@@ -56,16 +51,6 @@ namespace Sandbox {
                                                                                  inverseInertiaTensorModel(1.0f),
                                                                                  isFixed_(false),
                                                                                  state_() {
-        // Assume cube of length 1 unit per side.
-        float x = 1.0f;
-        float y = 1.0f;
-        float z = 1.0f;
-
-//        // Construct the inertia tensor (in object space).
-//        inverseInertiaTensorModel[0][0] = mass * (y * y) + (z * z);
-//        inverseInertiaTensorModel[1][1] = mass * (x * x) + (z * z);
-//        inverseInertiaTensorModel[2][2] = mass * (x * x) + (y * y);
-
         SetPosition(position);
         SetOrientation(rotation);
     }
@@ -75,36 +60,18 @@ namespace Sandbox {
             return;
         }
 
-#ifdef DEBUG_PRINTING
-        PrintVec3("force accumulator", state_.forceAccumulator);
-        PrintVec3("torque accumulator", state_.torqueAccumulator);
-#endif
-
         // Integration 1: Force into velocity.
         // Linear.
         state_.linearMomentum += state_.forceAccumulator * dt;
         state_.linearVelocity = state_.linearMomentum * inverseMass;
 
-#ifdef DEBUG_PRINTING
-        PrintVec3("linear momentum", state_.linearMomentum);
-        PrintVec3("linear velocity", state_.linearVelocity);
-#endif
         // Angular.
         state_.angularMomentum += state_.torqueAccumulator * dt;
         state_.angularVelocity = state_.inverseInertiaTensorWorld * state_.angularMomentum;
 
-#ifdef DEBUG_PRINTING
-        PrintVec3("angular momentum", state_.angularMomentum);
-        PrintVec3("angular velocity", state_.angularVelocity);
-#endif
-
         // Integration 2: Velocity into position.
         // Update position.
         state_.position += state_.linearVelocity * dt;
-
-#ifdef DEBUG_PRINTING
-        PrintVec3("position", state_.position);
-#endif
 
         // Update rotation.
         glm::mat3 rotation;
@@ -137,12 +104,7 @@ namespace Sandbox {
         state_.forceAccumulator = glm::vec3(0.0f);
         state_.torqueAccumulator = glm::vec3(0.0f);
 
-//        state_.inverseInertiaTensorWorld = state_.rotation * inverseInertiaTensorModel * glm::transpose(state_.rotation);
-
-#ifdef DEBUG_PRINTING
-        std::cout << "finished frame" << std::endl;
-        std::cout << std::endl;
-#endif
+        state_.inverseInertiaTensorWorld = state_.rotation * inverseInertiaTensorModel * glm::transpose(state_.rotation);
     }
 
     const glm::vec3 &RigidBody::GetPosition() const {
@@ -269,7 +231,7 @@ namespace Sandbox {
         isFixed_ = isFixed;
     }
 
-    RigidBodyCollection::RigidBodyCollection() {
+	RigidBodyCollection::RigidBodyCollection() {
     }
 
     RigidBodyCollection::~RigidBodyCollection() = default;
@@ -277,7 +239,7 @@ namespace Sandbox {
     void RigidBodyCollection::Update(float dt) {
         // Apply gravity.
         for (RigidBody& rb : structure_) {
-            rb.AddForce(glm::vec3(0.0f, 1.0f, 0.0f) * -20.0f * dt);
+            rb.AddForce(glm::vec3(0.0f, 1.0f, 0.0f) * -10.0f);
             rb.Update(dt);
         }
 
@@ -292,7 +254,7 @@ namespace Sandbox {
             for (int y = 0; y < dimensions_.y; ++y) {
                 for (int z = 0; z < dimensions_.z; ++z) {
                     glm::vec3 position = structure_[Index(x, y, z)].GetPosition();
-                    dd::sphere(static_cast<float *>(&position.x), dd::colors::Orange,0.05f, 0.0f, false);
+                    dd::point(static_cast<float *>(&position.x), dd::colors::Orange,20.0f, 0.0f, false);
                 }
             }
         }
@@ -405,4 +367,34 @@ namespace Sandbox {
             }
         }
     }
+
+	void RigidBodyCollection::OnImGui() {
+    	if (ImGui::Begin("Rigid Body Collection")) {
+    		ImGui::PushStyleColor(ImGuiCol_Text, 0xff999999);
+				ImGui::Text("Number of Mass Points: %zu", structure_.size());
+				ImGui::Text("Number of Springs: %zu", connections_.size());
+    		ImGui::PopStyleColor();
+
+    		// Anchor positions.
+    		ImGui::Text("Anchor 1 Position: ");
+    		glm::vec3 anchor1Position = structure_[0].GetPosition();
+    		if (ImGui::DragFloat3("##anchor1", &anchor1Position.x, 0.05, -10.0f, 10.0f)) {
+    			structure_[0].SetPosition(anchor1Position);
+    		}
+
+    		ImGui::Text("Anchor 2 Position: ");
+    		glm::vec3 anchor2Position = structure_[structure_.size() - 1].GetPosition();
+    		if (ImGui::DragFloat3("##anchor2", &anchor2Position.x, 0.05, -10.0f, 10.0f)) {
+    			structure_[structure_.size() - 1].SetPosition(anchor2Position);
+    		}
+
+    		if (ImGui::Button("Apply Random Force")) {
+    			// Pick random.
+    			int index = glm::linearRand(0, (int)structure_.size() - 1);
+    			structure_[index].AddForce(glm::vec3(glm::linearRand(0.5f, 1.0f) * 250.0f));
+    		}
+
+    		ImGui::End();
+    	}
+	}
 }

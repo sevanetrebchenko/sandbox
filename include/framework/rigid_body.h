@@ -105,6 +105,7 @@ namespace Sandbox {
 
             void Update(float dt);
             void Render();
+            void OnImGui();
 
             void Preallocate(const glm::vec3& scale);
 

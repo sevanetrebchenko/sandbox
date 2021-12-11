@@ -134,6 +134,8 @@ namespace Sandbox {
         log.OnImGui();
 
         _modelManager.OnImGui();
+
+        rb_.OnImGui();
     }
 
     void SceneProject4::OnShutdown() {
@@ -205,7 +207,7 @@ namespace Sandbox {
 //        sphere->AddMaterial(material);
 
         // Configure shape of rigid body internals.
-        rb_.Preallocate(glm::vec3(2.0f));
+        rb_.Preallocate(glm::vec3(3.0f));
 //        RigidBody anchor { glm::vec3(0.0f, 1.0f, 0.0f) };
 //        anchor.SetFixed(true);
 //
