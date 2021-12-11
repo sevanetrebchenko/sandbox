@@ -3,6 +3,7 @@
 #define SANDBOX_RIGID_BODY_H
 
 #include <sandbox_pch.h>
+#include <framework/model.h>
 
 namespace Sandbox {
 
@@ -71,6 +72,8 @@ namespace Sandbox {
 
             [[nodiscard]] bool IsFixed() const;
             void SetFixed(bool isFixed);
+
+            Model model_;
 
         private:
             float mass; // Assumes uniform mass distribution across all points.

@@ -70,6 +70,40 @@ namespace Sandbox {
         _fbo.DrawBuffers();
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        Shader* shader = shaderLibrary.GetShader("Phong");
+        shader->Bind();
+
+        // Set camera uniforms.
+        shader->SetUniform("cameraTransform", _camera.GetMatrix());
+        shader->SetUniform("cameraPosition", _camera.GetEyePosition());
+        shader->SetUniform("viewTransform", _camera.GetViewMatrix());
+        shader->SetUniform("cameraNearPlane", _camera.GetNearPlaneDistance());
+        shader->SetUniform("cameraFarPlane", _camera.GetFarPlaneDistance());
+
+        // Render cubes at the mass points.
+        for (RigidBody& rigidBody : rb_.structure_) {
+        	Transform &transform = rigidBody.model_.GetTransform();
+        	const Mesh *mesh = rigidBody.model_.GetMesh();
+        	Material* material = rigidBody.model_.GetMaterial("Phong");
+
+        	if (material) {
+        		const glm::mat4 &modelTransform = transform.GetMatrix();
+        		shader->SetUniform("modelTransform", modelTransform);
+        		shader->SetUniform("normalTransform", glm::inverse(modelTransform));
+
+        		// Bind all related uniforms with this shader.
+        		material->Bind(shader);
+        	}
+
+        	// Render stage.
+        	mesh->Bind();
+        	Backend::Rendering::DrawIndexed(mesh->GetVAO(), mesh->GetRenderingPrimitive());
+        	mesh->Unbind();
+
+        	// Post render stage.
+        }
+
+        shader->Unbind();
 
         Backend::Core::EnableFlag(GL_LINE_SMOOTH);
         glLineWidth(2.0f);
@@ -243,24 +277,9 @@ namespace Sandbox {
         {
             Light light;
             Transform &transform = light.GetTransform();
-            transform.SetPosition(glm::vec3(10.0f, 20.0f, 0.0f));
+            transform.SetPosition(glm::vec3(0.0f, 20.0f, 0.0f));
             _lightingManager.AddLight(light);
         }
-
-        {
-            Light light;
-            Transform &transform = light.GetTransform();
-            transform.SetPosition(glm::vec3(-10.0f, 20.0f, 0.0f));
-            _lightingManager.AddLight(light);
-        }
-
-        {
-            Light light;
-            Transform &transform = light.GetTransform();
-            transform.SetPosition(glm::vec3(0.0f, 20.0f, 10.0f));
-            _lightingManager.AddLight(light);
-        }
-
     }
 
 }

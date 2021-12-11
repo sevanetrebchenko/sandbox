@@ -1,6 +1,8 @@
 
 #include <framework/rigid_body.h>
 #include <glm/gtc/random.hpp>
+#include <framework/object_loader.h>
+#include <framework/material_library.h>
 
 namespace Sandbox {
 
@@ -23,7 +25,7 @@ namespace Sandbox {
 	}
 
     State::State() : position(0.0f),
-                     rotation(1.0f),
+                     rotation(),
                      linearVelocity(0.0f),
                      angularVelocity(0.0f),
                      forceAccumulator(0.0f),
@@ -48,28 +50,49 @@ namespace Sandbox {
         // Get updated distance to constrain by.
         // Positive force if greater than rest distance.
         float d = glm::length(start_->GetPosition() - end_->GetPosition()) - restDistance_;
+        if (glm::epsilonEqual(0.0f, d, glm::epsilon<float>())) {
+        	return;
+        }
 
         float damper = 0.7f;
 
         // F = -k * d.
         float magnitude = -springCoefficient_ * d;
+
         {
             glm::vec3 direction = glm::normalize(end_->GetPosition() - start_->GetPosition());
-            end_->AddForce(direction * magnitude - damper * end_->GetLinearVelocity());
+            glm::vec3 force = direction * magnitude;
+
+            end_->AddForce(force - damper * end_->GetLinearVelocity());
         }
 
         {
             glm::vec3 direction = glm::normalize(start_->GetPosition() - end_->GetPosition());
-            start_->AddForce(direction * magnitude - damper * start_->GetLinearVelocity());
+            glm::vec3 force = direction * magnitude;
+
+            start_->AddForce(force - damper * start_->GetLinearVelocity());
         }
     }
 
     // Assumes rigid body is a uniform cube with mass 1.0 at each of the cube's corners.
-    RigidBody::RigidBody(const glm::vec3 &position, const glm::mat3 &rotation) : mass(8.0f),
+    RigidBody::RigidBody(const glm::vec3 &position, const glm::mat3 &rotation) : model_("mass point"),
+    																			 mass(8.0f),
                                                                                  inverseMass(1.0f / mass),
                                                                                  inverseInertiaTensorModel(1.0f),
                                                                                  isFixed_(false),
                                                                                  state_() {
+		// Configure model properties.
+		Mesh modelMesh = OBJLoader::GetInstance().LoadFromFile("assets/models/cube2.obj");
+		modelMesh.Complete();
+		model_.SetMesh(new Mesh(modelMesh));
+		model_.GetTransform().SetScale(glm::vec3(0.15f));
+
+		Material *material = MaterialLibrary::GetInstance().GetMaterialInstance("Phong");
+		material->GetUniform("ambientCoefficient")->SetData(glm::vec3(1.0f, 0.6f, 0.0f));
+		material->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.0f));
+		material->GetUniform("specularCoefficient")->SetData(glm::vec3(0.0f));
+		model_.AddMaterial(material);
+
     	// Assume cube of length 1 unit per side.
     	float x = 1.0f;
     	float y = 1.0f;
@@ -77,21 +100,26 @@ namespace Sandbox {
 
 		// Construct the inertia tensor (in object space).
     	// Inertia tensor of a cube from: https://hepweb.ucsd.edu/ph110b/110b_notes/node26.html
-		inverseInertiaTensorModel *= mass * (x * y * z) / 6.0f;
-		inverseInertiaTensorModel = glm::inverse(inverseInertiaTensorModel);
+//		inverseInertiaTensorModel *= mass * (x * y * z) / 6.0f;
+//		inverseInertiaTensorModel = glm::inverse(inverseInertiaTensorModel);
 
 		// Inertia tensor for a stick (in the stick-spring-model).
-//		inverseInertiaTensorModel[0][0] = mass * (y * y) + (z * z);
-//		inverseInertiaTensorModel[1][1] = mass * (x * x) + (z * z);
-//		inverseInertiaTensorModel[2][2] = mass * (x * x) + (y * y);
-//		inverseInertiaTensorModel = glm::inverse(inverseInertiaTensorModel);
+		inverseInertiaTensorModel[0][0] = mass * (y * y) + (z * z);
+		inverseInertiaTensorModel[1][1] = mass * (x * x) + (z * z);
+		inverseInertiaTensorModel[2][2] = mass * (x * x) + (y * y);
+		inverseInertiaTensorModel = glm::inverse(inverseInertiaTensorModel);
 
         SetPosition(position);
         SetOrientation(rotation);
     }
 
     void RigidBody::Update(float dt) {
+		Transform& transform = model_.GetTransform();
+
         if (IsFixed()) {
+        	// Anchors might have had their positions updated.
+        	transform.SetPosition(state_.position);
+        	transform.Clean();
             return;
         }
 
@@ -145,6 +173,11 @@ namespace Sandbox {
         state_.torqueAccumulator = glm::vec3(0.0f);
 
         state_.inverseInertiaTensorWorld = state_.rotation * inverseInertiaTensorModel * glm::transpose(state_.rotation);
+
+        // Apply properties to visual geometry.
+        transform.SetPosition(state_.position);
+        transform.SetRotation(state_.rotation);
+        transform.Clean();
     }
 
     const glm::vec3 &RigidBody::GetPosition() const {
@@ -268,6 +301,17 @@ namespace Sandbox {
     }
 
     void RigidBody::SetFixed(bool isFixed) {
+		Material* material = model_.GetMaterial("Phong");
+
+		if (isFixed) {
+			// Green.
+			material->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else {
+			// Orange.
+			material->GetUniform("ambientCoefficient")->SetData(glm::vec3(1.0f, 0.6f, 0.0f));
+		}
+
         isFixed_ = isFixed;
     }
 
@@ -291,36 +335,14 @@ namespace Sandbox {
     }
 
     void RigidBodyCollection::Render() {
-    	ddVec3 orange = {1.0f, 0.5f, 0.0f};
-    	ddVec3 green = {0.0f, 1.0f, 0.0f};
-    	ddVec3 white = {1.0f, 1.0f, 1.0f};
-
-        // Draw masses.
-        for (int x = 0; x < dimensions_.x; ++x) {
-            for (int y = 0; y < dimensions_.y; ++y) {
-                for (int z = 0; z < dimensions_.z; ++z) {
-                	RigidBody& rb = structure_[Index(x, y, z)];
-                    glm::vec3 position = rb.GetPosition();
-
-                    if (rb.IsFixed()) {
-                    	// Draw pivots in green.
-                    	dd::point(static_cast<float *>(&position.x), green, 30.0f, 0.0f, false);
-                    }
-                    else {
-                    	// Draw other mass points in orange.
-                    	dd::point(static_cast<float *>(&position.x), orange, 30.0f, 0.0f, false);
-                    }
-
-                }
-            }
-        }
+    	ddVec3 white = { 1.0f, 1.0f, 1.0f };
 
         // Draw connections.
         for (Spring &spring : connections_) {
             glm::vec3 start = spring.start_->GetPosition();
             glm::vec3 end = spring.end_->GetPosition();
 
-            dd::line(static_cast<float *>(&start.x), static_cast<float *>(&end.x), white, 0.0f, false);
+            dd::line(static_cast<float *>(&start.x), static_cast<float *>(&end.x), white, 0.0f, true);
         }
     }
 
