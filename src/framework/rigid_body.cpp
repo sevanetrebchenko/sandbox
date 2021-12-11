@@ -23,7 +23,7 @@ namespace Sandbox {
 
     Spring::Spring(RigidBody *first, RigidBody *second) : start_(first),
                                                           end_(second),
-                                                          springCoefficient_(0.5f)
+                                                          springCoefficient_(2.5f)
                                                           {
         assert(start_ && end_);
         restDistance_ = glm::distance(start_->GetPosition(), end_->GetPosition());
@@ -31,41 +31,23 @@ namespace Sandbox {
 
     void Spring::Constrain() const {
         assert(start_ && end_);
-//
-//        // Get updated distance to constrain by.
-//        // Positive force if greater than rest distance.
-//        glm::vec3 between = start_->GetPosition() - end_->GetPosition();
-//
-//        glm::vec3 direction = glm::normalize(between);
-//
-//        float magnitude = glm::length(between);
-//
-//        magnitude = glm::abs(magnitude - restDistance_) * springCoefficient_;
-//
-//        force = glm::normalize(force);
-//        force *= -magnitude;
-//        end_->AddForce(force);
-//        start_->AddForce(-force);
-//
-//
-//
-//        assert(parent_ && start_ && end_);
 
         // Get updated distance to constrain by.
         // Positive force if greater than rest distance.
-        float d = glm::distance(start_->GetPosition(), end_->GetPosition()) - restDistance_;
+        float d = glm::length(start_->GetPosition() - end_->GetPosition()) - restDistance_;
+
+        float damper = 0.5f;
 
         // F = -k * d.
-        // Apply half of pulling force to both vertices.
-        float magnitude = springCoefficient_ * d;
+        float magnitude = -springCoefficient_ * d;
         {
-            glm::vec3 direction = glm::normalize(start_->GetPosition() - end_->GetPosition());
-            end_->AddForce(direction * magnitude);
+            glm::vec3 direction = glm::normalize(end_->GetPosition() - start_->GetPosition());
+            end_->AddForce(direction * magnitude - damper * end_->GetLinearVelocity());
         }
 
         {
-            glm::vec3 direction = glm::normalize(end_->GetPosition() - start_->GetPosition());
-            start_->AddForce(direction * magnitude);
+            glm::vec3 direction = glm::normalize(start_->GetPosition() - end_->GetPosition());
+            start_->AddForce(direction * magnitude - damper * start_->GetLinearVelocity());
         }
     }
 
@@ -79,7 +61,7 @@ namespace Sandbox {
         float y = 1.0f;
         float z = 1.0f;
 
-        // Construct the inertia tensor (in object space).
+//        // Construct the inertia tensor (in object space).
 //        inverseInertiaTensorModel[0][0] = mass * (y * y) + (z * z);
 //        inverseInertiaTensorModel[1][1] = mass * (x * x) + (z * z);
 //        inverseInertiaTensorModel[2][2] = mass * (x * x) + (y * y);
@@ -93,15 +75,15 @@ namespace Sandbox {
             return;
         }
 
-//#ifdef DEBUG_PRINTING
+#ifdef DEBUG_PRINTING
         PrintVec3("force accumulator", state_.forceAccumulator);
         PrintVec3("torque accumulator", state_.torqueAccumulator);
-//#endif
+#endif
 
         // Integration 1: Force into velocity.
         // Linear.
         state_.linearMomentum += state_.forceAccumulator * dt;
-        state_.linearVelocity += state_.linearMomentum * inverseMass;
+        state_.linearVelocity = state_.linearMomentum * inverseMass;
 
 #ifdef DEBUG_PRINTING
         PrintVec3("linear momentum", state_.linearMomentum);
@@ -140,7 +122,7 @@ namespace Sandbox {
         rotation[2][1] = -state_.angularVelocity.x;
         rotation[2][2] = 0.0f;
 
-        state_.rotation = rotation * state_.rotation * dt;
+        state_.rotation += rotation * state_.rotation * dt;
 
         // Orthonormalize orientation matrix.
         glm::vec3 x = glm::normalize(state_.rotation[0]);
@@ -155,7 +137,7 @@ namespace Sandbox {
         state_.forceAccumulator = glm::vec3(0.0f);
         state_.torqueAccumulator = glm::vec3(0.0f);
 
-        //state_.inverseInertiaTensorWorld = state_.rotation * inverseInertiaTensorModel * glm::transpose(state_.rotation);
+//        state_.inverseInertiaTensorWorld = state_.rotation * inverseInertiaTensorModel * glm::transpose(state_.rotation);
 
 #ifdef DEBUG_PRINTING
         std::cout << "finished frame" << std::endl;
@@ -243,8 +225,7 @@ namespace Sandbox {
 
     void RigidBody::SetForceAt(const glm::vec3 &force, const glm::vec3 &offset) {
         glm::vec3 relativePosition = offset - state_.position;
-        state_.torqueAccumulator = glm::cross(relativePosition,
-                                              force); // Force at a point translates into rotation (torque).
+        state_.torqueAccumulator = glm::cross(relativePosition, force); // Force at a point translates into rotation (torque).
     }
 
     void RigidBody::AddForce(const glm::vec3 &force) {
@@ -253,8 +234,7 @@ namespace Sandbox {
 
     void RigidBody::AddForceAt(const glm::vec3 &force, const glm::vec3 &offset) {
         glm::vec3 relativePosition = offset - state_.position;
-        state_.torqueAccumulator += glm::cross(relativePosition,
-                                               force); // Force at a point translates into rotation (torque).
+        state_.torqueAccumulator += glm::cross(relativePosition, force); // Force at a point translates into rotation (torque).
     }
 
     const glm::vec3 &RigidBody::GetTotalTorque() const {
@@ -363,14 +343,13 @@ namespace Sandbox {
 
         // Fix points.
         structure_[0].SetFixed(true);
-        structure_[1].SetFixed(true);
-        structure_[2].SetFixed(true);
+        structure_[structure_.size() - 1].SetFixed(true);
     }
 
     void RigidBodyCollection::GenerateConnectingSprings() {
-        for (int x = 0; x < dimensions_.x - 1; ++x) {
-            for (int y = 0; y < dimensions_.y - 1; ++y) {
-                for (int z = 0; z < dimensions_.z - 1; ++z) {
+        for (int x = 0; x < scale_.x; ++x) {
+            for (int y = 0; y < scale_.y; ++y) {
+                for (int z = 0; z < scale_.z; ++z) {
 
                     int index0 = Index(x, y, z);
                     int index1 = Index(x + 1, y, z);

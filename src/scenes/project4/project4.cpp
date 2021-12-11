@@ -70,46 +70,6 @@ namespace Sandbox {
         _fbo.DrawBuffers();
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//        Shader *shader = shaderLibrary.GetShader("Phong");
-//        shader->Bind();
-//
-//        // Set camera uniforms.
-//        shader->SetUniform("cameraTransform", _camera.GetMatrix());
-//        shader->SetUniform("cameraPosition", _camera.GetEyePosition());
-//        shader->SetUniform("viewTransform", _camera.GetViewMatrix());
-//        shader->SetUniform("cameraNearPlane", _camera.GetNearPlaneDistance());
-//        shader->SetUniform("cameraFarPlane", _camera.GetFarPlaneDistance());
-//
-//        for (Model *model : _modelManager.GetModels()) {
-//            Transform &transform = model->GetTransform();
-//            const Mesh *mesh = model->GetMesh();
-//
-//            Material* material;
-//
-//            AnimatedModel *animatedModel = dynamic_cast<AnimatedModel *>(model);
-//
-//            material = model->GetMaterial("Phong");
-//
-//            // Pre render stage.
-//            if (material) {
-//                const glm::mat4 &modelTransform = transform.GetMatrix();
-//                shader->SetUniform("modelTransform", modelTransform);
-//                shader->SetUniform("normalTransform", glm::inverse(modelTransform));
-//
-//                // Bind all related uniforms with this shader.
-//                material->Bind(shader);
-//            }
-//
-//            // Render stage.
-//            mesh->Bind();
-//            Backend::Rendering::DrawIndexed(mesh->GetVAO(), mesh->GetRenderingPrimitive());
-//            mesh->Unbind();
-//
-//            // Post render stage.
-//        }
-//
-//        shader->Unbind();
-
         rb_.Render();
 
         // Debug drawing.
@@ -245,14 +205,14 @@ namespace Sandbox {
 //        sphere->AddMaterial(material);
 
         // Configure shape of rigid body internals.
-//        rb_.Preallocate(glm::vec3(1.0f));
-        RigidBody anchor { glm::vec3(0.0f, 1.0f, 0.0f) };
-        anchor.SetFixed(true);
-
-        rb_.structure_.emplace_back(anchor);
-        rb_.structure_.emplace_back();
-
-        rb_.connections_.emplace_back(&rb_.structure_[0], &rb_.structure_[1]);
+        rb_.Preallocate(glm::vec3(2.0f));
+//        RigidBody anchor { glm::vec3(0.0f, 1.0f, 0.0f) };
+//        anchor.SetFixed(true);
+//
+//        rb_.structure_.emplace_back(anchor);
+//        rb_.structure_.emplace_back();
+//
+//        rb_.connections_.emplace_back(&rb_.structure_[0], &rb_.structure_[1]);
     }
 
     void SceneProject4::ConstructFBO() {

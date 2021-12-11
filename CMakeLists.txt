@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 # Set directory for .cmake includes.
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-include(submodule_setup)
+#include(submodule_setup)
 
 # Build third-party dependencies.
 message(STATUS "Adding library subdirectory")
