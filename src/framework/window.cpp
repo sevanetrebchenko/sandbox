@@ -6,76 +6,39 @@
 
 namespace Sandbox {
 
-    Window::Window(std::string name, int width, int height) : _window(nullptr),
-                                                              _name(std::move(name)),
-                                                              _width(width),
-                                                              _height(height)
-                                                              {
+    Window::Window(const std::string& name, int width, int height) : window_(nullptr),
+                                                                     width_(width),
+                                                                     height_(height)
+                                                                     {
         // Initialize GLFW.
-        InitializeGLFW();
-        CreateGLFWWindow();
-        SetupGLFWCallbacks();
-
-        // Initialize OpenGL.
-        InitializeOpenGLContext();
-
-        // Initialize ImGui.
-        InitializeImGui();
-    }
-
-    Window::~Window() {
-        glfwDestroyWindow(_window);
-        glfwTerminate();
-    }
-
-    void Window::InitializeGLFW() {
         int initializationCode = glfwInit();
-
-        // Failed to initialize GLFW.
         if (!initializationCode) {
             throw std::runtime_error("Failed to initialize GLFW.");
         }
-    }
 
-    void Window::CreateGLFWWindow() {
         // Setting up OpenGL properties
         glfwWindowHint(GLFW_SAMPLES, 1); // change for anti-aliasing
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        _window = glfwCreateWindow(_width, _height, _name.c_str(), nullptr, nullptr);
-
-        // Failed to create GLFW window.
-        if (!_window) {
+        // Create window.
+        window_ = glfwCreateWindow(width_, height_, name.c_str(), nullptr, nullptr);
+        if (!window_) {
             throw std::runtime_error("Failed to create GLFW window.");
         }
-    }
 
-    void Window::InitializeOpenGLContext() {
         // Initialize OpenGL.
-        glfwMakeContextCurrent(_window);
-
+        glfwMakeContextCurrent(window_);
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
             throw std::runtime_error("Failed to initialize Glad (OpenGL).");
         }
-
-        // OpenGL properties.
-        Backend::Core::EnableFlag(GL_DEPTH_TEST);
-//        Backend::Core::EnableFlag(GL_CULL_FACE);
-//        Backend::Core::CullFace(GL_BACK);
 
         ImGuiLog& log = ImGuiLog::GetInstance();
         log.LogTrace("Vendor: %s", (const char*)glGetString(GL_VENDOR));
         log.LogTrace("Renderer: %s", (const char*)glGetString(GL_RENDERER));
         log.LogTrace("OpenGL Version: %s", (const char*)glGetString(GL_VERSION));
-    }
 
-    bool Window::IsActive() {
-        return (glfwGetKey(_window, GLFW_KEY_ESCAPE) != GLFW_PRESS) && (glfwWindowShouldClose(_window) == 0);
-    }
-
-    void Window::InitializeImGui() {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -89,76 +52,17 @@ namespace Sandbox {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
         // Setup Platform/Renderer backend.
-        ImGui_ImplGlfw_InitForOpenGL(_window, true);
+        ImGui_ImplGlfw_InitForOpenGL(window_, true);
         ImGui_ImplOpenGL3_Init("#version 130");
     }
 
-    GLFWwindow *Window::GetNativeWindow() const {
-        return _window;
+    Window::~Window() {
+        glfwDestroyWindow(window_);
+        glfwTerminate();
     }
 
-    void Window::SetupGLFWCallbacks() {
-        glfwSetCursorPosCallback(_window, [](GLFWwindow* window, double xpos, double ypos) {
-            Camera* camera = reinterpret_cast<Camera*>(glfwGetWindowUserPointer(window));
-
-            // Only update look at direction if the cursor is not showing.
-            if (!camera->GetCursorEnabled()) {
-                glm::vec2& mousePosition = camera->GetLastMousePosition();
-                float xoffset = (float)xpos - mousePosition.x;
-                float yoffset = mousePosition.y - (float)ypos;
-                mousePosition.x = (float)xpos;
-                mousePosition.y = (float)ypos;
-
-                xoffset *= camera->GetCameraSensitivity();
-                yoffset *= camera->GetCameraSensitivity();
-
-                float& yaw = camera->GetCameraYaw();
-                float& pitch = camera->GetCameraPitch();
-
-                yaw += xoffset;
-                pitch += yoffset;
-
-                if(pitch > 89.0f)
-                    pitch = 89.0f;
-                if(pitch < -89.0f)
-                    pitch = -89.0f;
-
-                glm::vec3 direction;
-                direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-                direction.y = sin(glm::radians(pitch));
-                direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-                camera->SetLookAtDirection(glm::normalize(direction));
-            }
-
-        });
-
-        glfwSetKeyCallback(_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-            Camera* camera = reinterpret_cast<Camera*>(glfwGetWindowUserPointer(window));
-            bool& showCursor = camera->GetCursorEnabled();
-
-            if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS) {
-                showCursor = !showCursor;
-
-                if (showCursor) {
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                }
-                else {
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                }
-            }
-        });
-    }
-
-    int Window::GetWidth() const {
-        return _width;
-    }
-
-    int Window::GetHeight() const {
-        return _height;
-    }
-
-    const std::string &Window::GetName() const {
-        return _name;
+    bool Window::IsActive() {
+        return (glfwGetKey(window_, GLFW_KEY_ESCAPE) != GLFW_PRESS) && (glfwWindowShouldClose(window_) == 0);
     }
 
     void Window::PollEvents() {
@@ -166,7 +70,41 @@ namespace Sandbox {
     }
 
     void Window::SwapBuffers() {
-        glfwSwapBuffers(_window);
+        glfwSwapBuffers(window_);
+    }
+
+    bool Window::CheckForResize() {
+        int width;
+        int height;
+        glfwGetFramebufferSize(window_, &width, &height);
+
+        bool resized = false;
+
+        if (width_ != width || height_ != height) {
+            // Resized.
+            width_ = width;
+            height_ = height;
+
+            resized = true;
+        }
+
+        return resized;
+    }
+
+    void Window::SetName(const std::string& name) {
+        glfwSetWindowTitle(window_, name.c_str());
+    }
+
+    GLFWwindow *Window::GetNativeWindow() const {
+        return window_;
+    }
+
+    int Window::GetWidth() const {
+        return width_;
+    }
+
+    int Window::GetHeight() const {
+        return height_;
     }
 
 }

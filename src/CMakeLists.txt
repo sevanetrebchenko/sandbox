@@ -21,6 +21,8 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/framework/buffer/rbo.cpp"
 
         # Framework
+        "${PROJECT_SOURCE_DIR}/src/framework/application.cpp"
+        "${PROJECT_SOURCE_DIR}/src/framework/scene_manager.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/backend.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/camera.cpp"
         "${PROJECT_SOURCE_DIR}/src/framework/directory_utils.cpp"

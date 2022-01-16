@@ -8,31 +8,28 @@ namespace Sandbox {
 
     class Window {
         public:
-            Window(std::string name, int width, int height);
+            Window(const std::string& name, int width, int height);
             ~Window();
+
+            bool IsActive();
 
             void PollEvents();
             void SwapBuffers();
-            bool IsActive();
+
+            // Calls to GetWidth / GetHeight will always return most up-to-date window size.
+            [[nodiscard]] bool CheckForResize();
+
+            void SetName(const std::string& name);
 
             [[nodiscard]] GLFWwindow* GetNativeWindow() const;
-
             [[nodiscard]] int GetWidth() const;
             [[nodiscard]] int GetHeight() const;
-            [[nodiscard]] const std::string& GetName() const;
 
         private:
-            void InitializeGLFW();
-            void CreateGLFWWindow();
-            void SetupGLFWCallbacks();
-            void InitializeOpenGLContext();
-            void InitializeImGui();
-
             // Window data.
-            GLFWwindow* _window;
-            std::string _name;
-            int _width;
-            int _height;
+            GLFWwindow* window_;
+            int width_;
+            int height_;
     };
 
 }

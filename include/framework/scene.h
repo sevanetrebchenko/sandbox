@@ -10,33 +10,31 @@
 
 namespace Sandbox {
 
-    class Scene {
+    class IScene {
         public:
-            Scene(std::string name, int width, int height);
-            virtual ~Scene();
+            IScene(int width, int height);
+            virtual ~IScene() = 0;
 
-            void Init();
-            void Run();
-            void Shutdown();
+            virtual void OnInit();
+
+            // Make sure to call base Scene::OnUpdate if this function is overridden.
+            virtual void OnUpdate(float dt);
+
+            virtual void OnPreRender();
+            virtual void OnRender();
+            virtual void OnPostRender();
+
+            virtual void OnImGui();
+
+            virtual void OnShutdown();
+
+            virtual void OnWindowResize(int width, int height);
 
         protected:
-            virtual void OnInit() = 0;
-
-            virtual void OnUpdate(float dt) = 0;
-
-            virtual void OnPreRender() = 0;
-            virtual void OnRender() = 0;
-            virtual void OnPostRender() = 0;
-            virtual void OnImGui() = 0;
-
-            virtual void OnShutdown() = 0;
-
-            // Data provided to derived scenes by default.
-            Window _window;
             Camera _camera;
+
             ModelManager _modelManager;
             LightingManager _lightingManager;
-            std::string _dataDirectory;
 
         private:
             void LoadSceneData();
@@ -48,13 +46,6 @@ namespace Sandbox {
             void EndFrame();
 
             void ProcessInput();
-
-            std::string _sceneName;
-            std::string _imGuiIniName;
-            std::string _imGuiLogName;
-            float _dt;
-            float _currentFrameTime;
-            float _previousFrameTime;
     };
 
 }
