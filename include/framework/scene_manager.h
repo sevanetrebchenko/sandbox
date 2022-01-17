@@ -23,6 +23,9 @@ namespace Sandbox {
 
         private:
             struct SceneData {
+            	SceneData(std::string  sceneName, IScene* scene);
+            	~SceneData();
+
                 IScene* scene_;
 
                 std::string prettyName_; // Public facing name, used for GUI and whatnot.
@@ -30,16 +33,22 @@ namespace Sandbox {
 
                 std::string dataDirectory_;
 
-                std::string imGuiLogName_;
-                std::string imGuiIniName_;
+                std::string imGuiLogPath_;
+                std::string imGuiIniPath_;
             };
 
+            //
+            void VerifyConfiguration() const;
+
+            [[nodiscard]] const SceneData& GetCurrentSceneData() const;
+
+            void UnloadSceneData() const;
             void LoadSceneData() const;
 
             // Scene stubs, stored uninitialized.
             // Scenes are not going to be changed after initialization, we can get away with using a vector instead of a map.
             std::vector<SceneData> scenes_;
-            unsigned currentIndex_;
+            int currentIndex_;
     };
 
 }
