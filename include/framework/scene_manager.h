@@ -12,7 +12,7 @@ namespace Sandbox {
             ~SceneManager();
 
             void Init();
-            void Update(float dt);
+            void Update();
             void Shutdown();
 
             // Takes name by which the scene will be referenced in the editor.
@@ -21,26 +21,21 @@ namespace Sandbox {
 
             [[nodiscard]] IScene* GetCurrentScene() const;
 
+            void SetStartupScene(const std::string& name);
+
         private:
             struct SceneData {
-            	SceneData(std::string  sceneName, IScene* scene);
+            	SceneData(std::string sceneName, IScene* scene);
             	~SceneData();
 
                 IScene* scene_;
 
                 std::string prettyName_; // Public facing name, used for GUI and whatnot.
                 std::string name_;
-
-                std::string dataDirectory_;
-
-                std::string imGuiLogPath_;
                 std::string imGuiIniPath_;
             };
 
-            //
-            void VerifyConfiguration() const;
-
-            [[nodiscard]] const SceneData& GetCurrentSceneData() const;
+            [[nodiscard]] const SceneData* GetCurrentSceneData() const;
 
             void UnloadSceneData() const;
             void LoadSceneData() const;
@@ -48,6 +43,7 @@ namespace Sandbox {
             // Scene stubs, stored uninitialized.
             // Scenes are not going to be changed after initialization, we can get away with using a vector instead of a map.
             std::vector<SceneData> scenes_;
+            int previousIndex_;
             int currentIndex_;
     };
 

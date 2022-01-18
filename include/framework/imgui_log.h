@@ -8,7 +8,7 @@ namespace Sandbox {
 
     class ImGuiLog {
         public:
-            static ImGuiLog& GetInstance();
+            static ImGuiLog& Instance();
 
             void OnImGui();
             void ClearLog();
@@ -30,7 +30,9 @@ namespace Sandbox {
             int _processingBufferSize;
             char* _processingBuffer;
             std::set<std::pair<bool, const char*>> _filteredLogMessages;
-            std::vector<std::pair<bool, std::string>> _logMessages;
+            std::vector<std::pair<bool, std::string>> guiLogMessages_;
+
+            std::vector<std::pair<bool, std::string>> fileLogMessages_;
 
             ImGuiTextFilter _filter;
     };

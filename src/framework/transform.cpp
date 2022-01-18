@@ -24,7 +24,11 @@ namespace Sandbox {
         return _position;
     }
 
-    glm::mat4 Transform::GetMatrix() const {
+    glm::mat4 Transform::GetMatrix() {
+        if (_isDirty) {
+            CalculateMatrix();
+        }
+
         return _matrix;
     }
 
@@ -92,12 +96,6 @@ namespace Sandbox {
 
     bool Transform::IsDirty() const {
         return _isDirty;
-    }
-
-    void Transform::Clean() {
-        if (_isDirty) {
-            CalculateMatrix();
-        }
     }
 
 }

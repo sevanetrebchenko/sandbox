@@ -8,12 +8,10 @@
 
 namespace Sandbox {
 
-    /**
-     * Holds all the shaders in the framework.
-     */
     class ShaderLibrary {
         public:
-            static ShaderLibrary& GetInstance();
+            ShaderLibrary();
+            ~ShaderLibrary();
 
             void AddShader(Shader* shader);
             void AddShader(const std::string& shaderName, const std::initializer_list<std::string>& shaderComponentPaths);
@@ -24,9 +22,6 @@ namespace Sandbox {
             Shader* GetShader(const std::string& shaderName);
 
         private:
-            ShaderLibrary();
-            ~ShaderLibrary();
-
             std::unordered_map<std::string, Shader*> _shaders;
             std::vector<IReloadable*> _recompileTargets;
     };

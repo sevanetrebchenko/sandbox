@@ -14,12 +14,6 @@ namespace Sandbox {
         }
     }
 
-    void ModelManager::Update() {
-        for (Model* model : _modelList) {
-            model->Update();
-        }
-    }
-
     void ModelManager::OnImGui() {
         if (ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_None)) {
             for (Model* model : _modelList) {
@@ -76,7 +70,7 @@ namespace Sandbox {
     }
 
     Model* ModelManager::AddModelFromFile(std::string modelName, std::string filepath) {
-        ImGuiLog& log = ImGuiLog::GetInstance();
+        ImGuiLog& log = ImGuiLog::Instance();
 
         filepath = NativePathConverter::ConvertToNativeSeparators(filepath);
 

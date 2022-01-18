@@ -10,7 +10,8 @@ namespace Sandbox {
 
     class MaterialLibrary {
         public:
-            static MaterialLibrary& GetInstance();
+            MaterialLibrary();
+            ~MaterialLibrary();
 
             void OnImGui();
 
@@ -21,9 +22,6 @@ namespace Sandbox {
             Material* GetMaterialInstance(const std::string& materialName);
 
         private:
-            MaterialLibrary();
-            ~MaterialLibrary();
-
             std::unordered_map<std::string, Material*> _materialList;
     };
 

@@ -3,7 +3,7 @@
 
 namespace Sandbox {
 
-    ImGuiLog& ImGuiLog::GetInstance() {
+    ImGuiLog& ImGuiLog::Instance() {
         static ImGuiLog instance;
         return instance;
     }
@@ -43,7 +43,7 @@ namespace Sandbox {
                 _filteredLogMessages.clear();
 
                 // Process.
-                for (const auto& messageData : _logMessages) {
+                for (const auto& messageData : guiLogMessages_) {
                     bool isError = messageData.first;
                     const char* data = messageData.second.c_str();
 
@@ -81,7 +81,7 @@ namespace Sandbox {
             else {
                 io.WantCaptureKeyboard = false;
 
-                for (auto& messageData : _logMessages) {
+                for (auto& messageData : guiLogMessages_) {
                     bool isError = messageData.first;
                     const std::string& message = messageData.second;
 
@@ -114,7 +114,7 @@ namespace Sandbox {
     }
 
     void ImGuiLog::ClearLog() {
-        _logMessages.clear();
+        guiLogMessages_.clear();
         _filteredLogMessages.clear();
     }
 
@@ -164,7 +164,8 @@ namespace Sandbox {
         }
 
         vsnprintf(_processingBuffer, _processingBufferSize, formatString, argsList);
-        _logMessages.emplace_back(isErrorMessage, _processingBuffer);
+        guiLogMessages_.emplace_back(isErrorMessage, _processingBuffer);
+        fileLogMessages_.emplace_back(isErrorMessage, _processingBuffer);
 
         // Clear buffer.
         memset(_processingBuffer, '\0', _processingBufferSize);
@@ -189,7 +190,7 @@ namespace Sandbox {
             const std::string trace = "[TRACE] ";
             const std::string error = "[ERROR] ";
 
-            for (const std::pair<bool, std::string>& logData : _logMessages) {
+            for (const std::pair<bool, std::string>& logData : fileLogMessages_) {
                 bool isError = logData.first;
                 std::string logMessage = logData.second;
 

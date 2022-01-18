@@ -3,6 +3,16 @@
 
 namespace Sandbox {
 
+    ShaderLibrary::ShaderLibrary() {
+
+    }
+
+    ShaderLibrary::~ShaderLibrary() {
+        for (const auto& shaderPair : _shaders) {
+            delete shaderPair.second;
+        }
+    }
+
     void ShaderLibrary::AddShader(Shader *shader) {
         _shaders.emplace(shader->GetName(), shader);
         _recompileTargets.push_back(shader);
@@ -35,21 +45,6 @@ namespace Sandbox {
     void ShaderLibrary::RecompileAll() {
         for (const auto& shaderPair : _shaders) {
             shaderPair.second->Recompile();
-        }
-    }
-
-    ShaderLibrary &ShaderLibrary::GetInstance() {
-        static ShaderLibrary instance;
-        return instance;
-    }
-
-    ShaderLibrary::ShaderLibrary() {
-
-    }
-
-    ShaderLibrary::~ShaderLibrary() {
-        for (const auto& shaderPair : _shaders) {
-            delete shaderPair.second;
         }
     }
 

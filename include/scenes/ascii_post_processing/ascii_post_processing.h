@@ -10,7 +10,7 @@
 
 namespace Sandbox {
 
-    class SceneAsciiPostProcessing : public Scene {
+    class SceneAsciiPostProcessing : public IScene {
         public:
             SceneAsciiPostProcessing(int width, int height);
             ~SceneAsciiPostProcessing() override;

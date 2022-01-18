@@ -15,10 +15,6 @@ namespace Sandbox {
     Model::~Model() {
     }
 
-    void Model::Update() {
-        _transform.Clean();
-    }
-
     const std::string &Model::GetName() const {
         return _name;
     }

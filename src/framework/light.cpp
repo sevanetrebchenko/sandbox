@@ -54,7 +54,6 @@ namespace Sandbox {
 
     void Light::Clean() {
         _isDirty = false;
-        _transform.Clean();
     }
 
     void Light::SetActive(bool active) {

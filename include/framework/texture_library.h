@@ -9,7 +9,8 @@ namespace Sandbox {
 
     class TextureLibrary {
         public:
-            static TextureLibrary& GetInstance();
+            TextureLibrary();
+            ~TextureLibrary();
 
             void AddTexture(const std::string& textureName, const std::string& textureFilepath);
             void AddTexture(Texture* texture);
@@ -17,9 +18,6 @@ namespace Sandbox {
             [[nodiscard]] Texture* GetTexture(const std::string& textureName) const;
 
         private:
-            TextureLibrary();
-            ~TextureLibrary();
-
             std::unordered_map<std::string, Texture*> _textures;
     };
 

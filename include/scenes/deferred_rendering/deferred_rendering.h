@@ -9,9 +9,9 @@
 
 namespace Sandbox {
 
-    class SceneDeferredRendering : public Scene {
+    class SceneDeferredRendering : public IScene {
         public:
-            SceneDeferredRendering(int width, int height);
+            explicit SceneDeferredRendering(SceneOptions options);
             ~SceneDeferredRendering() override;
 
         protected:

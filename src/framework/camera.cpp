@@ -4,54 +4,54 @@
 
 namespace Sandbox {
 
-    Camera::Camera(float width, float height) : _isDirty(true),
-                                                _eyePosition(glm::vec3(0.0f, 0.0f, 5.0f)),
-                                                _lookAtDirection(glm::vec3(0.0f, 0.0f, -1.0f)),
-                                                _upVector(glm::vec3(0.0f, 1.0f, 0.0f)),
-                                                _width(width),
-                                                _height(height),
-                                                _fovAngle(75.0f),
-                                                _aspectRatio(_width / _height),
-                                                _nearPlaneDistance(0.01f),
-                                                _farPlaneDistance(1000.0f),
-                                                _cameraMatrix(glm::mat4(1.0f)),
-                                                _cameraSensitivity(0.1f),
-                                                _yaw(-90.0f),
-                                                _pitch(0.0f),
-                                                _cursorEnabled(true) {
+    ICamera::ICamera(float width, float height) : _isDirty(true),
+                                                  _eyePosition(glm::vec3(0.0f, 0.0f, 5.0f)),
+                                                  _lookAtDirection(glm::vec3(0.0f, 0.0f, -1.0f)),
+                                                  _upVector(glm::vec3(0.0f, 1.0f, 0.0f)),
+                                                  _width(width),
+                                                  _height(height),
+                                                  _fovAngle(75.0f),
+                                                  _aspectRatio(_width / _height),
+                                                  _nearPlaneDistance(0.01f),
+                                                  _farPlaneDistance(1000.0f),
+                                                  _cameraMatrix(glm::mat4(1.0f)),
+                                                  _cameraSensitivity(0.1f),
+                                                  _yaw(-90.0f),
+                                                  _pitch(0.0f),
+                                                  _cursorEnabled(true) {
         Backend::Core::SetViewport(0, 0, width, height);
     }
 
-    Camera::~Camera() = default;
+    ICamera::~ICamera() = default;
 
-    void Camera::SetEyePosition(glm::vec3 position) {
+    void ICamera::SetEyePosition(glm::vec3 position) {
         _eyePosition = position;
         _isDirty = true;
     }
 
-    glm::vec3 &Camera::GetEyePosition() {
+    glm::vec3 &ICamera::GetEyePosition() {
         return _eyePosition;
     }
 
-    void Camera::SetLookAtDirection(glm::vec3 direction) {
+    void ICamera::SetLookAtDirection(glm::vec3 direction) {
         _lookAtDirection = direction;
         _isDirty = true;
     }
 
-    glm::vec3 &Camera::GetLookAtDirection() {
+    glm::vec3 &ICamera::GetLookAtDirection() {
         return _lookAtDirection;
     }
 
-    void Camera::SetUpVector(glm::vec3 upVector) {
+    void ICamera::SetUpVector(glm::vec3 upVector) {
         _upVector = upVector;
         _isDirty = true;
     }
 
-    glm::vec3 &Camera::GetUpVector() {
+    glm::vec3 &ICamera::GetUpVector() {
         return _upVector;
     }
 
-    const glm::mat4 &Camera::GetMatrix() {
+    const glm::mat4 &ICamera::GetMatrix() {
         if (_isDirty) {
             CalculateMatrix();
         }
@@ -59,7 +59,7 @@ namespace Sandbox {
         return _cameraMatrix;
     }
 
-    void Camera::CalculateMatrix() {
+    void ICamera::CalculateMatrix() {
         // Camera matrix
         _viewMatrix = glm::lookAt(_eyePosition, _eyePosition + _lookAtDirection, _upVector);
 
@@ -70,55 +70,55 @@ namespace Sandbox {
         _isDirty = false;
     }
 
-    const glm::vec3 &Camera::GetForwardVector() const {
+    const glm::vec3 &ICamera::GetForwardVector() const {
         return _lookAtDirection;
     }
 
-    const glm::vec3 &Camera::GetUpVector() const {
+    const glm::vec3 &ICamera::GetUpVector() const {
         return _upVector;
     }
 
-    void Camera::SetLastMousePosition(glm::vec2 mousePos) {
+    void ICamera::SetLastMousePosition(glm::vec2 mousePos) {
         _mousePosition = mousePos;
     }
 
-    glm::vec2 &Camera::GetLastMousePosition() {
+    glm::vec2 &ICamera::GetLastMousePosition() {
         return _mousePosition;
     }
 
-    void Camera::SetCameraSensitivity(float sensitivity) {
+    void ICamera::SetCameraSensitivity(float sensitivity) {
         _cameraSensitivity = sensitivity;
     }
 
-    float &Camera::GetCameraSensitivity() {
+    float &ICamera::GetCameraSensitivity() {
         return _cameraSensitivity;
     }
 
-    void Camera::SetCameraYaw(float yaw) {
+    void ICamera::SetCameraYaw(float yaw) {
         _yaw = yaw;
     }
 
-    float &Camera::GetCameraYaw() {
+    float &ICamera::GetCameraYaw() {
         return _yaw;
     }
 
-    void Camera::SetCameraPitch(float pitch) {
+    void ICamera::SetCameraPitch(float pitch) {
         _pitch = pitch;
     }
 
-    float &Camera::GetCameraPitch() {
+    float &ICamera::GetCameraPitch() {
         return _pitch;
     }
 
-    void Camera::SetCursorEnabled(bool enabled) {
+    void ICamera::SetCursorEnabled(bool enabled) {
         _cursorEnabled = enabled;
     }
 
-    bool &Camera::GetCursorEnabled() {
+    bool &ICamera::GetCursorEnabled() {
         return _cursorEnabled;
     }
 
-    const glm::mat4 &Camera::GetPerspectiveMatrix() {
+    const glm::mat4 &ICamera::GetPerspectiveMatrix() {
         if (_isDirty) {
             CalculateMatrix();
         }
@@ -126,7 +126,7 @@ namespace Sandbox {
         return _perspectiveMatrix;
     }
 
-    const glm::mat4 &Camera::GetViewMatrix() {
+    const glm::mat4 &ICamera::GetViewMatrix() {
         if (_isDirty) {
             CalculateMatrix();
         }
@@ -134,36 +134,36 @@ namespace Sandbox {
         return _viewMatrix;
     }
 
-    float Camera::GetNearPlaneDistance() const {
+    float ICamera::GetNearPlaneDistance() const {
         return _nearPlaneDistance;
     }
 
-    void Camera::SetNearPlaneDistance(float nearPlaneDistance) {
+    void ICamera::SetNearPlaneDistance(float nearPlaneDistance) {
         _nearPlaneDistance = nearPlaneDistance;
     }
 
-    float Camera::GetFarPlaneDistance() const {
+    float ICamera::GetFarPlaneDistance() const {
         return _farPlaneDistance;
     }
 
-    void Camera::SetFarPlaneDistance(float farPlaneDistance) {
+    void ICamera::SetFarPlaneDistance(float farPlaneDistance) {
         _farPlaneDistance = farPlaneDistance;
     }
 
-    float Camera::GetFOV() const {
+    float ICamera::GetFOV() const {
         return _fovAngle;
     }
 
-    void Camera::SetFOV(float FOV) {
+    void ICamera::SetFOV(float FOV) {
         _fovAngle = FOV;
         _isDirty = true;
     }
 
-    float Camera::GetAspectRatio() const {
+    float ICamera::GetAspectRatio() const {
         return _aspectRatio;
     }
 
-    void Camera::SetAspectRatio(float aspectRatio) {
+    void ICamera::SetAspectRatio(float aspectRatio) {
         _aspectRatio = aspectRatio;
         _isDirty = true;
     }

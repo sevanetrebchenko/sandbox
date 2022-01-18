@@ -48,7 +48,7 @@ namespace Sandbox {
         try {
             shaderProgram->SetUniform(_uniformName, std::get<T1>(_uniformData));
         }
-        catch (std::bad_variant_access& accessException) {
+        catch (std::bad_variant_access&) {
             BindHelper<T2, T3...>(shaderProgram);
         }
     }

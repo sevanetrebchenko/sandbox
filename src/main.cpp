@@ -1,21 +1,20 @@
 
-// Scenes.
+#include <framework/application.h>
+
+// Scenes
 #include <scenes/deferred_rendering/deferred_rendering.h>
-#include <scenes/ascii_post_processing/ascii_post_processing.h>
 
 int main() {
+    Sandbox::Application application;
 
-    Sandbox::Scene* scene = new Sandbox::SceneDeferredRendering(1920, 1080);
-    try {
-        scene->Init();
-    }
-    catch (std::runtime_error& exception) {
-        std::cerr << exception.what() << std::endl;
-        return 1;
-    }
+    Sandbox::SceneManager& sceneManager = application.GetSceneManager();
+    sceneManager.AddScene("Deferred Rendering", new Sandbox::SceneDeferredRendering(Sandbox::SceneOptions()));
 
-    scene->Run();
-    scene->Shutdown();
+    sceneManager.SetStartupScene("Deferred Rendering");
+
+    application.Init();
+    application.Run();
+    application.Shutdown();
 
     return 0;
 }

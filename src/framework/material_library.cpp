@@ -3,17 +3,22 @@
 
 namespace Sandbox {
 
+    MaterialLibrary::MaterialLibrary() {
 
-    MaterialLibrary &MaterialLibrary::GetInstance() {
-        static MaterialLibrary materialLibrary;
-        return materialLibrary;
+    }
+
+    MaterialLibrary::~MaterialLibrary() {
+
     }
 
     void MaterialLibrary::OnImGui() {
         if (ImGui::Begin("Material Outliner", nullptr, ImGuiWindowFlags_None)) {
-            for (const std::pair<std::string, Material*>& materialData : _materialList) {
-                if (ImGui::TreeNode(materialData.first.c_str())) {
-                    materialData.second->OnImGui();
+            for (const std::pair<const std::string, Material*>& materialData : _materialList) {
+                const std::string& name = materialData.first;
+                Material* material = materialData.second;
+
+                if (ImGui::TreeNode(name.c_str())) {
+                    material->OnImGui();
 
                     ImGui::TreePop();
                 }
@@ -28,7 +33,7 @@ namespace Sandbox {
     }
 
     void MaterialLibrary::AddMaterial(const std::string& name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms) {
-        _materialList.emplace( name, new Material(name, uniforms));
+        _materialList.emplace(name, new Material(name, uniforms));
     }
 
     Material *MaterialLibrary::GetMaterial(const std::string &materialName) {
@@ -39,14 +44,6 @@ namespace Sandbox {
         }
 
         return nullptr;
-    }
-
-    MaterialLibrary::MaterialLibrary() {
-
-    }
-
-    MaterialLibrary::~MaterialLibrary() {
-
     }
 
     Material *MaterialLibrary::GetMaterialInstance(const std::string &materialName) {

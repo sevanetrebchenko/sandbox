@@ -6,10 +6,15 @@
 
 namespace Sandbox {
 
-    Window::Window(const std::string& name, int width, int height) : window_(nullptr),
-                                                                     width_(width),
-                                                                     height_(height)
-                                                                     {
+    Window& Window::Instance() {
+        // Scott Meyers singleton.
+        static Window window;
+        return window;
+    }
+
+    Window::Window() : window_(nullptr),
+                       dimensions_(glm::ivec2(1280, 720))
+                       {
         // Initialize GLFW.
         int initializationCode = glfwInit();
         if (!initializationCode) {
@@ -23,7 +28,7 @@ namespace Sandbox {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         // Create window.
-        window_ = glfwCreateWindow(width_, height_, name.c_str(), nullptr, nullptr);
+        window_ = glfwCreateWindow(1280, 720, "OpenGL Sandbox", nullptr, nullptr);
         if (!window_) {
             throw std::runtime_error("Failed to create GLFW window.");
         }
@@ -34,7 +39,7 @@ namespace Sandbox {
             throw std::runtime_error("Failed to initialize Glad (OpenGL).");
         }
 
-        ImGuiLog& log = ImGuiLog::GetInstance();
+        ImGuiLog& log = ImGuiLog::Instance();
         log.LogTrace("Vendor: %s", (const char*)glGetString(GL_VENDOR));
         log.LogTrace("Renderer: %s", (const char*)glGetString(GL_RENDERER));
         log.LogTrace("OpenGL Version: %s", (const char*)glGetString(GL_VERSION));
@@ -80,19 +85,13 @@ namespace Sandbox {
 
         bool resized = false;
 
-        if (width_ != width || height_ != height) {
+        if (dimensions_.x != width || dimensions_.y != height) {
             // Resized.
-            width_ = width;
-            height_ = height;
-
+            dimensions_ = glm::ivec2(width, height);
             resized = true;
         }
 
         return resized;
-    }
-
-    void Window::SetName(const std::string& name) {
-        glfwSetWindowTitle(window_, name.c_str());
     }
 
     GLFWwindow *Window::GetNativeWindow() const {
@@ -100,11 +99,37 @@ namespace Sandbox {
     }
 
     int Window::GetWidth() const {
-        return width_;
+        return dimensions_.x;
     }
 
     int Window::GetHeight() const {
-        return height_;
+        return dimensions_.y;
+    }
+
+    glm::ivec2 Window::GetDimensions() const {
+        return dimensions_;
+    }
+
+    glm::vec2 Window::GetMouseCursorPosition() const {
+        static glm::dvec2 mouseCursorPosition;
+        glfwGetCursorPos(window_, &mouseCursorPosition.x, &mouseCursorPosition.y);
+        return { mouseCursorPosition.x, mouseCursorPosition.y };
+    }
+
+    void Window::SetName(const std::string& name) {
+        glfwSetWindowTitle(window_, name.c_str());
+    }
+
+    void Window::SetWidth(int width) {
+        dimensions_.x = width;
+    }
+
+    void Window::SetHeight(int height) {
+        dimensions_.y = height;
+    }
+
+    void Window::SetDimensions(glm::ivec2 dimensions) {
+        dimensions_ = dimensions;
     }
 
 }

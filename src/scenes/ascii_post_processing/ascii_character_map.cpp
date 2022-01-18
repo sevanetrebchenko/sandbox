@@ -24,7 +24,7 @@ namespace Sandbox {
             throw std::runtime_error("Dimension mismatch in AddCharacter.");
         }
 
-        ImGuiLog& log = ImGuiLog::GetInstance();
+        ImGuiLog& log = ImGuiLog::Instance();
 
         if (_fontsheet.size() < MAX_NUM_CHARACTERS) {
             float characterCoverage = characterBitmap.GetCoverage();

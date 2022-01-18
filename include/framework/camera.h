@@ -6,11 +6,11 @@
 
 namespace Sandbox {
 
-    class Camera {
+    class ICamera {
         public:
-            Camera(float width, float height);
+            ICamera(float width, float height);
 
-            ~Camera();
+            ~ICamera();
 
             [[nodiscard]] const glm::vec3& GetForwardVector() const;
             [[nodiscard]] const glm::vec3& GetUpVector() const;

@@ -22,10 +22,9 @@ namespace Sandbox {
             void SetRotation(glm::vec3 rotation);
             [[nodiscard]] glm::vec3 GetRotation() const;
 
-            [[nodiscard]] glm::mat4 GetMatrix() const;
+            [[nodiscard]] glm::mat4 GetMatrix();
 
             [[nodiscard]] bool IsDirty() const;
-            void Clean();
 
         private:
             void CalculateMatrix();

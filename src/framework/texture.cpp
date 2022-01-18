@@ -89,7 +89,7 @@ namespace Sandbox {
 
             GLenum errorCode = glGetError();
             if (errorCode != GL_NO_ERROR) {
-                ImGuiLog& log = ImGuiLog::GetInstance();
+                ImGuiLog& log = ImGuiLog::Instance();
                 log.LogError("Error ( %s ) after loading texture: %s", glGetError(), textureName.c_str());
                 return;
             }
@@ -125,7 +125,7 @@ namespace Sandbox {
     }
 
     void Texture::WriteDataToDirectory(const std::string &directory) const {
-        ImGuiLog& log = ImGuiLog::GetInstance();
+        ImGuiLog& log = ImGuiLog::Instance();
 
         // Make sure directory exists.
         if (!std::filesystem::is_directory(directory)) {
