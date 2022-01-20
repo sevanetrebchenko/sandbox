@@ -6,13 +6,12 @@
 
 int main() {
     Sandbox::Application application;
+    application.Init();
 
     Sandbox::SceneManager& sceneManager = application.GetSceneManager();
-    sceneManager.AddScene("Deferred Rendering", new Sandbox::SceneDeferredRendering(Sandbox::SceneOptions()));
-
+    sceneManager.AddScene("Deferred Rendering", new Sandbox::SceneDeferredRendering());
     sceneManager.SetStartupScene("Deferred Rendering");
 
-    application.Init();
     application.Run();
     application.Shutdown();
 

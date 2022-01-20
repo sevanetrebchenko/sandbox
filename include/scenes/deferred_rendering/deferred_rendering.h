@@ -4,20 +4,23 @@
 
 #include <framework/scene.h>
 #include <framework/buffer/fbo.h>
-#include <framework/buffer/ubo.h>
+#include <framework/model_manager.h>
 #include <framework/lighting_manager.h>
+#include <framework/shader_library.h>
+#include <framework/material_library.h>
+#include <framework/camera/fps_camera.h>
 
 namespace Sandbox {
 
     class SceneDeferredRendering : public IScene {
         public:
-            explicit SceneDeferredRendering(SceneOptions options);
+            SceneDeferredRendering();
             ~SceneDeferredRendering() override;
 
         protected:
             void OnInit() override;
 
-            void OnUpdate(float dt) override;
+            void OnUpdate() override;
 
             void OnPreRender() override;
             void OnRender() override;
@@ -27,9 +30,10 @@ namespace Sandbox {
 
             void OnShutdown() override;
 
+            void OnWindowResize(int width, int height) override;
+
         private:
             void InitializeShaders();
-            void InitializeTextures();
             void InitializeMaterials();
             void ConfigureLights();
             void ConfigureModels();
@@ -39,7 +43,14 @@ namespace Sandbox {
             void RenderOutputScene();
             void RenderDepthBuffer();
 
-            FrameBufferObject _fbo;
+            FrameBufferObject fbo_;
+            FPSCamera camera_;
+
+            ModelManager modelManager_;
+            LightingManager lightingManager_;
+
+            ShaderLibrary shaderLibrary_;
+            MaterialLibrary materialLibrary_;
     };
 
 }

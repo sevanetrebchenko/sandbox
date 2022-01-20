@@ -9,7 +9,7 @@
 //namespace Sandbox {
 //
 //    SceneAsciiPostProcessing::SceneAsciiPostProcessing(int width, int height) : Scene("Ascii Post Processing", width, height),
-//                                                                                _fbo(1280, 760),
+//                                                                                fbo_(1280, 760),
 //                                                                                _characterMap("data/scenes/ascii_post_processing/fontsheets/ascii9x9.txt") {
 //        _dataDirectory = "data/scenes/ascii_post_processing/";
 //    }
@@ -52,9 +52,9 @@
 //    void SceneAsciiPostProcessing::OnRender() {
 //        ShaderLibrary& shaderLibrary = ShaderLibrary::GetInstance();
 //
-//        _fbo.BindForReadWrite();
-//        _fbo.DrawBuffers(0, 1);
-//        Backend::Core::SetViewport(0, 0, _fbo.GetWidth(), _fbo.GetHeight()); // Set viewport.
+//        fbo_.BindForReadWrite();
+//        fbo_.DrawBuffers(0, 1);
+//        Backend::Core::SetViewport(0, 0, fbo_.GetWidth(), fbo_.GetHeight()); // Set viewport.
 //        Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 //        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //
@@ -86,17 +86,17 @@
 //        }
 //        textureShader->Unbind();
 //
-//        _fbo.DrawBuffers(1, 1);
+//        fbo_.DrawBuffers(1, 1);
 //        Shader* asciiShader = shaderLibrary.GetShader("Ascii");
 //
 //        asciiShader->Bind();
 //        asciiShader->SetUniform("cameraTransform", _camera.GetMatrix());
-//        Backend::Rendering::BindTextureWithSampler(asciiShader, _fbo.GetNamedRenderTarget("regularOutput"), "inputTexture", 0);
-//        asciiShader->SetUniform("resolution", glm::vec2(_fbo.GetWidth(), _fbo.GetHeight()));
+//        Backend::Rendering::BindTextureWithSampler(asciiShader, fbo_.GetNamedRenderTarget("regularOutput"), "inputTexture", 0);
+//        asciiShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
 //        Backend::Rendering::DrawFSQ();
 //        asciiShader->Unbind();
 //
-//        _fbo.Unbind();
+//        fbo_.Unbind();
 //
 //        Backend::Core::SetViewport(0, 0, _window.GetWidth(), _window.GetHeight()); // Restore viewport.
 //    }
@@ -121,7 +121,7 @@
 //            ImGui::Separator();
 //
 //            if (ImGui::Button("Take Screenshot")) {
-//                _fbo.SaveRenderTargetsToDirectory(_dataDirectory);
+//                fbo_.SaveRenderTargetsToDirectory(_dataDirectory);
 //            }
 //        }
 //        ImGui::End();
@@ -133,7 +133,7 @@
 //            float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
 //            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
 //
-//            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("regularOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+//            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("regularOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
 //        }
 //        ImGui::End();
 //
@@ -144,7 +144,7 @@
 //            float aspect = static_cast<float>(_window.GetWidth()) / static_cast<float>(_window.GetHeight());
 //            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspect);
 //
-//            ImGui::Image(reinterpret_cast<ImTextureID>(_fbo.GetNamedRenderTarget("asciiOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+//            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("asciiOutput")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
 //        }
 //        ImGui::End();
 //
@@ -208,34 +208,34 @@
 //    }
 //
 //    void SceneAsciiPostProcessing::ConstructFBO() {
-//        _fbo.BindForReadWrite();
+//        fbo_.BindForReadWrite();
 //
 //        // Output texture.
 //        Texture* regularOutputTexture = new Texture("regularOutput");
 //        regularOutputTexture->Bind();
 //        regularOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 1280, 760);
 //        regularOutputTexture->Unbind();
-//        _fbo.AttachRenderTarget(regularOutputTexture);
+//        fbo_.AttachRenderTarget(regularOutputTexture);
 //
 //        Texture* asciiOutputTexture = new Texture("asciiOutput");
 //        asciiOutputTexture->Bind();
 //        asciiOutputTexture->ReserveData(Texture::AttachmentType::COLOR, 1280, 760);
 //        asciiOutputTexture->Unbind();
-//        _fbo.AttachRenderTarget(asciiOutputTexture);
+//        fbo_.AttachRenderTarget(asciiOutputTexture);
 //
-//        _fbo.DrawBuffers();
+//        fbo_.DrawBuffers();
 //
 //        // Depth buffer (RBO).
 //        RenderBufferObject* depthBuffer = new RenderBufferObject();
 //        depthBuffer->Bind();
 //        depthBuffer->ReserveData(1280, 760);
-//        _fbo.AttachDepthBuffer(depthBuffer);
+//        fbo_.AttachDepthBuffer(depthBuffer);
 //
-//        if (!_fbo.CheckStatus()) {
+//        if (!fbo_.CheckStatus()) {
 //            throw std::runtime_error("Custom FBO is not complete.");
 //        }
 //
-//        _fbo.Unbind();
+//        fbo_.Unbind();
 //    }
 //
 //    void SceneAsciiPostProcessing::ConstructAsciiMaps() {

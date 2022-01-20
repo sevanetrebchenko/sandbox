@@ -1,6 +1,6 @@
 
 #include <framework/window.h>
-#include <framework/camera.h>
+#include <framework/camera/camera.h>
 #include <framework/backend.h>
 #include <framework/imgui_log.h>
 
@@ -13,8 +13,15 @@ namespace Sandbox {
     }
 
     Window::Window() : window_(nullptr),
-                       dimensions_(glm::ivec2(1280, 720))
+                       dimensions_(glm::ivec2(1280, 720)),
+                       initialized_(false)
                        {
+    }
+
+    Window::~Window() {
+    }
+
+    void Window::Init() {
         // Initialize GLFW.
         int initializationCode = glfwInit();
         if (!initializationCode) {
@@ -61,7 +68,7 @@ namespace Sandbox {
         ImGui_ImplOpenGL3_Init("#version 130");
     }
 
-    Window::~Window() {
+    void Window::Shutdown() {
         glfwDestroyWindow(window_);
         glfwTerminate();
     }
@@ -108,12 +115,6 @@ namespace Sandbox {
 
     glm::ivec2 Window::GetDimensions() const {
         return dimensions_;
-    }
-
-    glm::vec2 Window::GetMouseCursorPosition() const {
-        static glm::dvec2 mouseCursorPosition;
-        glfwGetCursorPos(window_, &mouseCursorPosition.x, &mouseCursorPosition.y);
-        return { mouseCursorPosition.x, mouseCursorPosition.y };
     }
 
     void Window::SetName(const std::string& name) {

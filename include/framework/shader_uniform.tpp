@@ -34,10 +34,10 @@ namespace Sandbox {
     template<typename T>
     void ShaderUniform::TrySetData(const T &data) {
         try {
-            std::get<T>(_uniformData); // If this line passes, data in underlying variant is of the correct type.
-            _uniformData = data;
+            T& value = std::get<T>(_uniformData); // If this line passes, data in underlying variant is of the correct type.
+            value = data;
         }
-        catch (std::bad_variant_access& accessException) {
+        catch (std::bad_variant_access&) {
             // Since constructor ensures data has been set before this point, this is an error.
             throw std::runtime_error("Data type of underlying ShaderUniform does not match provided data to ShaderUniform::SetData.");
         }
@@ -58,7 +58,7 @@ namespace Sandbox {
         try {
             shaderProgram->SetUniform(_uniformName, std::get<T>(_uniformData));
         }
-        catch (std::bad_variant_access& accessException) {
+        catch (std::bad_variant_access&) {
             throw std::runtime_error("Uniform data type is unsupported.");
         }
     }
@@ -69,7 +69,7 @@ namespace Sandbox {
         try {
             OnImGuiForType(std::get<T1>(_uniformData));
         }
-        catch (std::bad_variant_access& accessException) {
+        catch (std::bad_variant_access&) {
             OnImGuiHelper<T2, T3...>();
         }
     }
@@ -79,7 +79,7 @@ namespace Sandbox {
         try {
             OnImGuiForType(std::get<T>(_uniformData));
         }
-        catch (std::bad_variant_access& accessException) {
+        catch (std::bad_variant_access&) {
             // Do nothing.
         }
     }

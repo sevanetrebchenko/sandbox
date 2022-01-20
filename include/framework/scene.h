@@ -2,31 +2,16 @@
 #ifndef SANDBOX_SCENE_H
 #define SANDBOX_SCENE_H
 
-#include <sandbox_pch.h>
-#include <framework/camera.h>
-#include <framework/model_manager.h>
-#include <framework/lighting_manager.h>
-#include <framework/shader_library.h>
-#include <framework/material_library.h>
-#include <framework/texture_library.h>
-
 namespace Sandbox {
-
-    struct SceneOptions {
-
-        // Section: ImGui options.
-        bool useDocking = true;
-    };
 
     class IScene {
         public:
-            IScene(SceneOptions options);
+            IScene();
             virtual ~IScene() = 0;
 
             virtual void OnInit();
 
-            // Call base Scene::OnUpdate if this function is overridden.
-            virtual void OnUpdate(float dt);
+            virtual void OnUpdate();
 
             virtual void OnPreRender();
             virtual void OnRender();
@@ -36,23 +21,9 @@ namespace Sandbox {
 
             virtual void OnShutdown();
 
+            // Callbacks.
+            // Resize custom framebuffers + render attachments, configure cameras, etc.
             virtual void OnWindowResize(int width, int height);
-            virtual void OnKeyboardInput(int key, int action);
-            virtual void OnMouseInput(int button, int action);
-            virtual void OnMouseScroll(float offset);
-
-        protected:
-            // Configure various per-scene properties.
-            SceneOptions options_;
-
-            ICamera* camera_;
-
-            ModelManager modelManager_;
-            LightingManager lightingManager_;
-
-            ShaderLibrary shaderLibrary_;
-            MaterialLibrary materialLibrary_;
-            TextureLibrary textureLibrary_;
     };
 
 }

@@ -112,7 +112,7 @@ namespace Sandbox {
                         unsigned elementOffset = element.GetBufferOffset();
                         unsigned elementDataSize = UniformBufferElement::UBOShaderDataTypeSize(element.GetShaderDataType());
 
-                        glm::uvec4 data (0.0f);
+                        glm::uvec4 data (0u);
 
                         for (int j = 0; j < numRemaining; ++j) {
                             data[j] = characterBitmap.GetValueAtIndex(numEvenDivisions * 4 + j); // Guaranteed to be less than a full step.

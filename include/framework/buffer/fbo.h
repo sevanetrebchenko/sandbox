@@ -15,8 +15,12 @@ namespace Sandbox {
                 DEPTH
             };
 
-            FrameBufferObject(unsigned contentWidth, unsigned contentHeight);
+            FrameBufferObject(int contentWidth, int contentHeight);
             ~FrameBufferObject();
+
+            // Reallocates storage for FBO render attachments and depth buffer to match input dimensions.
+            void Reallocate(int contentWidth, int contentHeight);
+            void Reallocate(glm::ivec2 contentDimensions);
 
             void BindForReadWrite() const;
             void BindForRead() const;
@@ -30,10 +34,10 @@ namespace Sandbox {
             void AttachRenderTarget(Texture* frameBufferTexture);
             void AttachDepthBuffer(RenderBufferObject* rbo);
 
-            Texture* GetNamedRenderTarget(const std::string& textureBufferName) const;
-            RenderBufferObject* GetDepthBuffer() const;
+            [[nodiscard]] Texture* GetNamedRenderTarget(const std::string& textureBufferName) const;
+            [[nodiscard]] RenderBufferObject* GetDepthBuffer() const;
 
-            bool CheckStatus() const;
+            [[nodiscard]] bool CheckStatus() const;
 
             // Expects directory path with appended separator (/).
             void SaveRenderTargetsToDirectory(const std::string& directoryPath) const;
@@ -42,8 +46,10 @@ namespace Sandbox {
             [[nodiscard]] unsigned GetHeight() const;
 
         private:
-            unsigned _contentWidth;
-            unsigned _contentHeight;
+            void RegenerateBufferID();
+
+            int _contentWidth;
+            int _contentHeight;
 
             std::unordered_map<std::string, Texture*> _renderTargetsMap;
             std::vector<Texture*> _renderTargetsList;

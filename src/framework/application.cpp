@@ -1,6 +1,7 @@
 
 #include <framework/application.h>
 #include <framework/backend.h>
+#include <framework/time.h>
 
 namespace Sandbox {
 
@@ -15,32 +16,7 @@ namespace Sandbox {
     }
 
     void Application::Init() {
-        Window& window = Window::Instance();
-
-        // Callback functions return cached state, do no polling themselves.
-        // Keyboard input callback.
-        glfwSetKeyCallback(window.GetNativeWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mode) {
-            IScene* activeScene = static_cast<IScene*>(glfwGetWindowUserPointer(window));
-            if (activeScene) {
-                activeScene->OnKeyboardInput(key, action);
-            }
-        });
-
-        // Mouse input callback.
-        glfwSetMouseButtonCallback(window.GetNativeWindow(), [](GLFWwindow* window, int button, int action, int mods) {
-            IScene* activeScene = static_cast<IScene*>(glfwGetWindowUserPointer(window));
-            if (activeScene) {
-                activeScene->OnMouseInput(button, action);
-            }
-        });
-
-        glfwSetScrollCallback(window.GetNativeWindow(), [](GLFWwindow* window, double xOffset, double yOffset) {
-            IScene* activeScene = static_cast<IScene*>(glfwGetWindowUserPointer(window));
-            if (activeScene) {
-                // A normal mouse wheel, being vertical, provides offsets along the Y-axis.
-                activeScene->OnMouseScroll(static_cast<float>(yOffset));
-            }
-        });
+        Window::Instance().Init();
     }
 
     void Application::Run() {
@@ -57,9 +33,13 @@ namespace Sandbox {
             dt = current - previous;
             previous = current;
 
+            Time::Instance().dt = dt;
+
             // Clear canvas.
             Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            window.PollEvents(); // Needs to be called before ImGui::NewFrame().
 
             // ImGui.
             ImGui_ImplOpenGL3_NewFrame();
@@ -71,18 +51,13 @@ namespace Sandbox {
             // Scene processing.
             IScene* scene = sceneManager_.GetCurrentScene();
             if (scene) {
-                // Poll events processes the events that are waiting in the queue and calls input callbacks.
-                // Ensure callback data is set for the event.
-                glfwSetWindowUserPointer(window.GetNativeWindow(), static_cast<void*>(scene));
-                window.PollEvents();
-
-                // Additional events.
+                // Events.
                 if (window.CheckForResize()) {
                     scene->OnWindowResize(window.GetWidth(), window.GetHeight());
                 }
 
                 // Run currently active scene.
-                scene->OnUpdate(dt);
+                scene->OnUpdate();
 
                 scene->OnPreRender();
                 scene->OnRender();
@@ -90,15 +65,12 @@ namespace Sandbox {
 
                 scene->OnImGui();
             }
-            else {
-                window.PollEvents();
-            }
 
 
             // Scene rendering.
+            ImGui::EndFrame();
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-            ImGui::EndFrame();
 
             window.SwapBuffers();
         }
@@ -106,6 +78,7 @@ namespace Sandbox {
 
     void Application::Shutdown() {
         sceneManager_.Shutdown();
+        Window::Instance().Shutdown();
     }
 
     SceneManager& Application::GetSceneManager() {

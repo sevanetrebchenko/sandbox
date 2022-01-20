@@ -10,6 +10,9 @@ namespace Sandbox {
         public:
             static Window& Instance();
 
+            void Init();
+            void Shutdown();
+
             bool IsActive();
 
             void PollEvents();
@@ -22,8 +25,6 @@ namespace Sandbox {
             [[nodiscard]] int GetWidth() const;
             [[nodiscard]] int GetHeight() const;
             [[nodiscard]] glm::ivec2 GetDimensions() const;
-
-            [[nodiscard]] glm::vec2 GetMouseCursorPosition() const;
 
             void SetName(const std::string& name);
 
@@ -38,6 +39,7 @@ namespace Sandbox {
             // Window data.
             GLFWwindow* window_;
             glm::ivec2 dimensions_;
+            bool initialized_;
     };
 
 }

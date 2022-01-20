@@ -4,11 +4,12 @@
 
 namespace Sandbox {
 
-    FrameBufferObject::FrameBufferObject(unsigned contextWidth, unsigned contextHeight) : _contentWidth(contextWidth),
-                                                                                          _contentHeight(contextHeight),
-                                                                                          _depthBuffer(nullptr),
-                                                                                          _currentColorAttachmentID(0),
-                                                                                          _hasDepthRenderTarget(false) {
+    FrameBufferObject::FrameBufferObject(int contentWidth, int contentHeight) : _contentWidth(contentWidth),
+                                                                                _contentHeight(contentHeight),
+                                                                                _depthBuffer(nullptr),
+                                                                                _currentColorAttachmentID(0),
+                                                                                _hasDepthRenderTarget(false)
+                                                                                {
         glGenFramebuffers(1, &_bufferID);
     }
 
@@ -135,6 +136,61 @@ namespace Sandbox {
 
             texture->WriteDataToDirectory(appendedDirectory);
         }
+    }
+
+    void FrameBufferObject::Reallocate(int contentWidth, int contentHeight) {
+        BindForReadWrite();
+
+        _contentWidth = contentWidth;
+        _contentHeight = contentHeight;
+
+        // Reset all fields.
+        _renderTargetsMap.clear();
+
+        std::vector<Texture*> renderTargets = _renderTargetsList; // Copy.
+        _renderTargetsList.clear();
+
+        // Reallocate all textures.
+        for (Texture* renderTarget : renderTargets) {
+            renderTarget->Bind();
+            renderTarget->ReserveData(renderTarget->GetAttachmentType(), _contentWidth, _contentHeight);
+        }
+
+        _hasDepthRenderTarget = false;
+
+        RenderBufferObject* depthBuffer = _depthBuffer; // Copy.
+        _depthBuffer = nullptr;
+
+        // Reallocate depth buffer.
+        if (depthBuffer) {
+            depthBuffer->Bind();
+            depthBuffer->ReserveData(contentWidth, contentHeight);
+        }
+
+        _drawBuffers.clear();
+        _currentColorAttachmentID = 0;
+
+        // Regenerate new framebuffer object.
+        // Note: not sure if this fully necessary, resizing doesn't happen every frame so the performance overhead is negligible.
+        RegenerateBufferID();
+
+        BindForReadWrite();
+
+        // Reattach all existing render targets and depth buffer.
+        for (Texture* renderTarget : renderTargets) {
+            AttachRenderTarget(renderTarget);
+        }
+
+        AttachDepthBuffer(depthBuffer);
+    }
+
+    void FrameBufferObject::Reallocate(glm::ivec2 contentDimensions) {
+        Reallocate(contentDimensions.x, contentDimensions.y);
+    }
+
+    void FrameBufferObject::RegenerateBufferID() {
+        glDeleteFramebuffers(1, &_bufferID);
+        glGenFramebuffers(1, &_bufferID);
     }
 
     void CopyDepthBuffer(FrameBufferObject* source, FrameBufferObject* destination) {

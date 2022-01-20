@@ -1,6 +1,8 @@
 
 #include <framework/imgui_log.h>
 
+#include <utility>
+
 namespace Sandbox {
 
     ImGuiLog& ImGuiLog::Instance() {
@@ -18,86 +20,50 @@ namespace Sandbox {
     }
 
     void ImGuiLog::OnImGui() {
-        if (ImGui::Begin("Log Window", nullptr, ImGuiWindowFlags_None)) {
+        static bool showLogWindow = true;
+        if (ImGui::Begin("Log Window", &showLogWindow)) {
             ImGuiIO& io = ImGui::GetIO();
 
             if (ImGui::Button("Clear")) {
                 ClearLog();
             }
 
-            ImGui::SameLine();
-            static bool errorMessagesOnly = false;
-            ImGui::Checkbox("Errors Only", &errorMessagesOnly);
+            static bool showTrace = true;
+            static bool showWarning = true;
+            static bool showError = true;
 
-            ImGui::Text("Message Filter");
             ImGui::SameLine();
-            _filter.Draw("##filter", 400.0f);
+            ImGui::Checkbox("Trace", &showTrace);
+
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor(1.0f, 1.0f, 0.0f)); // Yellow.
+            ImGui::Checkbox("Warning", &showWarning);
+            ImGui::PopStyleColor();
+
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor(1.0f, 0.2f, 0.0f)); // Red.
+            ImGui::Checkbox("Error", &showError);
+            ImGui::PopStyleColor();
 
             ImGui::Separator();
-            ImGui::BeginChild("#scrollingSection", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 
-            _mutex.lock();
-            if (_filter.IsActive()) {
-                io.WantCaptureKeyboard = true;
-
-                _filteredLogMessages.clear();
-
-                // Process.
-                for (const auto& messageData : guiLogMessages_) {
-                    bool isError = messageData.first;
-                    const char* data = messageData.second.c_str();
-
-                    if (_filter.PassFilter(data)) {
-                        if (isError) {
-                            _filteredLogMessages.insert(std::make_pair(isError, data));
+            for (const Message& data : gui_) {
+                switch (data.severity_) {
+                    case TRACE:
+                        if (showTrace) {
+                            PrintTraceMessage(data.message_);
                         }
-                        else {
-                            _filteredLogMessages.insert(std::make_pair(isError, data));
+                        break;
+                    case WARNING:
+                        if (showWarning) {
+                            PrintWarningMessage(data.message_);
                         }
-                    }
-                }
-
-                // Print.
-                for (const auto& messageData : _filteredLogMessages) {
-                    bool isError = messageData.first;
-                    const std::string& message = messageData.second;
-
-                    // Draw error messages in red.
-                    if (errorMessagesOnly) {
-                        if (isError) {
-                            PrintErrorMessage(message);
+                        break;
+                    case ERROR:
+                        if (showError) {
+                            PrintErrorMessage(data.message_);
                         }
-                    }
-                    else {
-                        if (isError) {
-                            PrintErrorMessage(message);
-                        }
-                        else {
-                            PrintTraceMessage(message);
-                        }
-                    }
-                }
-            }
-            else {
-                io.WantCaptureKeyboard = false;
-
-                for (auto& messageData : guiLogMessages_) {
-                    bool isError = messageData.first;
-                    const std::string& message = messageData.second;
-
-                    if (errorMessagesOnly) {
-                        if (isError) {
-                            PrintErrorMessage(message);
-                        }
-                    }
-                    else {
-                        if (isError) {
-                            PrintErrorMessage(message);
-                        }
-                        else {
-                            PrintTraceMessage(message);
-                        }
-                    }
+                        break;
                 }
             }
 
@@ -105,42 +71,37 @@ namespace Sandbox {
             if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
                 ImGui::SetScrollHereY(1.0f);
             }
-
-            _mutex.unlock();
-            ImGui::EndChild();
         }
 
         ImGui::End();
     }
 
     void ImGuiLog::ClearLog() {
-        guiLogMessages_.clear();
-        _filteredLogMessages.clear();
+        gui_.clear();
     }
 
     void ImGuiLog::LogTrace(const char *formatString, ...) {
         va_list argsList;
         va_start(argsList, formatString);
+        ProcessMessage(Severity::TRACE, formatString, argsList);
+        va_end(argsList);
+    }
 
-        _mutex.lock();
-        ProcessMessage(false, formatString, argsList);
-        _mutex.unlock();
-
+    void ImGuiLog::LogWarning(const char* formatString, ...) {
+        va_list argsList;
+        va_start(argsList, formatString);
+        ProcessMessage(Severity::WARNING, formatString, argsList);
         va_end(argsList);
     }
 
     void ImGuiLog::LogError(const char *formatString, ...) {
         va_list argsList;
         va_start(argsList, formatString);
-
-        _mutex.lock();
-        ProcessMessage(true, formatString, argsList);
-        _mutex.unlock();
-
+        ProcessMessage(Severity::ERROR, formatString, argsList);
         va_end(argsList);
     }
 
-    void ImGuiLog::ProcessMessage(bool isErrorMessage, const char *formatString, va_list argsList) {
+    void ImGuiLog::ProcessMessage(Severity severity, const char *formatString, va_list argsList) {
         int currentBufferSize = _processingBufferSize;
 
         // Copy args list to not modify passed parameters (yet).
@@ -164,21 +125,45 @@ namespace Sandbox {
         }
 
         vsnprintf(_processingBuffer, _processingBufferSize, formatString, argsList);
-        guiLogMessages_.emplace_back(isErrorMessage, _processingBuffer);
-        fileLogMessages_.emplace_back(isErrorMessage, _processingBuffer);
+        std::string message = _processingBuffer;
+
+        static const std::string trace =   "[  TRACE  ]  ";
+        static const std::string warning = "[ WARNING ]  ";
+        static const std::string error =   "[  ERROR  ]  ";
+
+        switch (severity) {
+            case TRACE:
+                message.insert(0, trace);
+                break;
+            case WARNING:
+                message.insert(0, warning);
+                break;
+            case ERROR:
+                message.insert(0, error);
+                break;
+        }
+
+        messages_.emplace_back(severity, message);
+        gui_.emplace_back(severity, message);
 
         // Clear buffer.
         memset(_processingBuffer, '\0', _processingBufferSize);
     }
 
-    void ImGuiLog::PrintErrorMessage(const std::string &message) const {
-        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor(1.0f, 0.2f, 0.0f));
+    void ImGuiLog::PrintTraceMessage(const std::string &message) const {
+        ImGui::TextUnformatted(message.c_str());
+    }
+
+    void ImGuiLog::PrintWarningMessage(const std::string& message) const {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor(1.0f, 1.0f, 0.0f)); // Yellow.
         ImGui::TextUnformatted(message.c_str());
         ImGui::PopStyleColor();
     }
 
-    void ImGuiLog::PrintTraceMessage(const std::string &message) const {
+    void ImGuiLog::PrintErrorMessage(const std::string &message) const {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor(1.0f, 0.2f, 0.0f)); // Red.
         ImGui::TextUnformatted(message.c_str());
+        ImGui::PopStyleColor();
     }
 
     void ImGuiLog::WriteToFile(const std::string &outputFile) const {
@@ -186,29 +171,22 @@ namespace Sandbox {
         fileStream.open(outputFile.c_str());
 
         if (fileStream.is_open()) {
-            // Message severities.
-            const std::string trace = "[TRACE] ";
-            const std::string error = "[ERROR] ";
-
-            for (const std::pair<bool, std::string>& logData : fileLogMessages_) {
-                bool isError = logData.first;
-                std::string logMessage = logData.second;
-
-                if (isError) {
-                    logMessage.insert(0, error);
-                }
-                else {
-                    logMessage.insert(0, trace);
-                }
-
-                fileStream << logMessage << std::endl;
+            for (const Message& data : messages_) {
+                fileStream << data.message_ << std::endl;
             }
-
             fileStream.close();
         }
         else {
             std::cerr << "Failed to open ImGui log file at location: " << outputFile << std::endl;
         }
+    }
+
+    ImGuiLog::Message::Message(ImGuiLog::Severity severity, std::string message) : severity_(severity),
+                                                                                   message_(std::move(message))
+                                                                                   {
+    }
+
+    ImGuiLog::Message::~Message() {
     }
 
 }
