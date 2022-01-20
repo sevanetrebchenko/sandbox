@@ -21,30 +21,29 @@ namespace Sandbox {
 
     void FPSCamera::CameraMovement() {
         float dt = Time::Instance().dt;
-        ImGuiIO& io = ImGui::GetIO();
         Input& input = Input::Instance();
 
         if (input.IsKeyPressed(GLFW_KEY_W)) {
             SetPosition(position_ + cameraSpeed_ * lookAtDirection_ * dt);
         }
 
-        if (input.IsKeyPressed(GLFW_KEY_S) && !io.WantCaptureKeyboard) {
+        if (input.IsKeyPressed(GLFW_KEY_S)) {
             SetPosition(position_ - cameraSpeed_ * lookAtDirection_ * dt);
         }
 
-        if (input.IsKeyPressed(GLFW_KEY_A) && !io.WantCaptureKeyboard) {
+        if (input.IsKeyPressed(GLFW_KEY_A)) {
             SetPosition(position_ - glm::normalize(glm::cross(lookAtDirection_, up_)) * cameraSpeed_ * dt);
         }
 
-        if (input.IsKeyPressed(GLFW_KEY_D) && !io.WantCaptureKeyboard) {
+        if (input.IsKeyPressed(GLFW_KEY_D)) {
             SetPosition(position_ + glm::normalize(glm::cross(lookAtDirection_, up_)) * cameraSpeed_ * dt);
         }
 
-        if (input.IsKeyPressed(GLFW_KEY_E) && !io.WantCaptureKeyboard) {
+        if (input.IsKeyPressed(GLFW_KEY_E)) {
             SetPosition(position_ + cameraSpeed_ * up_ * dt);
         }
 
-        if (input.IsKeyPressed(GLFW_KEY_Q) && !io.WantCaptureKeyboard) {
+        if (input.IsKeyPressed(GLFW_KEY_Q)) {
             SetPosition(position_ - cameraSpeed_ * up_ * dt);
         }
     }
