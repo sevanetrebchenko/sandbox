@@ -1,15 +1,7 @@
 
-#include <scenes/deferred_rendering/deferred_rendering.h>
-#include <framework/imgui_log.h>
-#include <framework/backend.h>
-#include <framework/material_library.h>
-#include <framework/shader_library.h>
-#include <framework/texture_library.h>
-#include <framework/primitive_loader.h>
-#include <framework/imgui_log.h>
-#include <framework/window.h>
-#include <framework/time.h>
-#include <framework/camera/fps_camera.h>
+#include "scenes/deferred_rendering/deferred_rendering.h"
+#include "common/api/window.h"
+#include "common/utility/imgui_log.h"
 
 namespace Sandbox {
 

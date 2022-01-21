@@ -2,7 +2,7 @@
 #ifndef SANDBOX_CHARACTER_BITMAP_H
 #define SANDBOX_CHARACTER_BITMAP_H
 
-#include <sandbox_pch.h>
+#include <pch.h>
 #include <scenes/ascii_post_processing/ascii_defines.h>
 
 namespace Sandbox {

@@ -2,7 +2,7 @@
 # PROJECT FILES
 set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/main.cpp"
-        "${PROJECT_SOURCE_DIR}/src/sandbox_pch.cpp"
+        "${PROJECT_SOURCE_DIR}/src/pch.cpp"
 
         # Scenes
         "scenes/deferred_rendering/deferred_rendering.cpp"
@@ -12,48 +12,48 @@ set(CORE_SOURCE_FILES
         "scenes/ascii_post_processing/ascii_character_map_manager.cpp"
 
         # Buffer
-        "${PROJECT_SOURCE_DIR}/src/framework/buffer/buffer.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/buffer/vbo.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/buffer/vao.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/buffer/ebo.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/buffer/ubo.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/buffer/fbo.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/buffer/rbo.cpp"
+        "common/api/buffer/buffer.cpp"
+        "common/api/buffer/vbo.cpp"
+        "common/api/buffer/vao.cpp"
+        "common/api/buffer/ebo.cpp"
+        "common/api/buffer/ubo.cpp"
+        "common/api/buffer/fbo.cpp"
+        "common/api/buffer/rbo.cpp"
 
         # Framework
-        "${PROJECT_SOURCE_DIR}/src/framework/application.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/scene_manager.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/backend.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/time.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/input.cpp"
-        "framework/camera/camera.cpp"
-        "framework/camera/fps_camera.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/directory_utils.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/imgui_log.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/mesh.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/model.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/model_manager.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/material.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/material_library.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/model_manager.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/object_loader.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/scene.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/shader.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/shader_data_types.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/shader_library.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/shader_uniform.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/texture.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/transform.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/window.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/texture_library.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/lighting_manager.cpp"
-        "${PROJECT_SOURCE_DIR}/src/framework/light.cpp"
+        "common/application/application.cpp"
+        "common/application/scene_manager.cpp"
+        "common/api/backend.cpp"
+        "common/application/time.cpp"
+        "common/application/input.cpp"
+        "common/camera/camera.cpp"
+        "common/camera/fps_camera.cpp"
+        "common/utility/directory_utils.cpp"
+        "common/utility/imgui_log.cpp"
+        "common/geometry/mesh.cpp"
+        "common/geometry/model.cpp"
+        "common/geometry/model_manager.cpp"
+        "common/material/material.cpp"
+        "common/material/material_library.cpp"
+        "common/geometry/model_manager.cpp"
+        "common/geometry/object_loader.cpp"
+        "common/application/scene.cpp"
+        "common/api/shader/shader.cpp"
+        "common/api/shader/shader_data_types.cpp"
+        "common/api/shader/shader_library.cpp"
+        "common/api/shader/shader_uniform.cpp"
+        "common/texture/texture.cpp"
+        "common/geometry/transform.cpp"
+        "common/api/window.cpp"
+        "common/texture/texture_library.cpp"
+        "common/lighting/lighting_manager.cpp"
+        "common/lighting/light.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})
 
-target_include_directories(Sandbox PUBLIC "${PROJECT_SOURCE_DIR}/include/")
-target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/sandbox_pch.h")
+target_include_directories(Sandbox PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/pch.h")
 
 # DEPENDENCIES
 # Link OpenGL

@@ -1,5 +1,5 @@
 
-#include <framework/application.h>
+#include <common/application/application.h>
 
 // Scenes
 #include <scenes/deferred_rendering/deferred_rendering.h>

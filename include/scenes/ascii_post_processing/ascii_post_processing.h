@@ -2,10 +2,10 @@
 #ifndef SANDBOX_ASCII_POST_PROCESSING_H
 #define SANDBOX_ASCII_POST_PROCESSING_H
 
-#include <framework/scene.h>
-#include <framework/buffer/fbo.h>
-#include <framework/buffer/ubo.h>
-#include <framework/mesh.h>
+#include <common/application/scene.h>
+#include <common/buffer/fbo.h>
+#include <common/buffer/ubo.h>
+#include <common/objects/mesh.h>
 #include <scenes/ascii_post_processing/ascii_character_map.h>
 
 namespace Sandbox {

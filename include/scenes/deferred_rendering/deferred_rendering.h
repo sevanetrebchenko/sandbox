@@ -2,13 +2,14 @@
 #ifndef SANDBOX_DEFERRED_RENDERING_H
 #define SANDBOX_DEFERRED_RENDERING_H
 
-#include <framework/scene.h>
-#include <framework/buffer/fbo.h>
-#include <framework/model_manager.h>
-#include <framework/lighting_manager.h>
-#include <framework/shader_library.h>
-#include <framework/material_library.h>
-#include <framework/camera/fps_camera.h>
+#include "common/application/scene.h"
+#include "common/api/buffer/fbo.h"
+#include "common/api/shader/shader.h"
+#include "common/geometry/model_manager.h"
+#include "common/lighting/lighting_manager.h"
+#include "common/material/material_library.h"
+#include "common/api/shader/shader_library.h"
+#include "common/camera/fps_camera.h"
 
 namespace Sandbox {
 
