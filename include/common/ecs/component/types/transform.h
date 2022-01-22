@@ -3,13 +3,14 @@
 #define SANDBOX_TRANSFORM_H
 
 #include "pch.h"
+#include "common/ecs/component/component.h"
 
 namespace Sandbox {
 
-    class Transform {
+    class Transform : public IComponent {
         public:
             Transform();
-            ~Transform();
+            ~Transform() override;
 
             void OnImGui();
 

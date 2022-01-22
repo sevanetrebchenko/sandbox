@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <set>
+#include <stack>
 #include <array>
 #include <bitset>
 #include <string>
@@ -27,6 +28,7 @@
 #include <thread>
 #include <cstdio>
 #include <variant>
+#include <typeindex>
 
 // Third-party
 #include <glm/glm.hpp>

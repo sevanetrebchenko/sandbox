@@ -20,6 +20,11 @@ set(CORE_SOURCE_FILES
         "common/api/buffer/fbo.cpp"
         "common/api/buffer/rbo.cpp"
 
+        # ECS
+        "common/ecs/entity/entity_manager.cpp"
+        "common/ecs/ecs.cpp"
+        "common/ecs/component/component.cpp"
+
         # Framework
         "common/application/application.cpp"
         "common/application/scene_manager.cpp"

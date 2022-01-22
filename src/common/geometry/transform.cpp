@@ -1,5 +1,5 @@
 
-#include "common/geometry/transform.h"
+#include "common/ecs/component/types/transform.h"
 
 namespace Sandbox {
 
