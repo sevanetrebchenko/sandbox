@@ -4,7 +4,9 @@
 // Scenes
 #include <scenes/deferred_rendering/deferred_rendering.h>
 
+
 int main() {
+
     Sandbox::Application application;
     application.Init();
 

@@ -24,6 +24,7 @@ set(CORE_SOURCE_FILES
         "common/ecs/entity/entity_manager.cpp"
         "common/ecs/ecs.cpp"
         "common/ecs/component/component.cpp"
+        "common/ecs/component/component_manager.cpp"
 
         # Framework
         "common/application/application.cpp"

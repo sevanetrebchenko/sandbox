@@ -2,12 +2,10 @@
 #ifndef SANDBOX_COMPONENT_MANAGER_TPP
 #define SANDBOX_COMPONENT_MANAGER_TPP
 
-#include "component_manager.h"
-
 namespace Sandbox {
 
     template <typename T>
-    ComponentManager<T>::ComponentManager() {
+    ComponentManager<T>::ComponentManager() : IComponentManager() {
     }
 
     template<typename T>
@@ -66,22 +64,22 @@ namespace Sandbox {
             return;
         }
 
-        int entityComponentIndex = indexIterator->second;
+        int toRemoveIndex = indexIterator->second;
 
         // Erase deleted component mapping.
         IDToIndex_.erase(entityID);
-        indexToID_.erase(entityComponentIndex);
-
 
         int lastIndex = components_.size() - 1; // Guaranteed to be positive.
         int lastEntityID = indexToID_[lastIndex];
 
-        std::swap(components_[entityComponentIndex], components_[lastIndex]);
+        std::swap(components_[toRemoveIndex], components_[lastIndex]);
         components_.pop_back(); // Delete component.
 
+        indexToID_.erase(lastIndex);
+
         // Update mapping.
-        indexToID_[entityComponentIndex] = lastEntityID;
-        IDToIndex_[lastEntityID] = entityComponentIndex;
+        indexToID_[toRemoveIndex] = lastEntityID;
+        IDToIndex_[lastEntityID] = toRemoveIndex;
     }
 
 }
