@@ -9,6 +9,16 @@ namespace Sandbox {
     EntityManager::~EntityManager() {
     }
 
+    void EntityManager::Reset() {
+		entityCounter_ = 0;
+		while (!recycledEntityIDs_.empty()) {
+			recycledEntityIDs_.pop();
+		}
+
+		IDToName_.clear();
+		nameToID_.clear();
+    }
+
     int EntityManager::CreateEntity(std::string entityName) {
         int entityID = -1; // Invalid ID.
 
@@ -71,6 +81,18 @@ namespace Sandbox {
         else {
             return -1;
         }
+    }
+
+    std::vector<int> EntityManager::GetEntityList() const {
+    	std::vector<int> entityList(IDToName_.size());
+
+    	int counter = 0;
+
+    	for (const std::pair<const int, std::string>& data : IDToName_) {
+    		entityList[counter++] = data.first;
+    	}
+
+    	return std::move(entityList);
     }
 
     std::string EntityManager::GetUniqueEntityName(const std::string& entityName) const {

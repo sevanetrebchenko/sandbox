@@ -2,6 +2,7 @@
 #include "common/application/application.h"
 #include "common/api/backend.h"
 #include "common/application/time.h"
+#include "common/ecs/ecs.h"
 
 namespace Sandbox {
 
@@ -17,6 +18,8 @@ namespace Sandbox {
 
     void Application::Init() {
         Window::Instance().Init();
+        ECS::Instance().Init();
+        sceneManager_.Init();
     }
 
     void Application::Run() {
@@ -46,7 +49,14 @@ namespace Sandbox {
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
+            ECS& ecs = ECS::Instance();
+
             sceneManager_.Update();
+            if (sceneManager_.SceneChangeRequested()) {
+                ecs.Reset(); // Reset ECS data for new scene.
+            }
+
+            ecs.Update();
 
             // Scene processing.
             IScene* scene = sceneManager_.GetCurrentScene();
@@ -78,6 +88,7 @@ namespace Sandbox {
 
     void Application::Shutdown() {
         sceneManager_.Shutdown();
+        ECS::Instance().Shutdown();
         Window::Instance().Shutdown();
     }
 

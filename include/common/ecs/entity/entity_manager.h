@@ -11,12 +11,16 @@ namespace Sandbox {
             EntityManager();
             ~EntityManager();
 
+            void Reset(); // Clears all entities.
+
             [[nodiscard]] int CreateEntity(std::string entityName = "");
 
             void DestroyEntity(int entityID);
             void DestroyEntity(const std::string& entityName);
 
             [[nodiscard]] int GetNamedEntityID(const std::string& entityName) const;
+
+            [[nodiscard]] std::vector<int> GetEntityList() const;
 
         private:
             [[nodiscard]] std::string GetUniqueEntityName(const std::string& entityName) const;

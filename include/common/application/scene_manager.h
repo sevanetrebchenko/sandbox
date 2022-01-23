@@ -21,6 +21,7 @@ namespace Sandbox {
             void AddScene(const std::string& name, IScene* scene);
 
             [[nodiscard]] IScene* GetCurrentScene() const;
+            [[nodiscard]] bool SceneChangeRequested() const;
 
             void SetStartupScene(const std::string& name);
 
@@ -46,6 +47,8 @@ namespace Sandbox {
             std::vector<SceneData> scenes_;
             int previousIndex_;
             int currentIndex_;
+
+            bool sceneChanged_;
     };
 
 }

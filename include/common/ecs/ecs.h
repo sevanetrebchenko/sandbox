@@ -15,6 +15,7 @@ namespace Sandbox {
 
             void RegisterSystem(ISystem* system);
 
+
             void Init();
             void Update(); // Updates all the systems.
             void Reset();  // Clears data between scenes.
@@ -32,11 +33,11 @@ namespace Sandbox {
 
             // Component management.
             // Types should match a built-in component type, without any decorations (const, pointer, reference, volatile, etc).
-            template <typename T>
-            T* AddComponent(int entityID);
+            template <typename T, typename ...Args>
+            T* AddComponent(int entityID, Args... args);
 
-            template <typename T>
-            T* AddComponent(const std::string& entityName);
+            template <typename T, typename ...Args>
+            T* AddComponent(const std::string& entityName, Args... args);
 
             template <typename T>
             [[nodiscard]] bool HasComponent(int entityID) const;

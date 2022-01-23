@@ -22,7 +22,9 @@ namespace Sandbox {
             // Pointers to components should not be stored over the course of multiple frames.
 
             // Returns new component, or
-            T* AddComponent(int entityID);
+            template <typename ...Args>
+            T* AddComponent(int entityID, Args... args);
+
             [[nodiscard]] T* GetComponent(int entityID) const;
             [[nodiscard]] bool HasComponent(int entityID) const;
             void RemoveComponent(int entityID);

@@ -21,7 +21,8 @@ namespace Sandbox {
     }
 
     template<typename T>
-    T* ComponentManager<T>::AddComponent(int entityID) {
+    template <typename ...Args>
+    T* ComponentManager<T>::AddComponent(int entityID, Args... args) {
         auto iterator = IDToIndex_.find(entityID);
         if (iterator != IDToIndex_.end()) {
             // Component already exists at this entity ID.
@@ -29,7 +30,7 @@ namespace Sandbox {
         }
 
         int index = components_.size();
-        components_.emplace_back(); // TODO: pass in args to allow non-default construction.
+        components_.emplace_back(std::forward<Args>(args)...);
 
         // Register mapping.
         IDToIndex_.emplace(entityID, index);

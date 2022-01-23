@@ -5,7 +5,9 @@
 namespace Sandbox {
 
     SceneManager::SceneManager() : previousIndex_(-1),
-                                   currentIndex_(-1) {
+                                   currentIndex_(-1),
+                                   sceneChanged_(false)
+                                   {
     }
 
     SceneManager::~SceneManager() {
@@ -41,6 +43,7 @@ namespace Sandbox {
             }
 
             LoadSceneData();
+            sceneChanged_ = true;
         }
 
         previousIndex_ = currentIndex_;
@@ -170,7 +173,11 @@ namespace Sandbox {
         log.LogTrace("Scene unloaded in: %i ms.", duration.count());
 	}
 
-    SceneManager::SceneData::SceneData(std::string sceneName, IScene* scene) : scene_(scene),
+	bool SceneManager::SceneChangeRequested() const {
+		return sceneChanged_;
+	}
+
+	SceneManager::SceneData::SceneData(std::string sceneName, IScene* scene) : scene_(scene),
 																			   prettyName_(std::move(sceneName))
 																			   {
     	ImGuiLog& log = ImGuiLog::Instance();

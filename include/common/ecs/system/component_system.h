@@ -10,6 +10,8 @@ namespace Sandbox {
             virtual void Init();
             virtual void Update() = 0;
             virtual void Shutdown();
+
+            void CheckEntityComponents(int entityID);
     };
 
 
