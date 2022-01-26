@@ -40,8 +40,6 @@ namespace Sandbox {
         if (previousIndex_ != currentIndex_) {
             sceneChangeRequested_ = true;
         }
-
-        previousIndex_ = currentIndex_;
     }
 
     void SceneManager::Shutdown() {
@@ -181,6 +179,7 @@ namespace Sandbox {
         // Load requested scene data.
         LoadSceneData();
         sceneChangeRequested_ = false;
+        previousIndex_ = currentIndex_;
     }
 
     SceneManager::SceneData::SceneData(std::string sceneName, IScene* scene) : scene_(scene),

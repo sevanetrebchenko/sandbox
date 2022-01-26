@@ -33,6 +33,13 @@ namespace Sandbox {
             std::unordered_map<std::string, ShaderUniform*> _uniforms;
     };
 
+    class MaterialCollection {
+        public:
+
+        private:
+            std::vector<Material> materials_;
+    };
+
 }
 
 #endif //SANDBOX_MATERIAL_H

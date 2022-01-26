@@ -314,24 +314,12 @@ namespace Sandbox {
         // Render models to FBO attachments.
         ECS& ecs = ECS::Instance();
 
-        ecs.IterateOver<Transform, Mesh, Material>([](Transform& transform, Mesh& mesh, Material&) {
-            transform.SetPosition(glm::vec3(0.0f));
-        });
+        ecs.IterateOver<Transform, Mesh>([geometryShader](Transform& transform, Mesh& mesh) {
+            const glm::mat4& modelTransform = transform.GetMatrix();
+            geometryShader->SetUniform("modelTransform", modelTransform);
 
-
-        for (Model* model : modelManager_.GetModels()) {
-            Transform& transform = model->GetTransform();
-            Mesh& mesh = model->GetMesh();
-            Material* material = model->GetMaterial("Phong");
-
-            // Pre render stage.
-            if (material) {
-                const glm::mat4& modelTransform = transform.GetMatrix();
-                geometryShader->SetUniform("modelTransform", modelTransform);
-
-                // Bind all related uniforms with this shader.
-                material->Bind(geometryShader);
-            }
+            // Bind all related uniforms with this shader.
+            // material.Bind(geometryShader);
 
             // Render stage.
             mesh.Bind();
@@ -339,7 +327,7 @@ namespace Sandbox {
             mesh.Unbind();
 
             // Post render stage.
-        }
+        });
 
         geometryShader->Unbind();
     }

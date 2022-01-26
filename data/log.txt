@@ -4,7 +4,7 @@
 [  TRACE  ]  Setting startup scene as: 'Deferred Rendering'
 [  TRACE  ]  Loading scene: 'Deferred Rendering'
 [  TRACE  ]  Found existing ImGui layout file: data/scenes/deferred_rendering/deferred_rendering_gui.ini
-[  TRACE  ]  Scene loaded in: 4 ms.
+[  TRACE  ]  Scene loaded in: 5 ms.
 [  TRACE  ]  Unloading scene: 'Deferred Rendering'
 [  TRACE  ]  Saving ImGui settings to: data/scenes/deferred_rendering/deferred_rendering_gui.ini
 [  TRACE  ]  Scene unloaded in: 0 ms.
