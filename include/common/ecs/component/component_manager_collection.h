@@ -7,8 +7,9 @@
 
 // Component includes go here.
 #include "common/ecs/component/types/transform.h"
+#include "common/geometry/mesh.h"
 
-#define COMPONENT_TYPES Sandbox::Transform
+#define COMPONENT_TYPES Sandbox::Transform, Sandbox::Mesh
 
 namespace Sandbox {
 
@@ -41,9 +42,12 @@ namespace Sandbox {
             void RemoveComponent(int entityID);
 
             template <typename Y>
-            [[nodiscard]] int GetIDFromType() const;
+            [[nodiscard]] int GetIDFromType();
 
             std::unordered_map<int, IComponentManager*> componentManagers_;
+
+            int typeIDCounter_;
+            std::unordered_map<std::type_index, int> typeIDMapping_;
     };
 
 }

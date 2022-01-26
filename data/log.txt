@@ -6,7 +6,7 @@
 [  TRACE  ]  Found existing ImGui layout file: data/scenes/deferred_rendering/deferred_rendering_gui.ini
 [  TRACE  ]  Creating new model: bunny from .obj file: assets\models\bunny_high_poly.obj
 [  TRACE  ]  Finished loading model: bunny.
-[  TRACE  ]  Scene loaded in: 624 ms.
+[  TRACE  ]  Scene loaded in: 4855 ms.
 [  TRACE  ]  Unloading scene: 'Deferred Rendering'
 [  TRACE  ]  Saving ImGui settings to: data/scenes/deferred_rendering/deferred_rendering_gui.ini
 [  TRACE  ]  Scene unloaded in: 0 ms.

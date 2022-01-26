@@ -1,0 +1,7 @@
+[TRACE] Vendor: NVIDIA Corporation
+[TRACE] Renderer: NVIDIA GeForce 940MX/PCIe/SSE2
+[TRACE] OpenGL Version: 4.6.0 NVIDIA 471.96
+[TRACE] Found existing ImGui layout (data\scenes\project4\physically-based_modeling_imgui.ini).
+[TRACE] Creating new ImGui log in location (data\scenes\project4\physically-based_modeling_log.txt).
+[TRACE] Saving ImGui settings to: data\scenes\project4\physically-based_modeling_imgui.ini
+[TRACE] Saving ImGui log to: data\scenes\project4\physically-based_modeling_log.txt

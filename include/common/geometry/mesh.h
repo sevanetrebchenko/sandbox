@@ -4,13 +4,14 @@
 
 #include "pch.h"
 #include "common/api/buffer/vao.h"
+#include "common/ecs/component/component.h"
 
 namespace Sandbox {
 
-    class Mesh {
+    class Mesh : public IComponent {
         public:
             explicit Mesh(GLuint renderingPrimitive = -1u);
-            ~Mesh();
+            ~Mesh() override;
 
             Mesh(const Mesh& mesh);
             Mesh& operator=(const Mesh& mesh);

@@ -10,7 +10,7 @@
 namespace Sandbox {
 
     template <typename ...T>
-    ComponentManagerCollection<T...>::ComponentManagerCollection() {
+    ComponentManagerCollection<T...>::ComponentManagerCollection() : typeIDCounter_(0) {
         static_assert((std::is_base_of_v<IComponent, T> && ...), "Invalid template parameter provided to base BaseComponentSystem - component types must derive from IComponent.");
     }
 
@@ -91,28 +91,16 @@ namespace Sandbox {
 
     template <typename ...T>
     template <typename Y>
-    int ComponentManagerCollection<T...>::GetIDFromType() const {
-        static int index = 0;
-        static std::unordered_map<std::type_index, int> mapping; // Type to index.
+    int ComponentManagerCollection<T...>::GetIDFromType() {
+        std::type_index type = std::type_index(typeid(Y));
 
-        // Create pointer to not enforce default construction requirement on component.
-        std::type_index type = std::type_index(typeid(Y*));
-
-        int toReturn = -1;
-
-        auto iterator = mapping.find(type);
-        if (iterator != mapping.end()) {
-            // Type already exists.
-            toReturn = mapping[type];
-        }
-        else {
+        auto iterator = typeIDMapping_.find(type);
+        if (iterator == typeIDMapping_.end()) {
             // Type does not exist.
-            toReturn = index++;
-            mapping.emplace(type, toReturn);
+            typeIDMapping_.emplace(type, typeIDCounter_++);
         }
 
-        assert(toReturn != -1); // Sanity.
-        return toReturn;
+        return typeIDMapping_[type];
     }
 
 }

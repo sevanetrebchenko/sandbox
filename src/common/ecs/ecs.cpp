@@ -21,6 +21,8 @@ namespace Sandbox {
     }
 
     void ECS::Init() {
+        componentManagers_.Init();
+
         for (ISystem* system : systems_) {
             system->Init();
         }
@@ -33,7 +35,18 @@ namespace Sandbox {
 
             for (ISystem* system : systems_) {
                 for (int entityID : entityList) {
-                    system->CheckEntityComponents(entityID);
+                    bool managed = system->ManagesEntity(entityID);
+
+                    if (system->CheckEntityComponents(entityID)) {
+                        if (!managed) {
+                            system->AddEntity(entityID);
+                        }
+                    }
+                    else {
+                        if (managed) {
+                            system->RemoveEntity(entityID);
+                        }
+                    }
                 }
             }
 

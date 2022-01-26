@@ -2,6 +2,8 @@
 #ifndef SANDBOX_COMPONENT_SYSTEM_H
 #define SANDBOX_COMPONENT_SYSTEM_H
 
+#include "pch.h"
+
 namespace Sandbox {
 
     // Interface for making systems polymorphic at runtime.
@@ -11,20 +13,17 @@ namespace Sandbox {
             virtual void Update() = 0;
             virtual void Shutdown();
 
-            void CheckEntityComponents(int entityID);
-    };
+            // Queries the components attached to the given entity to determine if it should be processed by this system.
+            // Returns true if the entity has all the necessary components to be processed by this system.
+            [[nodiscard]] virtual bool CheckEntityComponents(int entityID) = 0;
 
-
-    template <typename T>
-    class BaseSystem : public ISystem {
-        public:
-            BaseSystem();
-            ~BaseSystem();
+            void AddEntity(int entityID);
+            void RemoveEntity(int entityID);
+            [[nodiscard]] bool ManagesEntity(int entityID) const;
 
         protected:
-            [[nodiscard]] T* GetComponent(int entityID) const;
-
-            std::vector<int> entityIDs_; // IDs of entities updated by this system.
+            // Use ECS helper functions to operate on entity components.
+            std::vector<int> entityIDs_;
     };
 
 }
