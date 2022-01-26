@@ -14,6 +14,9 @@ namespace Sandbox {
 
     template<typename T>
     void ComponentManager<T>::Reset() {
+        for (T* component : components_) {
+            delete component;
+        }
         components_.clear();
 
         IDToIndex_.clear();
@@ -26,24 +29,24 @@ namespace Sandbox {
         auto iterator = IDToIndex_.find(entityID);
         if (iterator != IDToIndex_.end()) {
             // Component already exists at this entity ID.
-            return &components_[iterator->second];
+            return components_[iterator->second];
         }
 
         int index = components_.size();
-        components_.emplace_back(std::forward<Args>(args)...);
+        components_.emplace_back(new T(std::forward<Args>(args)...));
 
         // Register mapping.
         IDToIndex_.emplace(entityID, index);
         indexToID_.emplace(index, entityID);
 
-        return &components_[index];
+        return components_[index];
     }
 
     template<typename T>
     T* ComponentManager<T>::GetComponent(int entityID) const {
         auto iterator = IDToIndex_.find(entityID);
         if (iterator != IDToIndex_.end()) {
-            return &components_[iterator->second];
+            return components_[iterator->second];
         }
         else {
             // Component does not exist.

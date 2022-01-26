@@ -6,7 +6,7 @@ namespace Sandbox {
 
     SceneManager::SceneManager() : previousIndex_(-1),
                                    currentIndex_(-1),
-                                   sceneChanged_(false)
+                                   sceneChangeRequested_(false)
                                    {
     }
 
@@ -38,12 +38,7 @@ namespace Sandbox {
         ImGui::EndMainMenuBar();
 
         if (previousIndex_ != currentIndex_) {
-            if (previousIndex_ != -1) {
-                UnloadSceneData();
-            }
-
-            LoadSceneData();
-            sceneChanged_ = true;
+            sceneChangeRequested_ = true;
         }
 
         previousIndex_ = currentIndex_;
@@ -174,10 +169,21 @@ namespace Sandbox {
 	}
 
 	bool SceneManager::SceneChangeRequested() const {
-		return sceneChanged_;
+		return sceneChangeRequested_;
 	}
 
-	SceneManager::SceneData::SceneData(std::string sceneName, IScene* scene) : scene_(scene),
+    void SceneManager::SwitchScenes() {
+        if (previousIndex_ != -1) {
+            // Unload previous scene data.
+            UnloadSceneData();
+        }
+
+        // Load requested scene data.
+        LoadSceneData();
+        sceneChangeRequested_ = false;
+    }
+
+    SceneManager::SceneData::SceneData(std::string sceneName, IScene* scene) : scene_(scene),
 																			   prettyName_(std::move(sceneName))
 																			   {
     	ImGuiLog& log = ImGuiLog::Instance();

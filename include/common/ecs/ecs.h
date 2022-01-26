@@ -13,13 +13,16 @@ namespace Sandbox {
         public:
             static ECS& Instance();
 
-            void RegisterSystem(ISystem* system);
-
-
             void Init();
             void Update(); // Updates all the systems.
             void Reset();  // Clears data between scenes.
             void Shutdown();
+
+            void RegisterSystem(ISystem* system);
+
+            // Calls the given callback function for each entity, given it has the required set of components.
+            template <typename ...T, typename Fn>
+            void IterateOver(Fn&& callback) const;
 
 
             // Entity management.
@@ -45,11 +48,17 @@ namespace Sandbox {
             template <typename T>
             [[nodiscard]] bool HasComponent(const std::string& entityName) const;
 
-            template <typename T>
-            [[nodiscard]] T* GetComponent(int entityID);
+            template <typename ...T>
+            [[nodiscard]] bool HasComponents(int entityID) const;
+
+            template <typename ...T>
+            [[nodiscard]] bool HasComponents(const std::string& entityName) const;
 
             template <typename T>
-            [[nodiscard]] T* GetComponent(const std::string& entityName);
+            [[nodiscard]] T* GetComponent(int entityID) const;
+
+            template <typename T>
+            [[nodiscard]] T* GetComponent(const std::string& entityName) const;
 
             template <typename T>
             void RemoveComponent(int entityID);

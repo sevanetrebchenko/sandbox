@@ -23,6 +23,8 @@ namespace Sandbox {
             [[nodiscard]] IScene* GetCurrentScene() const;
             [[nodiscard]] bool SceneChangeRequested() const;
 
+            void SwitchScenes();
+
             void SetStartupScene(const std::string& name);
 
         private:
@@ -48,7 +50,7 @@ namespace Sandbox {
             int previousIndex_;
             int currentIndex_;
 
-            bool sceneChanged_;
+            bool sceneChangeRequested_;
     };
 
 }

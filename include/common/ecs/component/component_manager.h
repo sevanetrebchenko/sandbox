@@ -34,7 +34,7 @@ namespace Sandbox {
             std::unordered_map<int, int> IDToIndex_;
             std::unordered_map<int, int> indexToID_;
 
-            std::vector<T> components_;
+            std::vector<T*> components_;
     };
 
 }

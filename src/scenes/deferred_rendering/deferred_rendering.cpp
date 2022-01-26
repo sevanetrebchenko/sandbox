@@ -1,5 +1,6 @@
 
 #include "scenes/deferred_rendering/deferred_rendering.h"
+#include "common/ecs/ecs.h"
 #include "common/api/window.h"
 #include "common/utility/imgui_log.h"
 
@@ -193,10 +194,16 @@ namespace Sandbox {
     }
 
     void SceneDeferredRendering::ConfigureModels() {
-        Model* bunny = modelManager_.AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
-        Material* bunnyMaterial = materialLibrary_.GetMaterialInstance("Phong");
-        bunnyMaterial->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-        bunny->AddMaterial(bunnyMaterial);
+        ECS& ecs = ECS::Instance();
+
+        int bunny = ecs.CreateEntity("Bunny");
+        ecs.AddComponent<Mesh>(bunny);
+        // ecs.AddComponent<Material>(bunny);
+
+//        Model* bunny = modelManager_.AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
+//        Material* bunnyMaterial = materialLibrary_.GetMaterialInstance("Phong");
+//        bunnyMaterial->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+//        bunny->AddMaterial(bunnyMaterial);
     }
 
     void SceneDeferredRendering::ConstructFBO() {
@@ -305,6 +312,13 @@ namespace Sandbox {
         geometryShader->SetUniform("viewTransform", camera_.GetViewTransform());
 
         // Render models to FBO attachments.
+        ECS& ecs = ECS::Instance();
+
+        ecs.IterateOver<Transform, Mesh, Material>([](Transform& transform, Mesh& mesh, Material&) {
+            transform.SetPosition(glm::vec3(0.0f));
+        });
+
+
         for (Model* model : modelManager_.GetModels()) {
             Transform& transform = model->GetTransform();
             Mesh& mesh = model->GetMesh();

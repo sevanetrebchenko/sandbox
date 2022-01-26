@@ -6,10 +6,11 @@
 #include "common/ecs/component/component_manager.h"
 
 // Component includes go here.
-#include "common/ecs/component/types/transform.h"
+#include "common/geometry/transform.h"
 #include "common/geometry/mesh.h"
+#include "common/material/material.h"
 
-#define COMPONENT_TYPES Sandbox::Transform, Sandbox::Mesh
+#define COMPONENT_TYPES Sandbox::Transform, Sandbox::Mesh, Sandbox::Material
 
 namespace Sandbox {
 
@@ -26,7 +27,7 @@ namespace Sandbox {
             // Retrieves component manager for the given type.
             // Creates new component manager if queried one does not exist.
             template <typename Y>
-            [[nodiscard]] ComponentManager<Y>* GetComponentManager();
+            [[nodiscard]] ComponentManager<Y>* GetComponentManager() const;
 
             // Removes all components from an entity.
             void RemoveAllComponents(int entityID);
@@ -42,7 +43,10 @@ namespace Sandbox {
             void RemoveComponent(int entityID);
 
             template <typename Y>
-            [[nodiscard]] int GetIDFromType();
+            void GenerateTypeID();
+
+            template <typename Y>
+            [[nodiscard]] int GetIDFromType() const;
 
             std::unordered_map<int, IComponentManager*> componentManagers_;
 

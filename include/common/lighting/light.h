@@ -3,7 +3,7 @@
 #define SANDBOX_LIGHT_H
 
 #include "pch.h"
-#include "common/ecs/component/types/transform.h"
+#include "common/geometry/transform.h"
 
 namespace Sandbox {
 

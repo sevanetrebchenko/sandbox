@@ -3,8 +3,8 @@
 #define SANDBOX_MODEL_H
 
 #include "pch.h"
-#include "common/ecs/component/types/transform.h"
-#include "common/geometry/mesh.h"
+#include "transform.h"
+#include "mesh.h"
 #include "common/material/material.h"
 
 namespace Sandbox {

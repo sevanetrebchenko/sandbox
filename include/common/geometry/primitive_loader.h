@@ -3,7 +3,7 @@
 #define SANDBOX_PRIMITIVE_LOADER_H
 
 #include "pch.h"
-#include "common/geometry/mesh.h"
+#include "mesh.h"
 
 namespace Sandbox {
 

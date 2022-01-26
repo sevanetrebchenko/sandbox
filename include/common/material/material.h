@@ -5,13 +5,14 @@
 #include "pch.h"
 #include "common/api/shader/shader.h"
 #include "common/api/shader/shader_uniform.h"
+#include "common/ecs/component/component.h"
 
 namespace Sandbox {
 
-    class Material {
+    class Material : public IComponent {
         public:
             Material(std::string name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms);
-            ~Material();
+            ~Material() override;
 
             Material(const Material& other);
             Material& operator=(const Material& material);

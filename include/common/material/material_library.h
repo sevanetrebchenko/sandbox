@@ -3,7 +3,7 @@
 #define SANDBOX_MATERIAL_LIBRARY_H
 
 #include "pch.h"
-#include "common/material/material.h"
+#include "material.h"
 #include "common/api/shader/shader_uniform.h"
 
 namespace Sandbox {

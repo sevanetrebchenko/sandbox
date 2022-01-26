@@ -54,6 +54,7 @@ namespace Sandbox {
             sceneManager_.Update();
             if (sceneManager_.SceneChangeRequested()) {
                 ecs.Reset(); // Reset ECS data for new scene.
+                sceneManager_.SwitchScenes();
             }
 
             ecs.Update();
