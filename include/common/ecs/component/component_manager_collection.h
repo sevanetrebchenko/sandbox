@@ -5,17 +5,8 @@
 #include "pch.h"
 #include "common/ecs/component/component_manager.h"
 
-// Component includes go here.
-#include "common/geometry/transform.h"
-#include "common/geometry/mesh.h"
-#include "common/material/material.h"
-#include "scenes/cs562/project1/light.h"
-
-#define COMPONENT_TYPES Sandbox::Transform, Sandbox::Mesh, Sandbox::MaterialCollection, Sandbox::LocalLight
-
 namespace Sandbox {
 
-    template <typename ...T>
     class ComponentManagerCollection {
         public:
             ComponentManagerCollection();
@@ -27,27 +18,15 @@ namespace Sandbox {
 
             // Retrieves component manager for the given type.
             // Creates new component manager if queried one does not exist.
-            template <typename Y>
-            [[nodiscard]] ComponentManager<Y>* GetComponentManager() const;
+            template <typename T>
+            [[nodiscard]] ComponentManager<T>* GetComponentManager();
 
             // Removes all components from an entity.
             void RemoveAllComponents(int entityID);
 
         private:
-            template <typename Y>
-            void CreateComponentManager();
-
-            template <typename Y>
-            void ResetComponentManager();
-
-            template <typename Y>
-            void RemoveComponent(int entityID);
-
-            template <typename Y>
-            void GenerateTypeID();
-
-            template <typename Y>
-            [[nodiscard]] int GetIDFromType() const;
+            template <typename T>
+            [[nodiscard]] int GetTypeID();
 
             std::unordered_map<int, IComponentManager*> componentManagers_;
 

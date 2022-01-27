@@ -23,6 +23,7 @@ set(CORE_SOURCE_FILES
         "common/ecs/ecs.cpp"
         "common/ecs/component/component.cpp"
         "common/ecs/component/component_manager.cpp"
+        "common/ecs/component/component_manager_collection.cpp"
         "common/ecs/system/component_system.cpp"
 
         # Framework

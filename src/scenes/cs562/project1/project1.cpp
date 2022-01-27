@@ -4,6 +4,7 @@
 #include "common/ecs/ecs.h"
 #include "common/geometry/object_loader.h"
 #include "common/utility/imgui_log.h"
+#include "common/geometry/transform.h"
 
 namespace Sandbox {
 
@@ -231,10 +232,11 @@ namespace Sandbox {
             phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
             ecs.GetComponent<MaterialCollection>(floor)->SetMaterial(phong);
 
-            Transform* transform = ecs.GetComponent<Transform>(floor);
-            transform->SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
-            transform->SetScale(glm::vec3(10.0f));
-            transform->SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+            ecs.SetComponent<Transform>(floor, [](Transform& transform) {
+                transform.SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
+                transform.SetScale(glm::vec3(10.0f));
+                transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+            });
         }
     }
 

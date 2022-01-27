@@ -78,7 +78,10 @@ namespace Sandbox {
             ~ECS();
 
             EntityManager entityManager_;
-            ComponentManagerCollection<COMPONENT_TYPES> componentManagers_;
+
+            // ComponentManagerCollection creates ComponentManagers at time of request.
+            mutable ComponentManagerCollection componentManagers_;
+
             std::vector<ISystem*> systems_;
 
             bool refreshSystems_;

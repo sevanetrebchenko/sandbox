@@ -8,7 +8,10 @@ namespace Sandbox {
 
     class IComponentManager {
         public:
-            virtual ~IComponentManager() = 0;
+            virtual ~IComponentManager();
+
+            virtual void Reset() = 0;
+            virtual void RemoveComponent(int entityID) = 0;
     };
 
     template <typename T>
@@ -17,7 +20,7 @@ namespace Sandbox {
             ComponentManager();
             ~ComponentManager() override;
 
-            void Reset(); // Clears all components.
+            void Reset() override; // Clears all components.
 
             // Constructs a component and returns it.
             template <typename ...Args>
@@ -31,7 +34,7 @@ namespace Sandbox {
 
             [[nodiscard]] bool HasComponent(int entityID) const;
 
-            void RemoveComponent(int entityID);
+            void RemoveComponent(int entityID) override;
 
         private:
             // Mappings.

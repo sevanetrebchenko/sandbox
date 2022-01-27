@@ -4,7 +4,7 @@
 [  TRACE  ]  Setting startup scene as: 'CS562: Project 1'
 [  TRACE  ]  Loading scene: 'CS562: Project 1'
 [  TRACE  ]  Found existing ImGui layout file: data/scenes/cs562_project_1/cs562_project_1_gui.ini
-[  TRACE  ]  Scene loaded in: 245 ms.
+[  TRACE  ]  Scene loaded in: 303 ms.
 [  TRACE  ]  Unloading scene: 'CS562: Project 1'
 [  TRACE  ]  Saving ImGui settings to: data/scenes/cs562_project_1/cs562_project_1_gui.ini
 [  TRACE  ]  Scene unloaded in: 0 ms.
