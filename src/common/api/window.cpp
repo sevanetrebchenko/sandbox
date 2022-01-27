@@ -92,7 +92,6 @@ namespace Sandbox {
         bool resized = false;
 
         if (dimensions_.x != width || dimensions_.y != height) {
-            // Resized.
             dimensions_ = glm::ivec2(width, height);
             resized = true;
         }

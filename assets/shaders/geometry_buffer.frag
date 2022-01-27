@@ -7,8 +7,8 @@ layout (location = 2) out vec4 ambient;
 layout (location = 3) out vec4 diffuse;
 layout (location = 4) out vec4 specular;
 
-in vec4 viewPosition;
-in vec4 viewNormal;
+in vec4 worldPosition;
+in vec4 worldNormal;
 
 uniform vec3 ambientCoefficient;
 uniform vec3 diffuseCoefficient;
@@ -18,10 +18,12 @@ uniform float specularExponent;
 void main()
 {
     // Store fragment position in the first texture buffer.
-    position = vec4(viewPosition.xyz, 1.0f);
+    // position = vec4(viewPosition.xyz, 1.0f);
+    position = vec4(worldPosition.xyz, 1.0f);
 
     // Store normal in the second texture buffer.
-    normal = vec4(viewNormal.xyz, 1.0f); // Color, not traditional normal value.
+    // normal = vec4(viewNormal.xyz, 1.0f);
+    normal = vec4(worldNormal.xyz, 1.0f); // Color, not traditional normal value.
 
     // Store ambient color in the third texture buffer.
     ambient = vec4(ambientCoefficient, 1.0f);

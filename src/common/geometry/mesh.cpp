@@ -19,6 +19,7 @@ namespace Sandbox {
                                    _uv(mesh._uv),
                                    _triangles(mesh._triangles),
                                    _normals(mesh._normals) {
+        InitializeBuffers();
     }
 
     Mesh &Mesh::operator=(const Mesh &mesh) {
@@ -33,6 +34,8 @@ namespace Sandbox {
         _triangles = mesh._triangles;
         _uv = mesh._uv;
         _normals = mesh._normals;
+
+        InitializeBuffers();
 
         return *this;
     }

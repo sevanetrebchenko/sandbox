@@ -81,7 +81,7 @@ namespace Sandbox {
             log.LogTrace("Creating new model: %s from .obj file: %s", modelName.c_str(), filepath.c_str());
 
             // Load in mesh and set up buffers.
-            OBJLoader& objLoader = OBJLoader::GetInstance();
+            OBJLoader& objLoader = OBJLoader::Instance();
             Mesh modelMesh = objLoader.LoadFromFile(filepath);
             modelMesh.Complete();
 

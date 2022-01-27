@@ -15,9 +15,9 @@ out vec4 viewNormal;
 
 void main()
 {
-    // Transform to clip space
-    viewNormal = viewTransform * normalTransform * vec4(vertexNormal, 0.0f);
-    viewPosition = viewTransform * modelTransform * vec4(vertexPosition, 1.0);
+    // Transform to screen coodinates (NDC).
+    viewPosition = cameraTransform * modelTransform * vec4(vertexPosition, 1.0);
+    viewNormal = cameraTransform * normalTransform * vec4(vertexNormal, 0.0f);
 
     gl_Position = cameraTransform * modelTransform * vec4(vertexPosition, 1.0);
 }

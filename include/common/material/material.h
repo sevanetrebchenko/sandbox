@@ -9,10 +9,10 @@
 
 namespace Sandbox {
 
-    class Material : public IComponent {
+    class Material {
         public:
             Material(std::string name, std::initializer_list<std::pair<std::string, ShaderUniform::UniformEntry>> uniforms);
-            ~Material() override;
+            ~Material();
 
             Material(const Material& other);
             Material& operator=(const Material& material);
@@ -33,11 +33,16 @@ namespace Sandbox {
             std::unordered_map<std::string, ShaderUniform*> _uniforms;
     };
 
-    class MaterialCollection {
+    class MaterialCollection : public IComponent {
         public:
+            MaterialCollection();
+            ~MaterialCollection() override;
+
+            void SetMaterial(Material* material);
+            [[nodiscard]] Material* GetNamedMaterial(const std::string& name);
 
         private:
-            std::vector<Material> materials_;
+            std::vector<Material*> materials_;
     };
 
 }

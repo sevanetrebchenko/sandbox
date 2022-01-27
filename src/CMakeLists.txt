@@ -6,10 +6,8 @@ set(CORE_SOURCE_FILES
 
         # Scenes
         "scenes/deferred_rendering/deferred_rendering.cpp"
-        "scenes/ascii_post_processing/ascii_post_processing.cpp"
-        "scenes/ascii_post_processing/character_bitmap.cpp"
-        "scenes/ascii_post_processing/ascii_character_map.cpp"
-        "scenes/ascii_post_processing/ascii_character_map_manager.cpp"
+        "scenes/cs562/project1/project1.cpp"
+        "scenes/cs562/project1/light.cpp"
 
         # Buffer
         "common/api/buffer/buffer.cpp"

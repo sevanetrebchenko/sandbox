@@ -14,7 +14,7 @@ namespace Sandbox {
             static ECS& Instance();
 
             void Init();
-            void Update(); // Updates all the systems.
+            void Update(); // Updates all systems.
             void Reset();  // Clears data between scenes.
             void Shutdown();
 
@@ -75,6 +75,7 @@ namespace Sandbox {
             std::vector<ISystem*> systems_;
 
             bool refreshSystems_;
+            std::set<int> changedEntities_; // Entities that were updated this frame (created, destroyed, add/remove component).
     };
 
 }

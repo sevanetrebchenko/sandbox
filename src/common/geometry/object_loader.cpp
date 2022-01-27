@@ -9,7 +9,7 @@ namespace Sandbox {
     OBJLoader::~OBJLoader() {
     }
 
-    OBJLoader &OBJLoader::GetInstance() {
+    OBJLoader &OBJLoader::Instance() {
         static OBJLoader instance;
         return instance;
     }

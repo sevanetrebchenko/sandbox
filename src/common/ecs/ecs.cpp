@@ -1,6 +1,5 @@
 
 #include "common/ecs/ecs.h"
-#include "common/geometry/transform.h"
 
 namespace Sandbox {
 
@@ -76,6 +75,7 @@ namespace Sandbox {
         AddComponent<Transform>(entityID);
 
         refreshSystems_ = true;
+        changedEntities_.template emplace(entityID);
 
         return entityID;
     }
@@ -88,6 +88,7 @@ namespace Sandbox {
         entityManager_.DestroyEntity(entityID);
 
         refreshSystems_ = true;
+        changedEntities_.template emplace(entityID);
     }
 
     void ECS::DestroyEntity(const std::string& entityName) {

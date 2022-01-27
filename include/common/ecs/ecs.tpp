@@ -9,7 +9,9 @@ namespace Sandbox {
         static std::vector<int> validEntities;
 
         // Update valid entities list.
+        // TODO: Change to only iterate over the changed entities of the last frame.
         for (int entityID : entityManager_.GetEntityList()) {
+            // HasComponents... is safe to call for entities that don't exist (returns false).
             bool hasRequiredComponents = HasComponents<T...>(entityID);
 
             // Determine whether entity is present in valid entities list.
@@ -54,6 +56,7 @@ namespace Sandbox {
         T* component =  componentManager->AddComponent(entityID, std::forward<Args>(args)...);
 
         refreshSystems_ = true;
+        changedEntities_.template emplace(entityID);
 
         return component;
     }
@@ -101,6 +104,7 @@ namespace Sandbox {
         componentManager->RemoveComponent(entityID);
 
         refreshSystems_ = true;
+        changedEntities_.template emplace(entityID);
     }
 
     template <typename T>

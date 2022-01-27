@@ -49,7 +49,7 @@ void main(void) {
     vec3 color = vec3(0.0f);
 
     vec4 N = normalize(viewNormal);
-    vec4 viewVector = viewTransform * vec4(cameraPosition, 1.0f) - viewPosition;
+    vec4 viewVector = vec4(cameraPosition, 1.0f) - viewPosition;
     vec4 V = normalize(viewVector);
 
     for (int i = 0; i < MAX_NUM_LIGHTS; ++i) {
@@ -58,7 +58,7 @@ void main(void) {
         }
 
         // Light direction
-        vec4 L = normalize(viewTransform * vec4(lightData.lights[i].position, 1.0f) - viewPosition);
+        vec4 L = normalize(vec4(lightData.lights[i].position, 1.0f) - viewPosition);
 
         // Add ambient component.
         color += ambientCoefficient * lightData.lights[i].ambientColor;

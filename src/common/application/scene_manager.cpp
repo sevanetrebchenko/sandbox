@@ -155,6 +155,8 @@ namespace Sandbox {
         IScene* scene = data->scene_;
         scene->OnShutdown();
 
+        // TODO: Create directory if it doesn't exist.
+
     	// Save ImGui settings.
     	const std::string& ini = data->imGuiIniPath_;
     	log.LogTrace("Saving ImGui settings to: %s", ini.c_str());
@@ -193,6 +195,9 @@ namespace Sandbox {
     		if (character == ' ') {
     			builder << '_';
     		}
+            else if (character == ':') {
+                continue;
+            }
     		else {
     			builder << static_cast<char>(std::tolower(character));
     		}

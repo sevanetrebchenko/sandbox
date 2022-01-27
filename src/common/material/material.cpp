@@ -78,4 +78,23 @@ namespace Sandbox {
         return nullptr;
     }
 
+    MaterialCollection::MaterialCollection() {
+    }
+
+    MaterialCollection::~MaterialCollection() {
+    }
+
+    void MaterialCollection::SetMaterial(Material* material) {
+        materials_.emplace_back(material);
+    }
+
+    Material* MaterialCollection::GetNamedMaterial(const std::string& name) {
+        for (Material* material : materials_) {
+            if (material->GetName() == name) {
+                return material;
+            }
+        }
+
+        return nullptr;
+    }
 }

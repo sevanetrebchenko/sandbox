@@ -9,7 +9,7 @@ namespace Sandbox {
 
     class OBJLoader {
         public:
-            static OBJLoader& GetInstance();
+            static OBJLoader& Instance();
             Mesh LoadFromFile(const std::string& objFilePath);
 
         private:

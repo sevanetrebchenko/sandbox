@@ -8,6 +8,23 @@
 
 namespace Sandbox {
 
+    struct Vertex {
+        glm::vec3 vertex_;
+
+        glm::vec3 faceNormal_;   // Flat shading.
+        glm::vec3 vertexNormal_; // Smooth shading.
+    };
+
+    struct MeshData {
+        std::vector<glm::vec3> vertices_;
+        std::vector<unsigned> indices_;
+
+        std::vector<glm::vec2> uv_;
+
+        std::vector<glm::vec3> normals_;
+        bool flatShaded_;
+    };
+
     class Mesh : public IComponent {
         public:
             explicit Mesh(GLuint renderingPrimitive = -1u);

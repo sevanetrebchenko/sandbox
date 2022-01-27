@@ -1,33 +1,34 @@
 
-#include "scenes/deferred_rendering/deferred_rendering.h"
-#include "common/ecs/ecs.h"
+#include "scenes/cs562/project1/project1.h"
 #include "common/api/window.h"
-#include "common/utility/imgui_log.h"
+#include "common/ecs/ecs.h"
 #include "common/geometry/object_loader.h"
+#include "common/utility/imgui_log.h"
 
 namespace Sandbox {
 
-    SceneDeferredRendering::SceneDeferredRendering() : fbo_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
-                                                       camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()) {
+    SceneCS562Project1::SceneCS562Project1() : fbo_(2560, 1440),
+                                               camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight())
+                                               {
     }
 
-    SceneDeferredRendering::~SceneDeferredRendering() {
+    SceneCS562Project1::~SceneCS562Project1() {
     }
 
-    void SceneDeferredRendering::OnInit() {
+    void SceneCS562Project1::OnInit() {
         IScene::OnInit();
 
         InitializeShaders();
         InitializeMaterials();
 
         ConfigureLights();
-        ConstructFBO();
         ConfigureModels();
+        ConstructFBO();
 
         camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
 
-    void SceneDeferredRendering::OnUpdate() {
+    void SceneCS562Project1::OnUpdate() {
         IScene::OnUpdate();
 
         // Recompile shaders.
@@ -38,33 +39,43 @@ namespace Sandbox {
             ImGuiLog::Instance().LogError("Shader recompilation failed: %s", err.what());
         }
 
-        lightingManager_.Update();
         camera_.Update();
     }
 
-    void SceneDeferredRendering::OnPreRender() {
+    void SceneCS562Project1::OnPreRender() {
         IScene::OnPreRender();
     }
 
-    void SceneDeferredRendering::OnRender() {
+    void SceneCS562Project1::OnRender() {
         IScene::OnRender();
-
-        Backend::Core::EnableFlag(GL_DEPTH_TEST);
-        Backend::Core::EnableFlag(GL_CULL_FACE);
-        Backend::Core::CullFace(GL_BACK);
 
         // Set viewport.
         fbo_.BindForReadWrite();
         Backend::Core::SetViewport(0, 0, fbo_.GetWidth(), fbo_.GetHeight());
 
+        // 1. G-buffer pass.
         GeometryPass();
 
-        Backend::Core::WriteDepth(false); // Do not write depth from future passes (preserve depth of actual scene, not FSQ).
+        Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
-        RenderOutputScene();
+        // 2. Lighting pass.
+        GlobalLightingPass();
+
+        // 3. Local lighting pass.
+        Backend::Core::EnableFlag(GL_BLEND);    // Enable blending.
+        glBlendFunc(GL_ONE, GL_ONE);            // Additive blending TODO: abstract out.
+
+        Backend::Core::EnableFlag(GL_CULL_FACE);
+        Backend::Core::CullFace(GL_FRONT);
+
+        LocalLightingPass();
+
+        Backend::Core::DisableFlag(GL_CULL_FACE);
+        Backend::Core::DisableFlag(GL_BLEND);
+
         RenderDepthBuffer();
 
-        Backend::Core::WriteDepth(true); // Return depth-writing back to normal.
+        Backend::Core::EnableFlag(GL_DEPTH_TEST);
 
         // Restore viewport.
         fbo_.Unbind();
@@ -73,11 +84,11 @@ namespace Sandbox {
         Backend::Core::SetViewport(0, 0, window.GetWidth(), window.GetHeight());
     }
 
-    void SceneDeferredRendering::OnPostRender() {
+    void SceneCS562Project1::OnPostRender() {
         IScene::OnPostRender();
     }
 
-    void SceneDeferredRendering::OnImGui() {
+    void SceneCS562Project1::OnImGui() {
         // Enable window docking.
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
@@ -88,6 +99,12 @@ namespace Sandbox {
         if (ImGui::Begin("Overview"), &showOverview) {
             ImGui::Text("Render time:");
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+            ImGui::Separator();
+
+            if (ImGui::Button("Take Screenshot")) {
+                fbo_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_1/");
+            }
         }
         ImGui::End();
 
@@ -142,17 +159,16 @@ namespace Sandbox {
         ImGuiLog::Instance().OnImGui();
     }
 
-    void SceneDeferredRendering::OnShutdown() {
+    void SceneCS562Project1::OnShutdown() {
         IScene::OnShutdown();
     }
 
-    void SceneDeferredRendering::OnWindowResize(int width, int height) {
+    void SceneCS562Project1::OnWindowResize(int width, int height) {
         IScene::OnWindowResize(width, height);
 
         // Rebuild swapchain.
         fbo_.Reallocate(width, height);
         if (!fbo_.CheckStatus()) {
-            std::cout << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
             throw std::runtime_error("Custom FBO is not complete.");
         }
 
@@ -162,30 +178,21 @@ namespace Sandbox {
         Backend::Core::SetViewport(0, 0, width, height);
     }
 
-    void SceneDeferredRendering::InitializeShaders() {
-        shaderLibrary_.AddShader("SingleColor", { "assets/shaders/color.vert", "assets/shaders/color.frag" });
-        shaderLibrary_.AddShader("Texture", { "assets/shaders/texture.vert", "assets/shaders/texture.frag" });
-
-        shaderLibrary_.AddShader("Depth", { "assets/shaders/fsq.vert", "assets/shaders/depth.frag" });
+    void SceneCS562Project1::InitializeShaders() {
+        shaderLibrary_.AddShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
+        shaderLibrary_.AddShader("Global Lighting Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting.frag" });
+        shaderLibrary_.AddShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
+        shaderLibrary_.AddShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
         shaderLibrary_.AddShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
-        shaderLibrary_.AddShader("DeferredPhongShading", { "assets/shaders/fsq.vert", "assets/shaders/deferred_phong_shading.frag" });
-        shaderLibrary_.AddShader("GeometryPass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
     }
 
-    void SceneDeferredRendering::InitializeMaterials() {
-        // Single color material.
-        Material* singleColorMaterial = new Material("SingleColor", {
-            { "surfaceColor", glm::vec3(1.0f) }
-        });
-        singleColorMaterial->GetUniform("surfaceColor")->UseColorPicker(true);
-        materialLibrary_.AddMaterial(singleColorMaterial);
-
+    void SceneCS562Project1::InitializeMaterials() {
         // Phong shading material.
         Material* phongMaterial = new Material("Phong", {
-            { "ambientCoefficient", glm::vec3(0.5f) },
-            { "diffuseCoefficient", glm::vec3(0.5f) },
-            { "specularCoefficient", glm::vec3(1.0f) },
-            { "specularExponent", 50.0f }
+                { "ambientCoefficient", glm::vec3(0.5f) },
+                { "diffuseCoefficient", glm::vec3(0.5f) },
+                { "specularCoefficient", glm::vec3(1.0f) },
+                { "specularExponent", 50.0f }
         });
         phongMaterial->GetUniform("ambientCoefficient")->UseColorPicker(true);
         phongMaterial->GetUniform("diffuseCoefficient")->UseColorPicker(true);
@@ -194,7 +201,7 @@ namespace Sandbox {
         materialLibrary_.AddMaterial(phongMaterial);
     }
 
-    void SceneDeferredRendering::ConfigureModels() {
+    void SceneCS562Project1::ConfigureModels() {
         ECS& ecs = ECS::Instance();
 
         int bunny = ecs.CreateEntity("Bunny");
@@ -208,16 +215,39 @@ namespace Sandbox {
         phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
 
         materialCollection->SetMaterial(phong);
-
-//        Model* bunny = modelManager_.AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
-//        Material* bunnyMaterial = materialLibrary_.GetMaterialInstance("Phong");
-//        bunnyMaterial->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-//        bunny->AddMaterial(bunnyMaterial);
     }
 
-    void SceneDeferredRendering::ConstructFBO() {
-        int contentWidth = Window::Instance().GetWidth();
-        int contentHeight = Window::Instance().GetHeight();
+    void SceneCS562Project1::ConfigureLights() {
+        ECS& ecs = ECS::Instance();
+
+        Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/sphere.obj");
+        mesh.Complete();
+
+        float radius = 4.0f;
+        float angle = 0.0f;
+        int numLights = 20;
+        float angleChange = 360.0f / (float)numLights;
+
+        // Push back vertices in a circle.
+        for (int i = 0; i < numLights; ++i) {
+            int ID = ecs.CreateEntity("light");
+            ecs.AddComponent<Mesh>(ID, mesh);
+
+            glm::vec3 position = glm::vec3(std::cos(glm::radians(angle)), 0.0f, std::sin(glm::radians(angle)));
+
+            Transform* transform = ecs.GetComponent<Transform>(ID);
+            transform->SetPosition(position * radius);
+            transform->SetScale(glm::vec3(5.0f));
+
+            ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f, 0.0f, 0.0f), 0.3f);
+
+            angle += angleChange;
+        }
+    }
+
+    void SceneCS562Project1::ConstructFBO() {
+        int contentWidth = 2560;
+        int contentHeight = 1440;
 
         fbo_.BindForReadWrite();
 
@@ -290,44 +320,24 @@ namespace Sandbox {
         fbo_.Unbind();
     }
 
-    void SceneDeferredRendering::ConfigureLights() {
-        Light one;
-        Transform& oneTransform = one.GetTransform();
-        oneTransform.SetPosition(glm::vec3(2.0f, 0.0f, 0.0f));
-        lightingManager_.AddLight(one);
-
-        Light two;
-        Transform& twoTransform = two.GetTransform();
-        twoTransform.SetPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
-        lightingManager_.AddLight(two);
-
-
-        Light three;
-        Transform& threeTransform = three.GetTransform();
-        threeTransform.SetPosition(glm::vec3(0.0f, 2.0f, 0.0f));
-        lightingManager_.AddLight(three);
-    }
-
-    void SceneDeferredRendering::GeometryPass() {
+    void SceneCS562Project1::GeometryPass() {
         fbo_.DrawBuffers(0, 5);
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
 
-        Shader* geometryShader = shaderLibrary_.GetShader("GeometryPass");
+        Shader* geometryShader = shaderLibrary_.GetShader("Geometry Pass");
         geometryShader->Bind();
 
         // Set camera uniforms.
         geometryShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
 
         // Render models to FBO attachments.
-        ECS& ecs = ECS::Instance();
-
-        ecs.IterateOver<Transform, Mesh, MaterialCollection>([geometryShader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection) {
+        ECS::Instance().IterateOver<Transform, Mesh, MaterialCollection>([geometryShader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection) {
             const glm::mat4& modelTransform = transform.GetMatrix();
             geometryShader->SetUniform("modelTransform", modelTransform);
             geometryShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
 
-            // Bind all related uniforms with this shader.
+            // Bind all related uniforms with the Phong shader.
             Material* phong = materialCollection.GetNamedMaterial("Phong");
             if (phong) {
                 phong->Bind(geometryShader);
@@ -344,39 +354,77 @@ namespace Sandbox {
         geometryShader->Unbind();
     }
 
-    void SceneDeferredRendering::RenderOutputScene() {
+    void SceneCS562Project1::GlobalLightingPass() {
         // Render to 'output' texture.
         fbo_.DrawBuffers(5, 1);
+
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
 
-        Shader* deferredPhongShader = shaderLibrary_.GetShader("DeferredPhongShading");
-        deferredPhongShader->Bind();
+        Shader* globalLightingShader = shaderLibrary_.GetShader("Global Lighting Pass");
+        globalLightingShader->Bind();
 
         // Set camera uniforms.
-        deferredPhongShader->SetUniform("cameraPosition", camera_.GetPosition());
-        deferredPhongShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
-        deferredPhongShader->SetUniform("viewTransform", camera_.GetViewTransform());
-        deferredPhongShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
-        deferredPhongShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
+        globalLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
+
+        // Set global lighting uniforms.
+        globalLightingShader->SetUniform("lightDirection", directionalLight_.direction_);
+        globalLightingShader->SetUniform("lightColor", directionalLight_.color_);
+        globalLightingShader->SetUniform("lightBrightness", directionalLight_.brightness_);
 
         // Bind geometry pass textures.
-        Backend::Rendering::BindTextureWithSampler(deferredPhongShader, fbo_.GetNamedRenderTarget("position"), 0);
-        Backend::Rendering::BindTextureWithSampler(deferredPhongShader, fbo_.GetNamedRenderTarget("normal"), 1);
-        Backend::Rendering::BindTextureWithSampler(deferredPhongShader, fbo_.GetNamedRenderTarget("ambient"), 2);
-        Backend::Rendering::BindTextureWithSampler(deferredPhongShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
-        Backend::Rendering::BindTextureWithSampler(deferredPhongShader, fbo_.GetNamedRenderTarget("specular"), 4);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
 
         // Render to output texture using FSQ.
         Backend::Rendering::DrawFSQ();
 
-        deferredPhongShader->Unbind();
+        globalLightingShader->Unbind();
     }
 
-    void SceneDeferredRendering::RenderDepthBuffer() {
+    void SceneCS562Project1::LocalLightingPass() {
+        // Render to 'output' texture.
+        fbo_.DrawBuffers(5, 1);
+        // No clearing here.
+
+        Shader* localLightingShader = shaderLibrary_.GetShader("Local Lighting Pass");
+        localLightingShader->Bind();
+
+        localLightingShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
+
+        // Set camera uniforms.
+        localLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
+        localLightingShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+
+        // Bind geometry pass textures.
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
+
+        ECS::Instance().IterateOver<Transform, Mesh, LocalLight>([localLightingShader](Transform& transform, Mesh& mesh, LocalLight& light) {
+            localLightingShader->SetUniform("modelTransform", transform.GetMatrix());
+
+            localLightingShader->SetUniform("lightPosition", transform.GetPosition());
+            localLightingShader->SetUniform("lightRadius", transform.GetScale().x);
+            localLightingShader->SetUniform("lightColor", light.color_);
+            localLightingShader->SetUniform("lightBrightness", light.brightness_);
+
+            mesh.Bind();
+            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
+            mesh.Unbind();
+        });
+
+        localLightingShader->Unbind();
+    }
+
+    void SceneCS562Project1::RenderDepthBuffer() {
         // Render to depth texturing using FSQ.
         fbo_.DrawBuffers(6, 1);
-        Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
 
         Shader* depthShader = shaderLibrary_.GetShader("Depth");

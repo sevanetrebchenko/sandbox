@@ -9,8 +9,9 @@
 #include "common/geometry/transform.h"
 #include "common/geometry/mesh.h"
 #include "common/material/material.h"
+#include "scenes/cs562/project1/light.h"
 
-#define COMPONENT_TYPES Sandbox::Transform, Sandbox::Mesh, Sandbox::Material
+#define COMPONENT_TYPES Sandbox::Transform, Sandbox::Mesh, Sandbox::MaterialCollection, Sandbox::LocalLight
 
 namespace Sandbox {
 
