@@ -62,8 +62,8 @@ namespace Sandbox {
         GlobalLightingPass();
 
         // 3. Local lighting pass.
-        Backend::Core::EnableFlag(GL_BLEND);    // Enable blending.
-        glBlendFunc(GL_ONE, GL_ONE);            // Additive blending TODO: abstract out.
+        Backend::Core::EnableFlag(GL_BLEND); // Enable blending.
+        glBlendFunc(GL_ONE, GL_ONE);         // Additive blending TODO: abstract out.
 
         Backend::Core::EnableFlag(GL_CULL_FACE);
         Backend::Core::CullFace(GL_FRONT);
@@ -204,28 +204,72 @@ namespace Sandbox {
     void SceneCS562Project1::ConfigureModels() {
         ECS& ecs = ECS::Instance();
 
-        int bunny = ecs.CreateEntity("Bunny");
-        Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/bunny_high_poly.obj");
-        mesh.Complete();
-        ecs.AddComponent<Mesh>(bunny, mesh);
-        ecs.AddComponent<MaterialCollection>(bunny);
+        // Bunny.
+        {
+            int bunny = ecs.CreateEntity("Bunny");
+            Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/bunny_high_poly.obj");
+            mesh.Complete();
+            ecs.AddComponent<Mesh>(bunny, mesh);
+            ecs.AddComponent<MaterialCollection>(bunny);
 
-        MaterialCollection* materialCollection = ecs.GetComponent<MaterialCollection>(bunny);
-        Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-        phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+            ecs.GetComponent<MaterialCollection>(bunny)->SetMaterial(phong);
+        }
 
-        materialCollection->SetMaterial(phong);
+        // Floor.
+        {
+            int floor = ecs.CreateEntity("Floor");
+            Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/quad.obj");
+            mesh.Complete();
+            ecs.AddComponent<Mesh>(floor, mesh);
+            ecs.AddComponent<MaterialCollection>(floor);
+
+            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
+            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
+            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
+            ecs.GetComponent<MaterialCollection>(floor)->SetMaterial(phong);
+
+            Transform* transform = ecs.GetComponent<Transform>(floor);
+            transform->SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
+            transform->SetScale(glm::vec3(10.0f));
+            transform->SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+        }
     }
 
     void SceneCS562Project1::ConfigureLights() {
-        ECS& ecs = ECS::Instance();
+        static std::vector<glm::vec3> colors;
+        static bool initialized = false;
 
+        if (!initialized) {
+            colors.emplace_back(153, 0, 0);
+            colors.emplace_back(255, 0, 0);
+            colors.emplace_back(255, 128, 0);
+            colors.emplace_back(255, 255, 0);
+            colors.emplace_back(128, 255, 0);
+            colors.emplace_back(0, 255, 0);
+            colors.emplace_back(0, 255, 128);
+            colors.emplace_back(0, 255, 255);
+            colors.emplace_back(0, 154, 154);
+            colors.emplace_back(0, 128, 255);
+            colors.emplace_back(0, 0, 255);
+            colors.emplace_back(128, 0, 255);
+            colors.emplace_back(255, 0, 255);
+            colors.emplace_back(154, 0, 154);
+            colors.emplace_back(255, 0, 128);
+            colors.emplace_back(154, 0, 76);
+
+            initialized = true;
+        }
+
+        ECS& ecs = ECS::Instance();
         Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/sphere.obj");
         mesh.Complete();
 
         float radius = 4.0f;
         float angle = 0.0f;
-        int numLights = 20;
+        int numLights = 16;
         float angleChange = 360.0f / (float)numLights;
 
         // Push back vertices in a circle.
@@ -235,11 +279,12 @@ namespace Sandbox {
 
             glm::vec3 position = glm::vec3(std::cos(glm::radians(angle)), 0.0f, std::sin(glm::radians(angle)));
 
-            Transform* transform = ecs.GetComponent<Transform>(ID);
-            transform->SetPosition(position * radius);
-            transform->SetScale(glm::vec3(5.0f));
+            ecs.SetComponent<Transform>(ID, [position, radius](Transform& transform) {
+                transform.SetPosition(position * radius);
+                transform.SetScale(glm::vec3(5.0f));
+            });
 
-            ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f, 0.0f, 0.0f), 0.3f);
+            ecs.AddComponent<LocalLight>(ID, colors[i], 0.002f);
 
             angle += angleChange;
         }

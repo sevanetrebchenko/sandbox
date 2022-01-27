@@ -19,14 +19,18 @@ namespace Sandbox {
 
             void Reset(); // Clears all components.
 
-            // Pointers to components should not be stored over the course of multiple frames.
-
-            // Returns new component, or
+            // Constructs a component and returns it.
             template <typename ...Args>
-            T* AddComponent(int entityID, Args... args);
+            T* AddComponent(int entityID, const Args&... args);
+
+            // Constructs a component and calls the callback function with it.
+            template <typename Fn, typename ...Args>
+            void SetComponent(int entityID, const Args& ...args, Fn&& callback);
 
             [[nodiscard]] T* GetComponent(int entityID) const;
+
             [[nodiscard]] bool HasComponent(int entityID) const;
+
             void RemoveComponent(int entityID);
 
         private:

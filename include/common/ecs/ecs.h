@@ -37,31 +37,38 @@ namespace Sandbox {
             // Component management.
             // Types should match a built-in component type, without any decorations (const, pointer, reference, volatile, etc).
             template <typename T, typename ...Args>
-            T* AddComponent(int entityID, Args... args);
+            T* AddComponent(int entityID, const Args&... args);
 
-            template <typename T, typename ...Args>
-            T* AddComponent(const std::string& entityName, Args... args);
+            template <typename T, typename Fn, typename ...Args>
+            void SetComponent(int entityID, const Args&... args, Fn&& callback);
 
             template <typename T>
             [[nodiscard]] bool HasComponent(int entityID) const;
 
-            template <typename T>
-            [[nodiscard]] bool HasComponent(const std::string& entityName) const;
-
             template <typename ...T>
             [[nodiscard]] bool HasComponents(int entityID) const;
-
-            template <typename ...T>
-            [[nodiscard]] bool HasComponents(const std::string& entityName) const;
 
             template <typename T>
             [[nodiscard]] T* GetComponent(int entityID) const;
 
             template <typename T>
-            [[nodiscard]] T* GetComponent(const std::string& entityName) const;
+            void RemoveComponent(int entityID);
+
+
+            template <typename T, typename ...Args>
+            T* AddComponent(const std::string& entityName, const Args&... args);
+
+            template <typename T, typename Fn, typename ...Args>
+            void SetComponent(const std::string& entityName, const Args&... args, Fn&& callback);
 
             template <typename T>
-            void RemoveComponent(int entityID);
+            [[nodiscard]] bool HasComponent(const std::string& entityName) const;
+
+            template <typename ...T>
+            [[nodiscard]] bool HasComponents(const std::string& entityName) const;
+
+            template <typename T>
+            [[nodiscard]] T* GetComponent(const std::string& entityName) const;
 
             template <typename T>
             void RemoveComponent(const std::string& entityName);

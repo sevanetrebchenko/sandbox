@@ -23,7 +23,7 @@ void main()
 
     // Store normal in the second texture buffer.
     // normal = vec4(viewNormal.xyz, 1.0f);
-    normal = vec4(worldNormal.xyz, 1.0f); // Color, not traditional normal value.
+    normal = vec4(normalize(worldNormal.xyz), 1.0f); // Color, not traditional normal value.
 
     // Store ambient color in the third texture buffer.
     ambient = vec4(ambientCoefficient, 1.0f);

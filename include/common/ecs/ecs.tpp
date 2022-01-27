@@ -51,9 +51,9 @@ namespace Sandbox {
     }
 
     template <typename T, typename ...Args>
-    T* ECS::AddComponent(int entityID, Args... args) {
+    T* ECS::AddComponent(int entityID, const Args&... args) {
         ComponentManager<T>* componentManager = componentManagers_.template GetComponentManager<T>();
-        T* component =  componentManager->AddComponent(entityID, std::forward<Args>(args)...);
+        T* component =  componentManager->template AddComponent(entityID, args...);
 
         refreshSystems_ = true;
         changedEntities_.template emplace(entityID);
@@ -62,8 +62,19 @@ namespace Sandbox {
     }
 
     template <typename T, typename ...Args>
-    T* ECS::AddComponent(const std::string& entityName, Args... args) {
-        return AddComponent<T, Args...>(GetNamedEntityID(entityName), std::forward<Args>(args)...);
+    T* ECS::AddComponent(const std::string& entityName, const Args&... args) {
+        return AddComponent<T, Args...>(GetNamedEntityID(entityName), args...);
+    }
+
+    template <typename T, typename Fn, typename ...Args>
+    void ECS::SetComponent(int entityID, const Args&... args, Fn&& callback) {
+        ComponentManager<T>* componentManager = componentManagers_.template GetComponentManager<T>();
+        componentManager->template SetComponent(entityID, args..., std::forward<Fn>(callback));
+    }
+
+    template <typename T, typename Fn, typename ...Args>
+    void ECS::SetComponent(const std::string& entityName, const Args&... args, Fn&& callback) {
+        SetComponent<T>(GetNamedEntityID(entityName), args..., std::forward<Fn>(callback));
     }
 
     template <typename T>

@@ -1,1 +1,1 @@
-# Rendering sandbox
+# OpenGL Rendering Sandbox
