@@ -30,6 +30,7 @@ namespace Sandbox {
             template <typename Fn, typename ...Args>
             void SetComponent(int entityID, const Args& ...args, Fn&& callback);
 
+
             [[nodiscard]] T* GetComponent(int entityID) const;
 
             [[nodiscard]] bool HasComponent(int entityID) const;

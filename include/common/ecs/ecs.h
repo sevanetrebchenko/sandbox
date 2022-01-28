@@ -36,6 +36,8 @@ namespace Sandbox {
 
             // Component management.
             // Types should match a built-in component type, without any decorations (const, pointer, reference, volatile, etc).
+
+            // By entity ID.
             template <typename T, typename ...Args>
             T* AddComponent(int entityID, const Args&... args);
 
@@ -55,6 +57,7 @@ namespace Sandbox {
             void RemoveComponent(int entityID);
 
 
+            // By entity name.
             template <typename T, typename ...Args>
             T* AddComponent(const std::string& entityName, const Args&... args);
 
@@ -78,10 +81,7 @@ namespace Sandbox {
             ~ECS();
 
             EntityManager entityManager_;
-
-            // ComponentManagerCollection creates ComponentManagers at time of request.
-            mutable ComponentManagerCollection componentManagers_;
-
+            ComponentManagerCollection componentManagers_;
             std::vector<ISystem*> systems_;
 
             bool refreshSystems_;

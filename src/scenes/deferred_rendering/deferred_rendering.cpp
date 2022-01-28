@@ -197,6 +197,11 @@ namespace Sandbox {
     void SceneDeferredRendering::ConfigureModels() {
         ECS& ecs = ECS::Instance();
 
+        for (int i = 0; i < 10000; ++i) {
+            int e = ecs.CreateEntity("test");
+        }
+
+
         int bunny = ecs.CreateEntity("Bunny");
         Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/bunny_high_poly.obj");
         mesh.Complete();
@@ -339,6 +344,18 @@ namespace Sandbox {
             mesh.Unbind();
 
             // Post render stage.
+        });
+
+        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
+        });
+
+        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
+        });
+
+        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
+        });
+
+        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
         });
 
         geometryShader->Unbind();

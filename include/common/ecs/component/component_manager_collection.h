@@ -16,21 +16,22 @@ namespace Sandbox {
             void Reset();  // Clears data between scenes.
             void Shutdown();
 
-            // Retrieves component manager for the given type.
-            // Creates new component manager if queried one does not exist.
             template <typename T>
-            [[nodiscard]] ComponentManager<T>* GetComponentManager();
+            ComponentManager<T>* AddComponentManager();
+
+            // Retrieves component manager for the given type, given that it exists.
+            // Otherwise, returns nullptr.
+            template <typename T>
+            [[nodiscard]] ComponentManager<T>* GetComponentManager() const;
+
+            template <typename T>
+            [[nodiscard]] bool HasComponentManager() const;
 
             // Removes all components from an entity.
             void RemoveAllComponents(int entityID);
 
         private:
-            template <typename T>
-            [[nodiscard]] int GetTypeID();
-
-            std::unordered_map<int, IComponentManager*> componentManagers_;
-
-            int typeIDCounter_;
+            std::vector<IComponentManager*> componentManagers_;
             std::unordered_map<std::type_index, int> typeIDMapping_;
     };
 

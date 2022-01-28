@@ -3,7 +3,7 @@
 
 namespace Sandbox {
 
-    ComponentManagerCollection::ComponentManagerCollection() : typeIDCounter_(0) {
+    ComponentManagerCollection::ComponentManagerCollection() {
     }
 
     ComponentManagerCollection::~ComponentManagerCollection() {
@@ -14,8 +14,7 @@ namespace Sandbox {
 
     void ComponentManagerCollection::Reset() {
         // Clear all components from registered ComponentManagers.
-        for (const std::pair<const int, IComponentManager*>& data : componentManagers_) {
-            IComponentManager* componentManager = data.second;
+        for (IComponentManager* componentManager : componentManagers_) {
             componentManager->Reset();
         }
     }
@@ -24,14 +23,15 @@ namespace Sandbox {
         Reset();
 
         // Delete all component managers.
-        for (const std::pair<const int, IComponentManager*>& data : componentManagers_) {
-            delete data.second;
+        for (IComponentManager* componentManager : componentManagers_) {
+            delete componentManager;
         }
+
+        componentManagers_.clear();
     }
 
     void ComponentManagerCollection::RemoveAllComponents(int entityID) {
-        for (const std::pair<const int, IComponentManager*>& data : componentManagers_) {
-            IComponentManager* componentManager = data.second;
+        for (IComponentManager* componentManager : componentManagers_) {
             componentManager->RemoveComponent(entityID);
         }
     }

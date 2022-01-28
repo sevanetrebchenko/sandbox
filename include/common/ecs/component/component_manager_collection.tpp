@@ -7,35 +7,64 @@
 namespace Sandbox {
 
     template <typename T>
-    ComponentManager<T>* ComponentManagerCollection::GetComponentManager() {
-        static_assert(std::is_base_of_v<IComponent, T>, "Template type T provided to GetComponentManager must derive from IComponent.");
+    ComponentManager<T>* ComponentManagerCollection::AddComponentManager() {
+        static_assert(std::is_base_of_v<IComponent, T>, "Template type T provided to AddComponentManager must derive from IComponent.");
 
-        int type = GetTypeID<T>();
-        auto iterator = componentManagers_.find(type);
+        std::type_index type = std::type_index(typeid(T));
+        ComponentManager<T>* componentManager;
 
-        if (iterator == componentManagers_.end()) {
-            // Component manager does not exist, needs to be created.
-            componentManagers_.template emplace(type, new ComponentManager<T>());
+        if (HasComponentManager<T>()) {
+            componentManager = dynamic_cast<ComponentManager<T>*>(componentManagers_[typeIDMapping_.at(type)]);
+        }
+        else {
+            // Type has not been registered, register new component manager.
+            componentManager = new ComponentManager<T>();
+
+            typeIDMapping_.template emplace(type, componentManagers_.size());
+            componentManagers_.template emplace_back(componentManager);
         }
 
-        ComponentManager<T>* componentManager = dynamic_cast<ComponentManager<T>*>(componentManagers_[type]);
-        assert(componentManager); // Should always succeed.
-
+        assert(componentManager);
         return componentManager;
     }
 
     template <typename T>
-    int ComponentManagerCollection::GetTypeID() {
-        // Static asserts ensure type exists.
+    ComponentManager<T>* ComponentManagerCollection::GetComponentManager() const {
+        static_assert(std::is_base_of_v<IComponent, T>, "Template type T provided to GetComponentManager must derive from IComponent.");
+
+        if (HasComponentManager<T>()) {
+            std::type_index type = std::type_index(typeid(T));
+            int typeID = typeIDMapping_.at(type);
+
+            ComponentManager<T>* componentManager = dynamic_cast<ComponentManager<T>*>(componentManagers_[typeID]);
+            assert(componentManager); // Should always succeed.
+
+            return componentManager;
+        }
+        else {
+            return nullptr;
+        }
+    }
+
+    template <typename T>
+    bool ComponentManagerCollection::HasComponentManager() const {
+        static_assert(std::is_base_of_v<IComponent, T>, "Template type T provided to GetComponentManager must derive from IComponent.");
+
+        // Attempt to get registered type mapping.
         std::type_index type = std::type_index(typeid(T));
         auto iterator = typeIDMapping_.find(type);
 
         if (iterator == typeIDMapping_.end()) {
-            // Type has not been registered yet.
-            typeIDMapping_.template emplace(type, typeIDCounter_++);
+            // Type has not been registered, hence component manager does not exist.
+            return false;
         }
+        else {
+            int typeID = iterator->second;
+            assert(typeID < componentManagers_.size());
+            assert(dynamic_cast<ComponentManager<T>*>(componentManagers_[typeID])); // Assert correct mapping.
 
-        return typeIDMapping_[type];
+            return true;
+        }
     }
 
 }

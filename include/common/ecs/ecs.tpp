@@ -52,8 +52,15 @@ namespace Sandbox {
 
     template <typename T, typename ...Args>
     T* ECS::AddComponent(int entityID, const Args&... args) {
-        ComponentManager<T>* componentManager = componentManagers_.template GetComponentManager<T>();
-        T* component =  componentManager->template AddComponent(entityID, args...);
+        T* component;
+
+        if (componentManagers_.template HasComponentManager<T>()) {
+            component = componentManagers_.template GetComponentManager<T>()->template AddComponent(entityID, args...);
+        }
+        else {
+            // ComponentManager for requested type does not exist, and must be created first.
+            component = componentManagers_.template AddComponentManager<T>()->template AddComponent(entityID, args...);
+        }
 
         refreshSystems_ = true;
         changedEntities_.template emplace(entityID);
@@ -68,8 +75,16 @@ namespace Sandbox {
 
     template <typename T, typename Fn, typename ...Args>
     void ECS::SetComponent(int entityID, const Args&... args, Fn&& callback) {
-        ComponentManager<T>* componentManager = componentManagers_.template GetComponentManager<T>();
-        componentManager->template SetComponent(entityID, args..., std::forward<Fn>(callback));
+        if (componentManagers_.template HasComponentManager<T>()) {
+            componentManagers_.template GetComponentManager<T>()->template SetComponent(entityID, args..., std::forward<Fn>(callback));
+        }
+        else {
+            // ComponentManager for requested type does not exist, and must be created first.
+            componentManagers_.template AddComponentManager<T>()->template SetComponent(entityID, args..., std::forward<Fn>(callback));
+        }
+
+        refreshSystems_ = true;
+        changedEntities_.template emplace(entityID);
     }
 
     template <typename T, typename Fn, typename ...Args>
@@ -79,8 +94,9 @@ namespace Sandbox {
 
     template <typename T>
     bool ECS::HasComponent(int entityID) const {
-        ComponentManager<T>* componentManager = componentManagers_.template GetComponentManager<T>();
-        return componentManager->HasComponent(entityID);
+        // Short circuit.
+        return componentManagers_.template HasComponentManager<T>() &&
+               componentManagers_.template GetComponentManager<T>()->HasComponent(entityID);
     }
 
     template <typename T>
@@ -100,8 +116,13 @@ namespace Sandbox {
 
     template <typename T>
     T* ECS::GetComponent(int entityID) const {
-        ComponentManager<T>* componentManager = componentManagers_.template GetComponentManager<T>();
-        return componentManager->GetComponent(entityID);
+        if (componentManagers_.template HasComponentManager<T>()) {
+            return componentManagers_.template GetComponentManager<T>()->GetComponent(entityID);
+        }
+        else {
+            // No registered component manager, means no entities have that component type.
+            return nullptr;
+        }
     }
 
     template <typename T>
@@ -111,8 +132,7 @@ namespace Sandbox {
 
     template <typename T>
     void ECS::RemoveComponent(int entityID) {
-        ComponentManager<T>* componentManager = componentManagers_.template GetComponentManager<T>();
-        componentManager->RemoveComponent(entityID);
+        componentManagers_.template GetComponentManager<T>()->RemoveComponent(entityID);
 
         refreshSystems_ = true;
         changedEntities_.template emplace(entityID);
