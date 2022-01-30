@@ -29,7 +29,7 @@ namespace Sandbox {
         auto iterator = IDToIndex_.find(entityID);
         if (iterator != IDToIndex_.end()) {
             // Component already exists at this entity ID.
-            return components_[iterator->second];
+            throw std::runtime_error("From ComponentManager<T>::AddComponent: Component already exists at the given entity ID.");
         }
 
         int index = components_.size();
@@ -45,7 +45,15 @@ namespace Sandbox {
     template <typename T>
     template <typename Fn, typename ...Args>
     void ComponentManager<T>::SetComponent(int entityID, const Args& ...args, Fn&& callback) {
-        T* component = AddComponent(entityID, args...);
+        T* component;
+
+        if (HasComponent(entityID)) {
+            component = GetComponent(entityID);
+        }
+        else {
+            component = AddComponent(entityID, args...);
+        }
+
         callback(*component);
     }
 

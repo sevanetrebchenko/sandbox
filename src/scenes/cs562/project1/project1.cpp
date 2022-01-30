@@ -1,10 +1,10 @@
 
 #include "scenes/cs562/project1/project1.h"
 #include "common/api/window.h"
-#include "common/ecs/ecs.h"
 #include "common/geometry/object_loader.h"
 #include "common/utility/imgui_log.h"
 #include "common/geometry/transform.h"
+#include "common/ecs/ecs.h"
 
 namespace Sandbox {
 

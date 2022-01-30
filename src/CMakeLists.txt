@@ -23,8 +23,9 @@ set(CORE_SOURCE_FILES
         "common/ecs/ecs.cpp"
         "common/ecs/component/component.cpp"
         "common/ecs/component/component_manager.cpp"
-        "common/ecs/component/component_manager_collection.cpp"
+        "common/ecs/component/component_list.cpp"
         "common/ecs/system/component_system.cpp"
+        "common/ecs/iterator/entity_component_iterator.cpp"
 
         # Framework
         "common/application/application.cpp"

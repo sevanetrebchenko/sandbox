@@ -15,6 +15,9 @@ namespace Sandbox {
 
             [[nodiscard]] int CreateEntity(std::string entityName = "");
 
+            [[nodiscard]] bool Exists(int entityID) const;
+            [[nodiscard]] bool Exists(const std::string& entityName) const;
+
             void DestroyEntity(int entityID);
             void DestroyEntity(const std::string& entityName);
 
@@ -28,9 +31,12 @@ namespace Sandbox {
             int entityCounter_;
             std::stack<int> recycledEntityIDs_;
 
-            // Provides index into entityIDs vector.
+            // Stores mappings for easier ID/name lookup.
             std::unordered_map<int, std::string> IDToName_;
             std::unordered_map<std::string, int> nameToID_;
+
+            // List of all valid entity IDs.
+            std::vector<int> entityIDs_;
     };
 
 }

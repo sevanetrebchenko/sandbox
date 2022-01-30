@@ -3,13 +3,13 @@
 
 namespace Sandbox {
 
-    void ISystem::Init() {
+    void IComponentSystem::Init() {
     }
 
-    void ISystem::Shutdown() {
+    void IComponentSystem::Shutdown() {
     }
 
-    bool ISystem::ManagesEntity(int entityID) const {
+    bool IComponentSystem::ManagesEntity(int entityID) const {
         for (int entity : entityIDs_) {
             if (entityID == entity) {
                 return true;
@@ -19,13 +19,13 @@ namespace Sandbox {
         return false;
     }
 
-    void ISystem::AddEntity(int entityID) {
+    void IComponentSystem::AddEntity(int entityID) {
         if (!ManagesEntity(entityID)) {
             entityIDs_.emplace_back(entityID);
         }
     }
 
-    void ISystem::RemoveEntity(int entityID) {
+    void IComponentSystem::RemoveEntity(int entityID) {
         int numEntities = entityIDs_.size();
 
         for (int i = 0; i < numEntities; ++i) {

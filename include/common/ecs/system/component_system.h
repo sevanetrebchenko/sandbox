@@ -7,7 +7,7 @@
 namespace Sandbox {
 
     // Interface for making systems polymorphic at runtime.
-    class ISystem {
+    class IComponentSystem {
         public:
             virtual void Init();
             virtual void Update() = 0;

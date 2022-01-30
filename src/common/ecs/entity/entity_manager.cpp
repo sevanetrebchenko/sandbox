@@ -17,6 +17,8 @@ namespace Sandbox {
 
 		IDToName_.clear();
 		nameToID_.clear();
+
+        entityIDs_.clear();
     }
 
     int EntityManager::CreateEntity(std::string entityName) {
@@ -47,6 +49,14 @@ namespace Sandbox {
         IDToName_.emplace(entityID, entityName);
 
         return entityID;
+    }
+
+    bool EntityManager::Exists(int entityID) const {
+        return IDToName_.find(entityID) != IDToName_.end();
+    }
+
+    bool EntityManager::Exists(const std::string& entityName) const {
+        return Exists(GetNamedEntityID(entityName));
     }
 
     // The assumption made here is that, since the EntityManager controls how entities are created, the only error

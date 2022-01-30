@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <set>
+#include <unordered_set>
 #include <stack>
 #include <array>
 #include <bitset>
