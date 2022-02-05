@@ -9,18 +9,21 @@ namespace Sandbox {
 
     class OBJLoader {
         public:
+            struct Request {
+                explicit Request(std::string filepath);
+                ~Request();
+
+                std::string filepath_;
+            };
+
             static OBJLoader& Instance();
-            Mesh LoadFromFile(const std::string& objFilePath);
+            Mesh LoadFromFile(const Request& request);
 
         private:
             OBJLoader();
             ~OBJLoader();
 
-            void MinMaxVertex(const glm::vec3& vertex, glm::vec3& minimum, glm::vec3& maximum) const;
-            void TransformToOrigin(std::vector<glm::vec3>& vertices, const glm::vec3& minimum, const glm::vec3& maximum) const;
-            void ScaleToUniform(std::vector<glm::vec3>& vertices, const glm::vec3& minimum, const glm::vec3& maximum) const;
-
-            std::unordered_map<std::string, Mesh> _loadedMeshes;
+            std::unordered_map<std::string, Mesh> meshes_;
     };
 
 }

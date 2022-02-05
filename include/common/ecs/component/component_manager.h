@@ -34,11 +34,6 @@ namespace Sandbox {
             template <typename ...Args>
             T* AddComponent(int entityID, const Args&... args);
 
-            // Constructs a component and calls the callback function with it.
-            // If component at the given entity ID already exists, calls the callback function on the existing component.
-            template <typename Fn, typename ...Args>
-            void SetComponent(int entityID, const Args& ...args, Fn&& callback);
-
             [[nodiscard]] T* GetComponent(int entityID) const override;
 
             [[nodiscard]] bool HasComponent(int entityID) const override;

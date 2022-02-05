@@ -208,31 +208,36 @@ namespace Sandbox {
         // Bunny.
         {
             int bunny = ecs.CreateEntity("Bunny");
-            Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/bunny_high_poly.obj");
-            mesh.Complete();
-            ecs.AddComponent<Mesh>(bunny, mesh);
-            ecs.AddComponent<MaterialCollection>(bunny);
 
-            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-            ecs.GetComponent<MaterialCollection>(bunny)->SetMaterial(phong);
+            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
+
+            ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
+                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+
+                materialCollection.SetMaterial(phong);
+            });
         }
 
         // Floor.
         {
             int floor = ecs.CreateEntity("Floor");
-            Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/quad.obj");
-            mesh.Complete();
-            ecs.AddComponent<Mesh>(floor, mesh);
-            ecs.AddComponent<MaterialCollection>(floor);
+            ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
 
-            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
-            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
-            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
-            ecs.GetComponent<MaterialCollection>(floor)->SetMaterial(phong);
+            ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
+                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
+                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
+                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
 
-            ecs.SetComponent<Transform>(floor, [](Transform& transform) {
+                materialCollection.SetMaterial(phong);
+            });
+
+            ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
                 transform.SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
                 transform.SetScale(glm::vec3(10.0f));
                 transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
@@ -266,8 +271,7 @@ namespace Sandbox {
         }
 
         ECS& ecs = ECS::Instance();
-        Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/sphere.obj");
-        mesh.Complete();
+        Mesh mesh = OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"));
 
         float radius = 4.0f;
         float angle = 0.0f;
@@ -277,11 +281,13 @@ namespace Sandbox {
         // Push back vertices in a circle.
         for (int i = 0; i < numLights; ++i) {
             int ID = ecs.CreateEntity("light");
-            ecs.AddComponent<Mesh>(ID, mesh);
+            ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
 
             glm::vec3 position = glm::vec3(std::cos(glm::radians(angle)), 0.0f, std::sin(glm::radians(angle)));
 
-            ecs.SetComponent<Transform>(ID, [position, radius](Transform& transform) {
+            ecs.GetComponent<Transform>(ID).Configure([position, radius](Transform& transform) {
                 transform.SetPosition(position * radius);
                 transform.SetScale(glm::vec3(5.0f));
             });
@@ -392,7 +398,7 @@ namespace Sandbox {
 
             // Render stage.
             mesh.Bind();
-            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
+            mesh.Render();
             mesh.Unbind();
 
             // Post render stage.
@@ -462,7 +468,7 @@ namespace Sandbox {
             localLightingShader->SetUniform("lightBrightness", light.brightness_);
 
             mesh.Bind();
-            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
+            mesh.Render();
             mesh.Unbind();
         });
 

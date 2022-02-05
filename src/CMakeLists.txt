@@ -30,6 +30,7 @@ set(CORE_SOURCE_FILES
         # Framework
         "common/application/application.cpp"
         "common/application/scene_manager.cpp"
+        "common/geometry/topology.cpp"
         "common/api/backend.cpp"
         "common/application/time.cpp"
         "common/application/input.cpp"

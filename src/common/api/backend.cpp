@@ -38,7 +38,7 @@ namespace Sandbox {
         namespace Rendering {
             void DrawFSQ() {
                 static bool initialized = false;
-                static Mesh fsq(GL_TRIANGLES);
+                static Mesh quad { };
                 if (!initialized) {
                     std::vector<glm::vec3> vertices;
                     std::vector<unsigned> indices;
@@ -61,25 +61,23 @@ namespace Sandbox {
                     uv.emplace_back(1.0f, 0.0f);
                     uv.emplace_back(1.0f, 1.0f);
 
-                    fsq.SetVertices(vertices);
-                    fsq.SetIndices(indices);
-                    fsq.SetUV(uv);
-                    fsq.RecalculateNormals();
+                    quad.SetVertices(vertices);
+                    quad.SetIndices(indices, MeshTopology::TRIANGLES);
+                    quad.SetUVs(uv);
+                    quad.RecalculateNormals();
 
-                    fsq.Complete();
+                    quad.Complete();
 
                     initialized = true;
                 }
 
-                fsq.Bind();
-                DrawIndexed(fsq.GetVAO(), fsq.GetRenderingPrimitive());
-                fsq.Unbind();
+                quad.Bind();
+                quad.Render();
+                quad.Unbind();
             }
 
-            void DrawIndexed(const VertexArrayObject *vao, GLuint renderingPrimitive) {
-                if (vao && vao->GetEBO()) {
-                    glDrawElements(renderingPrimitive, vao->GetEBO()->GetIndexCount(), GL_UNSIGNED_INT, nullptr);
-                }
+            void DrawIndexed(GLuint renderingPrimitive, int indexCount) {
+                glDrawElements(renderingPrimitive, indexCount, GL_UNSIGNED_INT, nullptr);
             }
 
             void ActivateTextureSampler(int samplerID) {

@@ -12,15 +12,15 @@ namespace Sandbox {
     }
 
     template <typename T>
-    T* ComponentList::GetComponent() const {
+    ComponentWrapper<T> ComponentList::GetComponent() const {
         auto iterator = componentMapping_.find(std::type_index(typeid(T)));
         if (iterator != componentMapping_.end()) {
             T* component = dynamic_cast<T*>(iterator->second);
             assert(component); // Sanity.
-            return component;
+            return ComponentWrapper<T>(component);
         }
         else {
-            return nullptr;
+            return ComponentWrapper<T>();
         }
     }
 

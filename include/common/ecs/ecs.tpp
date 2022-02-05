@@ -8,7 +8,7 @@ namespace Sandbox {
 
     // By entity ID.
     template <typename T, typename ...Args>
-    T* ECS::AddComponent(int entityID, const Args&... args) {
+    ComponentWrapper<T> ECS::AddComponent(int entityID, const Args&... args) {
         T* component;
 
         if (HasComponentManager<T>()) {
@@ -22,21 +22,7 @@ namespace Sandbox {
         refreshSystems_ = true;
         DistributeECSEvent(entityID, ECSAction::COMPONENT_ADD);
 
-        return component;
-    }
-
-    template <typename T, typename Fn, typename ...Args>
-    void ECS::SetComponent(int entityID, const Args&... args, Fn&& callback) {
-        if (HasComponentManager<T>()) {
-            GetComponentManager<T>()->template SetComponent(entityID, args..., std::forward<Fn>(callback));
-        }
-        else {
-            // ComponentManager for requested type does not exist, and must be created first.
-            AddComponentManager<T>()->template SetComponent(entityID, args..., std::forward<Fn>(callback));
-        }
-
-        refreshSystems_ = true;
-        DistributeECSEvent(entityID, ECSAction::COMPONENT_ADD);
+        return ComponentWrapper<T>(component);
     }
 
     template <typename T>
@@ -51,13 +37,13 @@ namespace Sandbox {
     }
 
     template <typename T>
-    T* ECS::GetComponent(int entityID) const {
+    ComponentWrapper<T> ECS::GetComponent(int entityID) const {
         if (HasComponentManager<T>()) {
-            return GetComponentManager<T>()->GetComponent(entityID);
+            return ComponentWrapper<T>(GetComponentManager<T>()->GetComponent(entityID));
         }
         else {
             // No registered component manager, means no entities have that component type.
-            return nullptr;
+            return ComponentWrapper<T>();
         }
     }
 
@@ -78,13 +64,8 @@ namespace Sandbox {
 
     // By entity name.
     template <typename T, typename ...Args>
-    T* ECS::AddComponent(const std::string& entityName, const Args&... args) {
+    ComponentWrapper<T> ECS::AddComponent(const std::string& entityName, const Args&... args) {
         return AddComponent<T, Args...>(GetNamedEntityID(entityName), args...);
-    }
-
-    template <typename T, typename Fn, typename ...Args>
-    void ECS::SetComponent(const std::string& entityName, const Args&... args, Fn&& callback) {
-        SetComponent<T>(GetNamedEntityID(entityName), args..., std::forward<Fn>(callback));
     }
 
     template <typename T>
@@ -98,7 +79,7 @@ namespace Sandbox {
     }
 
     template <typename T>
-    T* ECS::GetComponent(const std::string& entityName) const {
+    ComponentWrapper<T> ECS::GetComponent(const std::string& entityName) const {
         return GetComponent<T>(GetNamedEntityID(entityName));
     }
 

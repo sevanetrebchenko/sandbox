@@ -1,200 +1,259 @@
 
 #include "common/geometry/mesh.h"
+#include "common/api/backend.h"
+#include "common/utility/imgui_log.h"
 
 namespace Sandbox {
 
-    Mesh::Mesh(GLuint renderingPrimitive) : _renderingPrimitive(renderingPrimitive),
-                                            _vao(nullptr),
-                                            _isDirty(true) {
+    Mesh::Mesh() : vao_(),
+                   isDirty_(false),
+                   topology_(MeshTopology::TRIANGLES),
+                   vertexData_()
+                   {
+        // Mesh has one global data layout that does not change.
+        vao_.Bind();
+
+        // Vertex position.
+        {
+            BufferLayout bufferLayout { };
+            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC3, "vertexPosition" } } );
+            vao_.AddVBO("position", bufferLayout);
+        }
+
+        // Vertex normal.
+        {
+            BufferLayout bufferLayout { };
+            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC3, "vertexNormal" } } );
+            vao_.AddVBO("normal", bufferLayout);
+        }
+
+        // Vertex UV coordinates.
+        {
+            BufferLayout bufferLayout { };
+            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC2, "vertexUV" } } );
+            vao_.AddVBO("uv", bufferLayout);
+        }
+
+        // TODO: TBN frame, skinned models.
+
+        vao_.Unbind();
     }
 
     Mesh::~Mesh() {
-        delete _vao;
     }
 
-    Mesh::Mesh(const Mesh &mesh) : _renderingPrimitive(mesh._renderingPrimitive),
-                                   _vao(nullptr),
-                                   _isDirty(true),
-                                   _vertices(mesh._vertices),
-                                   _uv(mesh._uv),
-                                   _triangles(mesh._triangles),
-                                   _normals(mesh._normals) {
-        InitializeBuffers();
+    Mesh::Mesh(const Mesh& other) : vao_(other.vao_),
+                                    isDirty_(true),  // Buffers need updating.
+                                    topology_(other.topology_),
+                                    vertexData_(other.vertexData_),
+                                    indices_(other.indices_)
+                                    {
     }
 
-    Mesh &Mesh::operator=(const Mesh &mesh) {
-        if (this == &mesh) {
+    Mesh &Mesh::operator=(const Mesh &other) {
+        if (this == &other) {
             return *this;
         }
 
-        _vao = nullptr; // Do not initialize buffers.
-        _isDirty = true;
-        _renderingPrimitive = mesh._renderingPrimitive;
-        _vertices = mesh._vertices;
-        _triangles = mesh._triangles;
-        _uv = mesh._uv;
-        _normals = mesh._normals;
-
-        InitializeBuffers();
+        vao_ = other.vao_;
+        isDirty_ = true;  // Buffers need updating.
+        topology_ = other.topology_;
+        vertexData_ = other.vertexData_;
+        indices_ = other.indices_;
 
         return *this;
     }
 
-    void Mesh::RecalculateNormals() {
-        std::size_t numIndices = _triangles.size();
-        assert(numIndices % 3 == 0);
-
-        std::vector<std::vector<glm::vec3>> vertexAdjacentFaceNormals;
-        vertexAdjacentFaceNormals.resize(_vertices.size());
-
-        // Traverse all triples of indices and compute face normals from each.
-        // Attempt to add each normal to the involved vertex if it hasn't been already.
-        for (int i = 0; i < numIndices; i += 3) {
-            unsigned& index1 = _triangles[i + 0];
-            unsigned& index2 = _triangles[i + 1];
-            unsigned& index3 = _triangles[i + 2];
-            glm::vec3& vertex1 = _vertices[index1];
-            glm::vec3& vertex2 = _vertices[index2];
-            glm::vec3& vertex3 = _vertices[index3];
-
-            // Calculate face normal.
-            glm::vec3 faceNormal = glm::cross(vertex3 - vertex2, vertex1 - vertex2);
-
-            bool duplicateNormal = false;
-            // Attempt to add each normal to the involved vertices.
-            for (unsigned j = 0; j < 3; ++j) {
-                unsigned& index = _triangles[i + j];
-                // Check if normal was already added to this face's vertices.
-                for (const auto &normal : vertexAdjacentFaceNormals[index]) {
-                    if ((glm::dot(faceNormal, normal) - (faceNormal.x * faceNormal.x + faceNormal.y * faceNormal.y + faceNormal.z * faceNormal.z)) > std::numeric_limits<float>::epsilon()) {
-                        duplicateNormal = true;
-                        break;
-                    }
-                }
-
-                if (!duplicateNormal) {
-                    vertexAdjacentFaceNormals[index].emplace_back(faceNormal);
-                }
-            }
-        }
-
-        // Compute normals from precomputed adjacent normal list.
-        int numNormals = vertexAdjacentFaceNormals.size();
-        _normals.resize(numNormals);
-
-        // Fill mesh data normal data buffer.
-        for (int i = 0; i < numNormals; ++i) {
-            glm::vec3& vertexNormal = _normals[i];
-
-            // Sum all adjacent face normals (without duplicates).
-            for (const glm::vec3& normal : vertexAdjacentFaceNormals[i]) {
-                vertexNormal += normal;
-            }
-
-            vertexNormal = glm::normalize(vertexNormal);
-        }
-    }
-
     void Mesh::Bind() const {
-        if (_vao) {
-            _vao->Bind();
-        }
+        // TODO: smart bind.
+        vao_.Bind();
     }
 
     void Mesh::Unbind() const {
-        if (_vao) {
-            _vao->Unbind();
-        }
+        vao_.Unbind();
     }
 
-    void Mesh::SetVertices(const std::vector<glm::vec3> &vertices) {
-        _vertices = vertices;
-    }
-
-    void Mesh::SetUV(const std::vector<glm::vec2> &uvs) {
-        _uv = uvs;
-    }
-
-    void Mesh::SetIndices(const std::vector<unsigned int>& indices) {
-        _triangles = indices;
+    void Mesh::Render() const {
+        // Indices array always has the most up-to-date index count.
+        Backend::Rendering::DrawIndexed(GetRenderingPrimitive(topology_), static_cast<int>(indices_.size()));
     }
 
     void Mesh::Complete() {
-        if (_isDirty) {
-            InitializeBuffers();
+        if (isDirty_) {
+            // Configure mesh buffer data.
+            // Vertex positions.
+            {
+                VertexBufferObject* vbo = vao_.GetVBO("position");
+                assert(vbo);
+
+                std::vector<glm::vec3> vertices = GetVertices();
+                assert(!vertices.empty());
+
+                vbo->SetData(vertices.size() * sizeof(vertices[0]), vertices.data());
+            }
+
+            // Vertex normals.
+            {
+                VertexBufferObject* vbo = vao_.GetVBO("normal");
+                assert(vbo);
+
+                std::vector<glm::vec3> normals = GetNormals();
+                if (normals.empty()) {
+                    // Recalculating normals requires vertices to be present, which was validated above.
+                    RecalculateNormals();
+                }
+
+                vbo->SetData(normals.size() * sizeof(normals[0]), normals.data());
+            }
+
+            // Texture coordinates.
+            {
+                VertexBufferObject* vbo = vao_.GetVBO("uv");
+                assert(vbo);
+
+                std::vector<glm::vec2> uv = GetUVs();
+                assert(!uv.empty());
+
+                vbo->SetData(uv.size() * sizeof(uv[0]), uv.data());
+            }
+
+            // Indices.
+            {
+                ElementBufferObject* ebo = vao_.GetEBO();
+                assert(ebo);
+
+                // Indices were not set, configure them by default based on mesh topology.
+                if (indices_.empty()) {
+                    std::vector<glm::vec3> vertices = GetVertices();
+                    assert(!vertices.empty());
+
+                    std::size_t numVertices = vertices.size();
+                    for (unsigned i = 0; i < numVertices; ++i) {
+                        indices_.emplace_back(i);
+                    }
+                }
+
+                ebo->SetData(indices_.size() * sizeof(indices_[0]), indices_.data());
+            }
+
+            isDirty_ = false;
         }
     }
 
-    const std::vector<glm::vec3> &Mesh::GetVertices() const {
-        return _vertices;
-    }
+    void Mesh::RecalculateNormals() {
+        // Recalculate all vertex normals.
+        std::vector<glm::vec3> vertices = GetVertices();
 
-    const std::vector<glm::vec2> &Mesh::GetUV() const {
-        return _uv;
-    }
+        // Calculate unique contributing vertex normals, per vertex.
+        // (vertex -> contributing face normals at that vertex)
+        std::unordered_map<glm::vec3, std::unordered_set<glm::vec3>> contributingFaceNormals;
+        for (int i = 0; i < indices_.size(); i += 3) {
+            const glm::vec3& v1 = vertices[indices_[i + 0]];
+            const glm::vec3& v2 = vertices[indices_[i + 1]];
+            const glm::vec3& v3 = vertices[indices_[i + 2]];
 
-    const std::vector<unsigned> &Mesh::GetIndices() const {
-        return _triangles;
-    }
+            const glm::vec3& faceNormal = glm::normalize(glm::cross(v3 - v2, v1 - v2));
 
-    GLuint Mesh::GetRenderingPrimitive() const {
-        return _renderingPrimitive;
-    }
-
-    const VertexArrayObject *Mesh::GetVAO() const {
-        return _vao;
-    }
-
-    void Mesh::InitializeBuffers() {
-        if (_isDirty) {
-            if (!_vao) {
-                _vao = new VertexArrayObject();
-            }
-
-            BufferLayout vertexBufferLayout;
-            vertexBufferLayout.SetBufferElements({ {ShaderDataType::VEC3, "vertexPosition"} });
-
-            VertexBufferObject* vertices = new VertexBufferObject(vertexBufferLayout);
-            vertices->SetData(_vertices.size() * sizeof(glm::vec3), _vertices.data());
-
-            // Line meshes have no normals.
-            bool hasNormals = !_normals.empty();
-            VertexBufferObject* normals = nullptr;
-            if (hasNormals) {
-                BufferLayout normalBufferLayout;
-                normalBufferLayout.SetBufferElements({ {ShaderDataType::VEC3, "normalPosition"} });
-
-                normals = new VertexBufferObject(normalBufferLayout);
-                normals->SetData(_normals.size() * sizeof(glm::vec3), _normals.data());
-            }
-
-            bool hasUVs = !_uv.empty();
-            VertexBufferObject* uv = nullptr;
-            if (hasUVs) {
-                BufferLayout uvBufferLayout;
-                uvBufferLayout.SetBufferElements({ {ShaderDataType::VEC2, "uvCoordinate"} });
-
-                uv = new VertexBufferObject(uvBufferLayout);
-                uv->SetData(_uv.size() * sizeof(glm::vec2), _uv.data());
-            }
-
-            ElementBufferObject* ebo = new ElementBufferObject();
-            ebo->SetData(_triangles.size() * sizeof(unsigned), _triangles.data());
-
-            _vao->ClearVBOs();
-            _vao->AddVBO(vertices);
-
-            if (hasNormals) {
-                _vao->AddVBO(normals);
-            }
-
-            if (hasUVs) {
-                _vao->AddVBO(uv);
-            }
-            _vao->SetEBO(ebo);
-
-            _isDirty = false;
+            // Contribute face normal to vertex normal calculation.
+            contributingFaceNormals[v1].emplace(faceNormal);
+            contributingFaceNormals[v2].emplace(faceNormal);
+            contributingFaceNormals[v3].emplace(faceNormal);
         }
+
+        // Compute vertex normals.
+        std::vector<glm::vec3> normals;
+        normals.reserve(vertices.size()); // 1 to 1 mapping.
+
+        for (const glm::vec3& vertex : vertices) {
+            auto iterator = contributingFaceNormals.find(vertex);
+            assert(iterator != contributingFaceNormals.end());
+
+            // Vertex normals are computed by averaging the contributing face normals at each vertex.
+            glm::vec3 normal(0.0f);
+            for (const glm::vec3& n : iterator->second) {
+                normal += n;
+            }
+
+            normals.emplace_back(glm::normalize(normal));
+        }
+
+        SetNormals(normals);
+    }
+
+    void Mesh::SetVertices(const std::vector<glm::vec3>& vertices) {
+        int numVertices = vertices.size();
+        vertexData_.resize(numVertices);
+
+        for (int i = 0; i < numVertices; ++i) {
+            vertexData_[i].vertex_ = vertices[i];
+        }
+
+        isDirty_ = true;
+    }
+
+    void Mesh::SetIndices(const std::vector<unsigned int>& indices, MeshTopology topology) {
+        indices_ = indices;
+        topology_ = topology;
+        isDirty_ = true;
+    }
+
+    void Mesh::SetUVs(const std::vector<glm::vec2>& uv) {
+        // No resizing for UV coordinates.
+        unsigned limit = std::min(vertexData_.size(), uv.size());
+
+        for (unsigned i = 0; i < limit; ++i) {
+            vertexData_[i].uv_ = uv[i];
+        }
+
+        isDirty_ = true;
+    }
+
+    void Mesh::SetNormals(const std::vector<glm::vec3>& normals) {
+        // No resizing for vertex normals.
+        unsigned limit = std::min(vertexData_.size(), normals.size());
+
+        for (unsigned i = 0; i < limit; ++i) {
+            vertexData_[i].normal_ = normals[i];
+        }
+
+        isDirty_ = true;
+    }
+
+    std::vector<glm::vec3> Mesh::GetVertices() const {
+        std::vector<glm::vec3> vertices;
+        vertices.reserve(vertexData_.size());
+
+        for (const Vertex& vertex : vertexData_) {
+            vertices.emplace_back(vertex.vertex_);
+        }
+
+        return std::move(vertices);
+    }
+
+    std::vector<unsigned> Mesh::GetIndices() const {
+        return indices_;
+    }
+
+    std::vector<glm::vec2> Mesh::GetUVs() const {
+        std::vector<glm::vec2> uv;
+        uv.reserve(vertexData_.size());
+
+        for (const Vertex& vertex : vertexData_) {
+            uv.emplace_back(vertex.uv_);
+        }
+
+        return std::move(uv);
+    }
+
+    std::vector<glm::vec3> Mesh::GetNormals() const {
+        std::vector<glm::vec3> normals;
+        normals.reserve(vertexData_.size());
+
+        for (const Vertex& vertex : vertexData_) {
+            normals.emplace_back(vertex.normal_);
+        }
+
+        return std::move(normals);
     }
 
 }

@@ -7,8 +7,7 @@
 #include "common/ecs/system/component_system.h"
 #include "common/ecs/component/component_list.h"
 #include "common/ecs/iterator/entity_component_iterator.h"
-
-#include <any>
+#include "common/ecs/component/component_wrapper.h"
 
 namespace Sandbox {
 
@@ -38,11 +37,7 @@ namespace Sandbox {
             // By entity ID.
             // Throws error if component at given entity ID already exists.
             template <typename T, typename ...Args>
-            T* AddComponent(int entityID, const Args&... args);
-
-            // Returns already existing component, if appropriate. Otherwise, returns newly constructed component.
-            template <typename T, typename Fn, typename ...Args>
-            void SetComponent(int entityID, const Args&... args, Fn&& callback);
+            ComponentWrapper<T> AddComponent(int entityID, const Args&... args);
 
             template <typename T>
             [[nodiscard]] bool HasComponent(int entityID) const;
@@ -51,7 +46,7 @@ namespace Sandbox {
             [[nodiscard]] bool HasComponents(int entityID) const;
 
             template <typename T>
-            [[nodiscard]] T* GetComponent(int entityID) const;
+            [[nodiscard]] ComponentWrapper<T> GetComponent(int entityID) const;
 
             // Gets the requested components currently attached to the entity.
             // Query requires at least two component types.
@@ -68,11 +63,7 @@ namespace Sandbox {
             // By entity name.
             // Throws error if component at given entity name already exists.
             template <typename T, typename ...Args>
-            T* AddComponent(const std::string& entityName, const Args&... args);
-
-            // Returns already existing component, if appropriate. Otherwise, returns newly constructed component.
-            template <typename T, typename Fn, typename ...Args>
-            void SetComponent(const std::string& entityName, const Args&... args, Fn&& callback);
+            ComponentWrapper<T> AddComponent(const std::string& entityName, const Args&... args);
 
             template <typename T>
             [[nodiscard]] bool HasComponent(const std::string& entityName) const;
@@ -81,7 +72,7 @@ namespace Sandbox {
             [[nodiscard]] bool HasComponents(const std::string& entityName) const;
 
             template <typename T>
-            [[nodiscard]] T* GetComponent(const std::string& entityName) const;
+            [[nodiscard]] ComponentWrapper<T> GetComponent(const std::string& entityName) const;
 
             // Gets the requested components currently attached to the entity.
             // Query requires at least two component types.

@@ -14,21 +14,27 @@ namespace Sandbox {
             VertexArrayObject();
             ~VertexArrayObject();
 
+            VertexArrayObject(const VertexArrayObject& other);
+            VertexArrayObject& operator=(const VertexArrayObject& other);
+
             void Bind() const;
             void Unbind() const;
 
-            void AddVBO(VertexBufferObject* vertexBufferObject);
-            void ClearVBOs();
-            void SetEBO(ElementBufferObject* elementBufferObject);
-            [[nodiscard]] ElementBufferObject* GetEBO() const;
+            // Assumes VAO is bound.
+            void AddVBO(const std::string& name, const BufferLayout& bufferLayout);
+            [[nodiscard]] VertexBufferObject* GetVBO(const std::string& name);
+
+            // Each VAO has one bound EBO.
+            [[nodiscard]] ElementBufferObject* GetEBO();
 
         private:
             [[nodiscard]] GLenum ConvertShaderDataTypeToOpenGLDataType(ShaderDataType shaderDataType) const;
 
-            unsigned _bufferID;
-            unsigned _currentAttributeIndex;
-            std::vector<VertexBufferObject*> _vbos;
-            ElementBufferObject* _ebo;
+            unsigned bufferID_;
+            unsigned currentAttributeIndex_;
+
+            std::unordered_map<std::string, VertexBufferObject> vbos_;
+            ElementBufferObject ebo_;
     };
 
 }

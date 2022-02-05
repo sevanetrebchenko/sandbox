@@ -36,16 +36,11 @@ namespace Sandbox {
             [[nodiscard]] const std::unordered_set<int>& GetValidEntityList();
 
         protected:
-            // Lazy update valid entity list.
-            void Update();
-
             // Returns true if entity should be processed by this Iterator.
             [[nodiscard]] virtual bool ValidateEntityComponentIDs(const ComponentList& componentList) const = 0;
 
             bool initialized_;
-
             std::unordered_set<int> validEntityList_; // Entities that are processed by this Iterator.
-            std::stack<ECSAction> actions_;
     };
 
     template <typename ...T>

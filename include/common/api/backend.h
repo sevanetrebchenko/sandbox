@@ -24,7 +24,7 @@ namespace Sandbox {
 
         namespace Rendering {
             void DrawFSQ();
-            void DrawIndexed(const VertexArrayObject* vao, GLuint renderingPrimitive);
+            void DrawIndexed(GLuint renderingPrimitive, int indexCount);
 
             void ActivateTextureSampler(int samplerID);
             void BindTextureWithSampler(Shader* shader, Texture* texture, int samplerID);

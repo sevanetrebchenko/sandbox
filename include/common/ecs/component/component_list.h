@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "common/ecs/component/component.h"
+#include "common/ecs/component/component_wrapper.h"
 
 namespace Sandbox {
 
@@ -22,7 +23,7 @@ namespace Sandbox {
             ~ComponentList();
 
             template <typename T>
-            [[nodiscard]] T* GetComponent() const;
+            [[nodiscard]] ComponentWrapper<T> GetComponent() const;
 
             template <typename T>
             [[nodiscard]] bool HasComponent() const;

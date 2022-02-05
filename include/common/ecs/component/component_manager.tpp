@@ -42,21 +42,6 @@ namespace Sandbox {
         return components_[index];
     }
 
-    template <typename T>
-    template <typename Fn, typename ...Args>
-    void ComponentManager<T>::SetComponent(int entityID, const Args& ...args, Fn&& callback) {
-        T* component;
-
-        if (HasComponent(entityID)) {
-            component = GetComponent(entityID);
-        }
-        else {
-            component = AddComponent(entityID, args...);
-        }
-
-        callback(*component);
-    }
-
     template<typename T>
     T* ComponentManager<T>::GetComponent(int entityID) const {
         auto iterator = IDToIndex_.find(entityID);

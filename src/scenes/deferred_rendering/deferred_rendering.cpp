@@ -197,27 +197,17 @@ namespace Sandbox {
     void SceneDeferredRendering::ConfigureModels() {
         ECS& ecs = ECS::Instance();
 
-        for (int i = 0; i < 10000; ++i) {
-            int e = ecs.CreateEntity("test");
-        }
-
-
         int bunny = ecs.CreateEntity("Bunny");
-        Mesh mesh = OBJLoader::Instance().LoadFromFile("assets/models/bunny_high_poly.obj");
-        mesh.Complete();
-        ecs.AddComponent<Mesh>(bunny, mesh);
-        ecs.AddComponent<MaterialCollection>(bunny);
+        ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
+            mesh.Complete();
+        });
 
-        MaterialCollection* materialCollection = ecs.GetComponent<MaterialCollection>(bunny);
-        Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-        phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+        ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
+            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
 
-        materialCollection->SetMaterial(phong);
-
-//        Model* bunny = modelManager_.AddModelFromFile("bunny", "assets/models/bunny_high_poly.obj");
-//        Material* bunnyMaterial = materialLibrary_.GetMaterialInstance("Phong");
-//        bunnyMaterial->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-//        bunny->AddMaterial(bunnyMaterial);
+            materialCollection.SetMaterial(phong);
+        });
     }
 
     void SceneDeferredRendering::ConstructFBO() {
@@ -306,7 +296,6 @@ namespace Sandbox {
         twoTransform.SetPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
         lightingManager_.AddLight(two);
 
-
         Light three;
         Transform& threeTransform = three.GetTransform();
         threeTransform.SetPosition(glm::vec3(0.0f, 2.0f, 0.0f));
@@ -340,22 +329,10 @@ namespace Sandbox {
 
             // Render stage.
             mesh.Bind();
-            Backend::Rendering::DrawIndexed(mesh.GetVAO(), mesh.GetRenderingPrimitive());
+            mesh.Render();
             mesh.Unbind();
 
             // Post render stage.
-        });
-
-        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
-        });
-
-        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
-        });
-
-        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
-        });
-
-        ecs.IterateOver<Transform, Mesh>([](Transform& transform, Mesh& mesh) {
         });
 
         geometryShader->Unbind();

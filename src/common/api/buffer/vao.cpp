@@ -3,93 +3,129 @@
 
 namespace Sandbox {
 
-    VertexArrayObject::VertexArrayObject() : _bufferID(0),
-                                             _currentAttributeIndex(0),
-                                             _ebo(nullptr) {
-        glGenVertexArrays(1, &_bufferID);
+    VertexArrayObject::VertexArrayObject() : bufferID_(0),
+                                             currentAttributeIndex_(0)
+                                             {
+        glGenVertexArrays(1, &bufferID_);
+
+        // Bind EBO.
+        Bind();
+        ebo_.Bind();
     }
 
     VertexArrayObject::~VertexArrayObject() {
-        ClearVBOs();
-        glDeleteVertexArrays(1, &_bufferID);
+        glDeleteVertexArrays(1, &bufferID_);
+    }
+
+    VertexArrayObject::VertexArrayObject(const VertexArrayObject& other) : bufferID_(0),
+                                                                           currentAttributeIndex_(0)
+    {
+        glGenVertexArrays(1, &bufferID_);
+
+        Bind();
+
+        ebo_.Bind();
+
+        // Deep copy VBO layouts.
+        for (const std::pair<const std::string, VertexBufferObject>& vboData : other.vbos_) {
+            const std::string& vboName = vboData.first;
+            const VertexBufferObject& vbo = vboData.second;
+
+            AddVBO(vboName, vbo.GetBufferLayout());
+        }
+
+        Unbind();
+    }
+
+    VertexArrayObject& VertexArrayObject::operator=(const VertexArrayObject& other) {
+        if (this == &other) {
+            return *this;
+        }
+
+        bufferID_ = 0;
+        currentAttributeIndex_ = 0;
+
+        // Clear currently attached VBOs.
+        vbos_.clear();
+
+        Bind();
+
+        ebo_.Bind();
+
+        // Deep copy VBO layouts.
+        for (const std::pair<const std::string, VertexBufferObject>& vboData : other.vbos_) {
+            const std::string& vboName = vboData.first;
+            const VertexBufferObject& vbo = vboData.second;
+
+            AddVBO(vboName, vbo.GetBufferLayout());
+        }
+
+        Unbind();
+
+        return *this;
     }
 
     void VertexArrayObject::Bind() const {
         // VBOs/EBO get bound on initialization.
-        glBindVertexArray(_bufferID);
-
-        for (VertexBufferObject* vbo : _vbos) {
-            if (vbo) {
-                vbo->Bind();
-            }
-        }
-
-        if (_ebo) {
-            _ebo->Bind();
-        }
+        glBindVertexArray(bufferID_);
     }
 
     void VertexArrayObject::Unbind() const {
-        for (VertexBufferObject* vbo : _vbos) {
-            if (vbo) {
-                vbo->Unbind();
-            }
-        }
-
-        if (_ebo) {
-            _ebo->Unbind();
-        }
-
         glBindVertexArray(0);
     }
 
-    void VertexArrayObject::AddVBO(VertexBufferObject *vertexBufferObject) {
-        if (!vertexBufferObject->GetBufferLayout().GetBufferElements().empty()) {
-            Bind();
-            vertexBufferObject->Bind();
+    void VertexArrayObject::AddVBO(const std::string& name, const BufferLayout& bufferLayout) {
+        if (bufferLayout.GetBufferElements().empty()) {
+            return;
+        }
 
-            const BufferLayout& vertexBufferLayout = vertexBufferObject->GetBufferLayout();
+        if (vbos_.find(name) != vbos_.end()) {
+            // VBO with provided name already exists.
+            assert(false); // TODO:
+        }
 
-            for (auto& vertexBufferElement : vertexBufferLayout.GetBufferElements()) {
-                unsigned elementCount = vertexBufferElement.GetComponentCount();
-                switch (vertexBufferElement.GetShaderDataType()) {
-                    case ShaderDataType::BOOL:
-                    case ShaderDataType::INT:
-                    case ShaderDataType::FLOAT:
-                    case ShaderDataType::VEC2:
-                    case ShaderDataType::VEC3:
-                    case ShaderDataType::VEC4:
-                        glEnableVertexAttribArray(_currentAttributeIndex);
-                        glVertexAttribPointer(_currentAttributeIndex,
+        // Create new VBO.
+        vbos_.emplace(name, bufferLayout);
+        VertexBufferObject& vbo = vbos_.at(name);
+
+        vbo.Bind();
+
+        for (auto& vertexBufferElement : bufferLayout.GetBufferElements()) {
+            unsigned elementCount = vertexBufferElement.GetComponentCount();
+            switch (vertexBufferElement.GetShaderDataType()) {
+                case ShaderDataType::BOOL:
+                case ShaderDataType::INT:
+                case ShaderDataType::FLOAT:
+                case ShaderDataType::VEC2:
+                case ShaderDataType::VEC3:
+                case ShaderDataType::VEC4:
+                    glEnableVertexAttribArray(currentAttributeIndex_);
+                    glVertexAttribPointer(currentAttributeIndex_,
+                                          vertexBufferElement.GetComponentCount(),
+                                          ConvertShaderDataTypeToOpenGLDataType(vertexBufferElement.GetShaderDataType()),
+                                          GL_FALSE,
+                                          bufferLayout.GetStride(),
+                                          (void*)vertexBufferElement.GetBufferOffset());
+                    ++currentAttributeIndex_;
+                    break;
+                case ShaderDataType::MAT4:
+                    for (unsigned i = 0; i < elementCount; ++i) {
+                        glEnableVertexAttribArray(currentAttributeIndex_);
+                        glVertexAttribPointer(currentAttributeIndex_,
                                               vertexBufferElement.GetComponentCount(),
                                               ConvertShaderDataTypeToOpenGLDataType(vertexBufferElement.GetShaderDataType()),
                                               GL_FALSE,
-                                              vertexBufferLayout.GetStride(),
-                                              (void*)vertexBufferElement.GetBufferOffset());
-                        ++_currentAttributeIndex;
-                        break;
-                    case ShaderDataType::MAT4:
-                        for (unsigned i = 0; i < elementCount; ++i) {
-                            glEnableVertexAttribArray(_currentAttributeIndex);
-                            glVertexAttribPointer(_currentAttributeIndex,
-                                                  vertexBufferElement.GetComponentCount(),
-                                                  ConvertShaderDataTypeToOpenGLDataType(vertexBufferElement.GetShaderDataType()),
-                                                  GL_FALSE,
-                                                  vertexBufferLayout.GetStride(),
-                                                  (void*)(vertexBufferElement.GetBufferOffset() + sizeof(float) * elementCount * i));
-                            ++_currentAttributeIndex;
-                        }
-                        break;
-                    default:
-                        throw std::runtime_error("Unknown shader data type provided to VertexArrayObject::SetVBO.");
-                }
+                                              bufferLayout.GetStride(),
+                                              (void*)(vertexBufferElement.GetBufferOffset() + sizeof(float) * elementCount * i));
+                        ++currentAttributeIndex_;
+                    }
+                    break;
+                default:
+                    throw std::runtime_error("Unknown shader data type provided to VertexArrayObject::SetVBO.");
             }
-
-            Unbind();
-            vertexBufferObject->Unbind();
-
-            _vbos.push_back(vertexBufferObject);
         }
+
+        vbo.Unbind();
     }
 
     GLenum VertexArrayObject::ConvertShaderDataTypeToOpenGLDataType(ShaderDataType shaderDataType) const {
@@ -109,37 +145,19 @@ namespace Sandbox {
         }
     }
 
-    void VertexArrayObject::SetEBO(ElementBufferObject *elementBufferObject) {
-        _ebo = elementBufferObject;
-
-        // Restore state to ensure ebo binding to correct VAO.
-        Bind();
-        _ebo->Bind();
+    ElementBufferObject* VertexArrayObject::GetEBO() {
+        return &ebo_;
     }
 
-    ElementBufferObject *VertexArrayObject::GetEBO() const {
-        return _ebo;
-    }
-
-    void VertexArrayObject::ClearVBOs() {
-        // VBOs/EBO get bound on initialization.
-        glBindVertexArray(_bufferID);
-
-        for (VertexBufferObject* vbo : _vbos) {
-            if (vbo) {
-                vbo->Unbind();
-                delete vbo;
-            }
+    VertexBufferObject* VertexArrayObject::GetVBO(const std::string& name) {
+        auto iterator = vbos_.find(name);
+        if (iterator != vbos_.end()) {
+            return &iterator->second;
+        }
+        else {
+            return nullptr;
         }
 
-        _vbos.clear();
-
-        if (_ebo) {
-            _ebo->Unbind();
-            delete _ebo;
-        }
-
-        _currentAttributeIndex = 0;
     }
 
 }

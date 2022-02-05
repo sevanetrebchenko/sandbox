@@ -3,7 +3,9 @@
 
 namespace Sandbox {
 
-    ElementBufferObject::ElementBufferObject() {
+    ElementBufferObject::ElementBufferObject() : _bufferID(0),
+                                                 _indexCount(0)
+                                                 {
         glGenBuffers(1, &_bufferID);
     }
 

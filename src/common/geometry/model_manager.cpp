@@ -80,15 +80,15 @@ namespace Sandbox {
         if (extension == "obj") {
             log.LogTrace("Creating new model: %s from .obj file: %s", modelName.c_str(), filepath.c_str());
 
-            // Load in mesh and set up buffers.
-            OBJLoader& objLoader = OBJLoader::Instance();
-            Mesh modelMesh = objLoader.LoadFromFile(filepath);
-            modelMesh.Complete();
-
-            log.LogTrace("Finished loading model: %s.", modelName.c_str());
+//            // Load in mesh and set up buffers.
+//            OBJLoader& objLoader = OBJLoader::Instance();
+//            Mesh modelMesh = objLoader.LoadFromFile(filepath);
+//            modelMesh.Complete();
+//
+//            log.LogTrace("Finished loading model: %s.", modelName.c_str());
 
             Model* model = new Model(modelName);
-            model->SetMesh(modelMesh);
+//            model->SetMesh(modelMesh);
 
             _modelList.emplace_back(model);
             return model;
