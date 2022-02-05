@@ -5,6 +5,7 @@
 #include "common/utility/imgui_log.h"
 #include "common/geometry/transform.h"
 #include "common/ecs/ecs.h"
+#include "common/application/time.h"
 
 namespace Sandbox {
 
@@ -22,7 +23,7 @@ namespace Sandbox {
         InitializeShaders();
         InitializeMaterials();
 
-        ConfigureLights();
+        // ConfigureLights();
         ConfigureModels();
         ConstructFBO();
 
@@ -206,43 +207,39 @@ namespace Sandbox {
         ECS& ecs = ECS::Instance();
 
         // Bunny.
-        {
-            int bunny = ecs.CreateEntity("Bunny");
+        int bunny = ecs.CreateEntity("Bunny");
 
-            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
-                mesh.Complete();
-            });
+        ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny.obj"))).Configure([](Mesh& mesh) {
+            mesh.Complete();
+        });
 
-            ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
-                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+        ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
+            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
 
-                materialCollection.SetMaterial(phong);
-            });
-        }
+            materialCollection.SetMaterial(phong);
+        });
 
         // Floor.
-        {
-            int floor = ecs.CreateEntity("Floor");
-            ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
-                mesh.Complete();
-            });
+        int floor = ecs.CreateEntity("Floor");
+        ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
+            mesh.Complete();
+        });
 
-            ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
-                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
-                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
-                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
+        ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
+            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
+            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
+            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
 
-                materialCollection.SetMaterial(phong);
-            });
+            materialCollection.SetMaterial(phong);
+        });
 
-            ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
-                transform.SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
-                transform.SetScale(glm::vec3(10.0f));
-                transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
-            });
-        }
+        ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
+            transform.SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
+            transform.SetScale(glm::vec3(10.0f));
+            transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+        });
     }
 
     void SceneCS562Project1::ConfigureLights() {
@@ -381,8 +378,17 @@ namespace Sandbox {
         Shader* geometryShader = shaderLibrary_.GetShader("Geometry Pass");
         geometryShader->Bind();
 
+        static float timer = 0.0f;
+        static int multiplier = 1;
+        timer += multiplier * Time::Instance().dt * 0.5f;
+
+        if (timer > 1.0f || timer < 0.0f) {
+            multiplier *= -1;
+        }
+
         // Set camera uniforms.
         geometryShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+        geometryShader->SetUniform("timer", timer);
 
         // Render models to FBO attachments.
         ECS::Instance().IterateOver<Transform, Mesh, MaterialCollection>([geometryShader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection) {
