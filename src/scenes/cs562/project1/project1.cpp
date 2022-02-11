@@ -23,7 +23,7 @@ namespace Sandbox {
         InitializeShaders();
         InitializeMaterials();
 
-        // ConfigureLights();
+        ConfigureLights();
         ConfigureModels();
         ConstructFBO();
 
@@ -127,7 +127,7 @@ namespace Sandbox {
         ImGui::End();
 
         // Draw individual deferred rendering textures.
-        static bool showDebugTextures = true;
+        static bool showDebugTextures = false;
         if (ImGui::Begin("Debug Textures"), &showDebugTextures) {
             float maxWidth = ImGui::GetWindowContentRegionWidth();
             ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspectRatio);
@@ -237,7 +237,7 @@ namespace Sandbox {
 
         ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
             transform.SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
-            transform.SetScale(glm::vec3(10.0f));
+            transform.SetScale(glm::vec3(50.0f));
             transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
         });
     }
@@ -272,27 +272,48 @@ namespace Sandbox {
 
         float radius = 4.0f;
         float angle = 0.0f;
-        int numLights = 16;
-        float angleChange = 360.0f / (float)numLights;
+        int numPerSide = 100;
 
-        // Push back vertices in a circle.
-        for (int i = 0; i < numLights; ++i) {
-            int ID = ecs.CreateEntity("light");
-            ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
-                mesh.Complete();
-            });
+        int index = 0;
 
-            glm::vec3 position = glm::vec3(std::cos(glm::radians(angle)), 0.0f, std::sin(glm::radians(angle)));
+        for (int x = 0; x < numPerSide; ++x) {
+            for (int z = 0; z < numPerSide; ++z) {
+                int ID = ecs.CreateEntity("light");
+                ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
+                    mesh.Complete();
+                });
 
-            ecs.GetComponent<Transform>(ID).Configure([position, radius](Transform& transform) {
-                transform.SetPosition(position * radius);
-                transform.SetScale(glm::vec3(5.0f));
-            });
+                glm::vec3 position = glm::vec3(x - numPerSide / 2, -1.5f, z - numPerSide / 2);
 
-            ecs.AddComponent<LocalLight>(ID, colors[i], 0.002f);
+                ecs.GetComponent<Transform>(ID).Configure([position, radius](Transform& transform) {
+                    transform.SetPosition(position);
+                    transform.SetScale(glm::vec3(1.f));
+                });
 
-            angle += angleChange;
+                ecs.AddComponent<LocalLight>(ID, colors[++index % colors.size()], 0.02f);
+            }
         }
+
+//        float angleChange = 360.0f / (float)numLights;
+//
+//        // Push back vertices in a circle.
+//        for (int i = 0; i < numLights; ++i) {
+//            int ID = ecs.CreateEntity("light");
+//            ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
+//                mesh.Complete();
+//            });
+//
+//            glm::vec3 position = glm::vec3(std::cos(glm::radians(angle)), 0.0f, std::sin(glm::radians(angle)));
+//
+//            ecs.GetComponent<Transform>(ID).Configure([position, radius](Transform& transform) {
+//                transform.SetPosition(position * radius);
+//                transform.SetScale(glm::vec3(5.0f));
+//            });
+//
+//            ecs.AddComponent<LocalLight>(ID, colors[i % colors.size()], 0.002f);
+//
+//            angle += angleChange;
+//        }
     }
 
     void SceneCS562Project1::ConstructFBO() {
@@ -378,17 +399,9 @@ namespace Sandbox {
         Shader* geometryShader = shaderLibrary_.GetShader("Geometry Pass");
         geometryShader->Bind();
 
-        static float timer = 0.0f;
-        static int multiplier = 1;
-        timer += multiplier * Time::Instance().dt * 0.5f;
-
-        if (timer > 1.0f || timer < 0.0f) {
-            multiplier *= -1;
-        }
-
         // Set camera uniforms.
         geometryShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
-        geometryShader->SetUniform("timer", timer);
+        geometryShader->SetUniform("normalBlend", 0.0f);
 
         // Render models to FBO attachments.
         ECS::Instance().IterateOver<Transform, Mesh, MaterialCollection>([geometryShader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection) {

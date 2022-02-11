@@ -1,6 +1,7 @@
 
 #include "common/api/backend.h"
 #include "common/geometry/mesh.h"
+#include "common/api/buffer/vao_manager.h"
 
 namespace Sandbox {
     namespace Backend {
@@ -38,7 +39,7 @@ namespace Sandbox {
         namespace Rendering {
             void DrawFSQ() {
                 static bool initialized = false;
-                static Mesh quad { };
+                static Mesh quad { VAOManager::Instance().GetVAO("assets/models/quad.obj") };
                 if (!initialized) {
                     std::vector<glm::vec3> vertices;
                     std::vector<unsigned> indices;

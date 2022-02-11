@@ -32,11 +32,7 @@ void main(void) {
     vec3 specularCoefficient = texture(specular, uv).rgb;
     float specularExponent = texture(specular, uv).a;
 
-    fragColor = worldNormal;
-    return;
-
     vec3 color = vec3(0.0f);
-
     float distanceToLight = distance(worldPosition.xyz, lightPosition);
 
     if (abs(distanceToLight) <= lightRadius) {

@@ -5,38 +5,38 @@
 
 namespace Sandbox {
 
-    Mesh::Mesh() : vao_(),
+    Mesh::Mesh(VertexArrayObject* vao) : vao_(vao),
                    isDirty_(false),
                    topology_(MeshTopology::TRIANGLES),
                    vertexData_()
                    {
-        // Mesh has one global data layout that does not change.
-        vao_.Bind();
-
-        // Vertex position.
-        {
-            BufferLayout bufferLayout { };
-            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC3, "vertexPosition" } } );
-            vao_.AddVBO("position", bufferLayout);
-        }
-
-        // Vertex normal.
-        {
-            BufferLayout bufferLayout { };
-            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC3, "vertexNormal" } } );
-            vao_.AddVBO("normal", bufferLayout);
-        }
-
-        // Vertex UV coordinates.
-        {
-            BufferLayout bufferLayout { };
-            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC2, "vertexUV" } } );
-            vao_.AddVBO("uv", bufferLayout);
-        }
-
-        // TODO: TBN frame, skinned models.
-
-        vao_.Unbind();
+//        // Mesh has one global data layout that does not change.
+//        vao_.Bind();
+//
+//        // Vertex position.
+//        {
+//            BufferLayout bufferLayout { };
+//            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC3, "vertexPosition" } } );
+//            vao_.AddVBO("position", bufferLayout);
+//        }
+//
+//        // Vertex normal.
+//        {
+//            BufferLayout bufferLayout { };
+//            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC3, "vertexNormal" } } );
+//            vao_.AddVBO("normal", bufferLayout);
+//        }
+//
+//        // Vertex UV coordinates.
+//        {
+//            BufferLayout bufferLayout { };
+//            bufferLayout.SetBufferElements( { BufferElement { ShaderDataType::VEC2, "vertexUV" } } );
+//            vao_.AddVBO("uv", bufferLayout);
+//        }
+//
+//        // TODO: TBN frame, skinned models.
+//
+//        vao_.Unbind();
     }
 
     Mesh::~Mesh() {
@@ -48,6 +48,7 @@ namespace Sandbox {
                                     vertexData_(other.vertexData_),
                                     indices_(other.indices_)
                                     {
+        vao_->initialized = false;
     }
 
     Mesh &Mesh::operator=(const Mesh &other) {
@@ -56,6 +57,7 @@ namespace Sandbox {
         }
 
         vao_ = other.vao_;
+        vao_->initialized = false;
         isDirty_ = true;  // Buffers need updating.
         topology_ = other.topology_;
         vertexData_ = other.vertexData_;
@@ -66,24 +68,29 @@ namespace Sandbox {
 
     void Mesh::Bind() const {
         // TODO: smart bind.
-        vao_.Bind();
+        vao_->Bind();
     }
 
     void Mesh::Unbind() const {
-        vao_.Unbind();
+        vao_->Unbind();
     }
 
-    void Mesh::Render() const {
+    void Mesh::Render() {
+        vao_->Bind();
+        Complete();
+
         // Indices array always has the most up-to-date index count.
-        Backend::Rendering::DrawIndexed(GetRenderingPrimitive(topology_), static_cast<int>(indices_.size()));
+        Backend::Rendering::DrawIndexed(GetRenderingPrimitive(topology_), indices_.size());
     }
 
     void Mesh::Complete() {
-        if (isDirty_) {
+        vao_->Bind();
+
+        if (!vao_->initialized || isDirty_) {
             // Configure mesh buffer data.
             // Vertex positions.
             {
-                VertexBufferObject* vbo = vao_.GetVBO("position");
+                VertexBufferObject* vbo = vao_->GetVBO("position");
                 assert(vbo);
 
                 std::vector<glm::vec3> vertices = GetVertices();
@@ -94,7 +101,7 @@ namespace Sandbox {
 
             // Vertex normals.
             {
-                VertexBufferObject* vbo = vao_.GetVBO("normal");
+                VertexBufferObject* vbo = vao_->GetVBO("normal");
                 assert(vbo);
 
                 std::vector<glm::vec3> normals = GetNormals();
@@ -108,7 +115,7 @@ namespace Sandbox {
 
             // Texture coordinates.
             {
-                VertexBufferObject* vbo = vao_.GetVBO("uv");
+                VertexBufferObject* vbo = vao_->GetVBO("uv");
                 assert(vbo);
 
                 std::vector<glm::vec2> uv = GetUVs();
@@ -119,7 +126,7 @@ namespace Sandbox {
 
             // Indices.
             {
-                ElementBufferObject* ebo = vao_.GetEBO();
+                ElementBufferObject* ebo = vao_->GetEBO();
                 assert(ebo);
 
                 // Indices were not set, configure them by default based on mesh topology.
@@ -136,6 +143,7 @@ namespace Sandbox {
                 ebo->SetData(indices_.size() * sizeof(indices_[0]), indices_.data());
             }
 
+            vao_->initialized = true;
             isDirty_ = false;
         }
     }

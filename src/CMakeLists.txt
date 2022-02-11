@@ -17,6 +17,7 @@ set(CORE_SOURCE_FILES
         "common/api/buffer/ubo.cpp"
         "common/api/buffer/fbo.cpp"
         "common/api/buffer/rbo.cpp"
+        "common/api/buffer/vao_manager.cpp"
 
         # ECS
         "common/ecs/entity/entity_manager.cpp"
@@ -47,7 +48,7 @@ set(CORE_SOURCE_FILES
         "common/geometry/object_loader.cpp"
         "common/application/scene.cpp"
         "common/api/shader/shader.cpp"
-        "common/api/shader/shader_data_types.cpp"
+        "common/api/shader/shader_types.cpp"
         "common/api/shader/shader_library.cpp"
         "common/api/shader/shader_uniform.cpp"
         "common/texture/texture.cpp"

@@ -12,7 +12,7 @@ int main() {
     application.Init();
 
     Sandbox::SceneManager& sceneManager = application.GetSceneManager();
-    sceneManager.AddScene("Deferred Rendering", new Sandbox::SceneDeferredRendering());
+//    sceneManager.AddScene("Deferred Rendering", new Sandbox::SceneDeferredRendering());
     sceneManager.AddScene("CS562: Project 1", new Sandbox::SceneCS562Project1());
 
     sceneManager.SetStartupScene("CS562: Project 1");

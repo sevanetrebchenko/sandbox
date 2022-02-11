@@ -27,6 +27,8 @@ namespace Sandbox {
             // Each VAO has one bound EBO.
             [[nodiscard]] ElementBufferObject* GetEBO();
 
+            bool initialized = false;
+
         private:
             [[nodiscard]] GLenum ConvertShaderDataTypeToOpenGLDataType(ShaderDataType shaderDataType) const;
 

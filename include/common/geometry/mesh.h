@@ -28,7 +28,7 @@ namespace Sandbox {
     class Mesh : public IComponent {
         public:
             // Default mesh topology is Triangles.
-            Mesh();
+            Mesh(VertexArrayObject* vao);
             ~Mesh() override;
 
             Mesh(const Mesh& other);
@@ -38,7 +38,7 @@ namespace Sandbox {
             void Unbind() const;
 
             // Assumes mesh is already bound.
-            void Render() const;
+            void Render();
             virtual void Complete();
 
             // Allows for manual construction of meshes.
@@ -65,7 +65,7 @@ namespace Sandbox {
             void RecalculateNormals();
 
         private:
-            VertexArrayObject vao_;
+            VertexArrayObject* vao_;
             bool isDirty_;
 
             MeshTopology topology_;

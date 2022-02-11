@@ -3,7 +3,7 @@
 #define SANDBOX_UBO_H
 
 #include "pch.h"
-#include "common/api/shader/shader_data_types.h"
+#include "common/api/shader/shader_types.h"
 #include "common/api/buffer/buffer.h"
 #include "common/api/shader/shader_uniform.h"
 

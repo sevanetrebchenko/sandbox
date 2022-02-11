@@ -3,7 +3,7 @@
 #define SANDBOX_BUFFER_H
 
 #include "pch.h"
-#include "common/api/shader/shader_data_types.h"
+#include "common/api/shader/shader_types.h"
 
 namespace Sandbox {
 

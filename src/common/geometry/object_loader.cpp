@@ -1,5 +1,6 @@
 
 #include "common/geometry/object_loader.h"
+#include "common/api/buffer/vao_manager.h"
 
 namespace Sandbox {
 
@@ -91,14 +92,14 @@ namespace Sandbox {
             vertex = transform * glm::vec4(vertex, 1.0f);
         }
 
-        Mesh mesh { };
+        Mesh mesh { VAOManager::Instance().GetVAO(filename) };
         mesh.SetVertices(vertices);
         mesh.SetIndices(indices, MeshTopology::TRIANGLES);
         mesh.SetUVs(uv);
         mesh.RecalculateNormals();
 
         // Save mesh for future use.
-        meshes_[filename] = mesh;
+        meshes_.emplace(filename, mesh);
         return mesh;
     }
 

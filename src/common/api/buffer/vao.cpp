@@ -21,6 +21,7 @@ namespace Sandbox {
                                                                            currentAttributeIndex_(0)
     {
         glGenVertexArrays(1, &bufferID_);
+        initialized = false;
 
         Bind();
 
@@ -44,6 +45,7 @@ namespace Sandbox {
 
         bufferID_ = 0;
         currentAttributeIndex_ = 0;
+        initialized = false;
 
         // Clear currently attached VBOs.
         vbos_.clear();

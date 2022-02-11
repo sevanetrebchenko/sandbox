@@ -79,7 +79,6 @@ namespace Sandbox {
 
 
             // Scene rendering.
-            ImGui::EndFrame();
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

@@ -92,7 +92,7 @@ namespace Sandbox {
 
             // Calls the callback function for each entity, given it has the required set of components.
             template <typename ...T, typename Fn>
-            void IterateOver(Fn&& callback);
+            inline void IterateOver(Fn&& callback);
 
 
         private:
@@ -125,7 +125,7 @@ namespace Sandbox {
             std::unordered_map<std::type_index, IComponentManager*> componentManagers_;
 
             // System management.
-            std::unordered_map<std::type_index, IComponentSystem*> systems_; // TODO: does this work?
+            std::unordered_map<std::type_index, IComponentSystem*> systems_;
             bool refreshSystems_;
 
             std::unordered_map<std::type_index, int> componentIDs_;
