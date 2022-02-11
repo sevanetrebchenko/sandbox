@@ -289,7 +289,6 @@ namespace Sandbox {
                     transform.SetPosition(position);
                     transform.SetScale(glm::vec3(1.f));
                 });
-
                 ecs.AddComponent<LocalLight>(ID, colors[++index % colors.size()], 0.02f);
             }
         }
