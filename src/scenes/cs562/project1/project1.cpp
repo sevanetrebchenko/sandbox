@@ -272,7 +272,7 @@ namespace Sandbox {
 
         float radius = 4.0f;
         float angle = 0.0f;
-        int numPerSide = 100;
+        int numPerSide = 50;
 
         int index = 0;
 
@@ -398,9 +398,24 @@ namespace Sandbox {
         Shader* geometryShader = shaderLibrary_.GetShader("Geometry Pass");
         geometryShader->Bind();
 
+
+        static float timer = 0.0f;
+        static float multiplier = 1.0f;
+
+        timer += Time::Instance().dt * multiplier;
+
+        if (timer > 1.0f) {
+            timer = 1.0f;
+            multiplier = -1.0f;
+        }
+        else if (timer < 0.0f) {
+            timer = 0.0f;
+            multiplier = 1.0f;
+        }
+
         // Set camera uniforms.
         geometryShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
-        geometryShader->SetUniform("normalBlend", 0.0f);
+        geometryShader->SetUniform("normalBlend", timer);
 
         // Render models to FBO attachments.
         ECS::Instance().IterateOver<Transform, Mesh, MaterialCollection>([geometryShader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection) {

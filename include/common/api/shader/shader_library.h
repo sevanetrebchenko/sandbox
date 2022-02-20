@@ -1,6 +1,5 @@
 
-#ifndef SANDBOX_SHADER_LIBRARY_H
-#define SANDBOX_SHADER_LIBRARY_H
+#pragma once
 
 #include "pch.h"
 #include "common/api/shader/shader.h"
@@ -27,5 +26,3 @@ namespace Sandbox {
     };
 
 }
-
-#endif //SANDBOX_SHADER_LIBRARY_H

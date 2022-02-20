@@ -2,6 +2,7 @@
 #include <utility>
 
 #include "common/api/shader/shader_library.h"
+#include "common/utility/imgui_log.h"
 
 namespace Sandbox {
 
@@ -9,7 +10,11 @@ namespace Sandbox {
         ShaderComponent(std::string code, GLenum type);
         ~ShaderComponent() = default;
 
+        std::string path_;
+        int version_;
         std::string code_;
+        std::unordered_set<std::string> dependencies_;
+
         GLenum type_;
     };
 
@@ -21,16 +26,16 @@ namespace Sandbox {
             void Process(const std::initializer_list<std::string>& shaderComponentPaths);
 
         private:
-            [[nodiscard]] std::string ProcessFile(const std::string& filepath) const;
+            [[nodiscard]] std::string ProcessFile(const std::string& filepath);
 
             [[nodiscard]] std::string GetLine(std::ifstream& stream) const;
+            void ThrowFormattedError(const std::string& file, int lineNumber, const std::string& line, const std::string& message, int index) const;
 
             std::unordered_map<std::string, ShaderComponent> shaderComponents_;
 
-            bool processingExistingInclude_;
-
             // Keeps track of all the included files to allow for double includes without throwing redefinition errors.
             std::unordered_set<std::string> includedFiles_;
+            int version_;
     };
 
     ShaderComponent::ShaderComponent(std::string code, GLenum type) : code_(std::move(code)),
@@ -38,7 +43,7 @@ namespace Sandbox {
                                                                       {
     }
 
-    Parser::Parser() {
+    Parser::Parser() : version_(-1) {
     }
 
     Parser::~Parser() {
@@ -47,13 +52,16 @@ namespace Sandbox {
     void Parser::Process(const std::initializer_list<std::string>& shaderComponentPaths) {
         for (const std::string& filepath : shaderComponentPaths) {
             std::string code = ProcessFile(filepath);
+
+            std::cout << code << std::endl;
+
             GLenum type = ShaderType(filepath).ToOpenGLType();
 
             shaderComponents_.emplace(filepath, ShaderComponent(code, type));
         }
     }
 
-    std::string Parser::ProcessFile(const std::string& filepath) const {
+    std::string Parser::ProcessFile(const std::string& filepath) {
         std::ifstream reader;
         reader.open(filepath);
 
@@ -71,35 +79,150 @@ namespace Sandbox {
         std::stringstream tokenizer;
         std::string token;
 
-//        while (!reader.eof()) {
-//            line = GetLine(reader);
-//
-//            // Tokenize input line.
-//            tokenizer.clear();
-//            tokenizer.str(line);
-//
-//            while (!tokenizer.eof()) {
-//                tokenizer >> token;
-//                std::cout << token << std::endl;
-//            }
-//
-//            std::cout << std::endl;
-//            line.clear();
-//        }
+        while (!reader.eof()) {
+            line = GetLine(reader);
 
-        return std::string();
+            // Tokenize input line.
+            tokenizer.clear();
+            tokenizer.str(line);
+
+            if (line.empty()) {
+                file << std::endl;
+                continue;
+            }
+
+            tokenizer >> token;
+
+            bool include = false;
+            bool version = false;
+            int length = 0;
+
+            // Spaces are allowed between the '#' and "include' / 'pragma' directives, as long as they are on the same line.
+            if (token == "#" || token == "# ") {
+                length += static_cast<int>(token.length());
+
+                if (tokenizer.eof()) {
+                    // '#' character on a single line is not allowed.
+                    ThrowFormattedError(filepath, lineNumber, line, "invalid preprocessor directive", length);
+                }
+
+                tokenizer >> token; // Preprocessor directive.
+
+                if (token == "include") {
+                    length += static_cast<int>(token.length());
+                    if (tokenizer.eof()) {
+                        ThrowFormattedError(filepath, lineNumber, line, "#include directive missing \"FILENAME\"", length);
+                    }
+
+                    tokenizer >> token; // Filename.
+                    include = true;
+                }
+                else if (token == "version") {
+                    length += static_cast<int>(token.length());
+                    if (tokenizer.eof()) {
+                        ThrowFormattedError(filepath, lineNumber, line, "#version directive missing version number", length);
+                    }
+
+                    // Version number.
+                    tokenizer >> token;
+                    version = true;
+                }
+            }
+            else if (token == "#include") {
+                length = static_cast<int>(token.length());
+                if (tokenizer.eof()) {
+                    ThrowFormattedError(filepath, lineNumber, line, "#include directive missing \"FILENAME\" or FILENAME", length);
+                }
+
+                tokenizer >> token; // Filename.
+                include = true;
+            }
+            else if (token == "#version") {
+                length += static_cast<int>(token.length());
+                if (tokenizer.eof()) {
+                    ThrowFormattedError(filepath, lineNumber, line, "#version directive missing version number", length);
+                }
+
+                // Version number.
+                tokenizer >> token;
+                version = true;
+            }
+
+            if (include) {
+                auto iterator = includedFiles_.find(token);
+                if (iterator != includedFiles_.end()) {
+                    // Any repeats of already included files are ignored.
+                    // TODO: issue warning.
+                    file << std::endl;
+                }
+                else {
+                    includedFiles_.emplace(token);
+
+                    // Process given filepath for correct formatting.
+                    // Filepath can either be surrounded by "" or have no decoration.
+                    bool first = token[0] == '\"';
+                    bool last = token[token.length() - 1] == '\"';
+
+                    if ((first && !last) || (!first && last)) {
+                        // Mismatch.
+                        ThrowFormattedError(filepath, lineNumber, line, "#include directive missing \"FILENAME\" or FILENAME", static_cast<int>(token.length()));
+                    }
+
+                    if (first && last) {
+                        // Remove quotation marks.
+                        token.erase(std::remove(token.begin(), token.end(), '\"'), token.end());
+                    }
+
+                    // Allow for includes to be local to the shader directory.
+
+                    file << ProcessFile(token) << std::endl;
+                }
+            }
+            else if (version) {
+                if (version_ == -1) {
+                    // Keep the first found shader version.
+                    version_ = std::stoi(token);
+                }
+            }
+            else {
+                // Type of token is not processed, keep line unchanged.
+                file << line << std::endl;
+            }
+
+            line.clear();
+            ++lineNumber;
+        }
+
+        return file.str();
     }
 
     std::string Parser::GetLine(std::ifstream& stream) const {
         std::string line;
         std::getline(stream, line);
 
-        // Erase new lines.
         line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
-        // Erase comments.
+//        std::string output;
+//
+//        // Remove any extra white space characters (\n, ' ', \r, \t, \f, \v)
+//        std::unique_copy(line.begin(), line.end(), std::back_insert_iterator<std::string>(output), [](char a,char b) {
+//            return isspace(a) && isspace(b);
+//        });
 
         return std::move(line);
+    }
+
+    void Parser::ThrowFormattedError(const std::string& file, int lineNumber, const std::string& line, const std::string& message, int index) const {
+        std::stringstream builder;
+
+        // file:line number:offset: error: message
+        builder << file + ':' + std::to_string(lineNumber) + ':' + std::to_string(index) + ':' + "error: " + message << std::endl;
+        builder << std::fixed << std::setfill(' ') << std::setw(4) << std::to_string(lineNumber) << " | " << line << std::endl;
+        builder << "     | " << std::setfill(' ') << std::setw(index) << "^" << std::endl;
+
+        std::string error = builder.str();
+        ImGuiLog::Instance().LogWarning(error.c_str());
+        throw std::runtime_error(error);
     }
 
     ShaderLibrary::ShaderLibrary() {
