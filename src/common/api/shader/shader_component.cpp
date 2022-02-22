@@ -161,6 +161,7 @@ namespace Sandbox {
                 char native = GetNativeSeparator();
 
                 // TODO: this needs to be updated when caching / builds with asset directories are a thing.
+                // TODO: warnings for double includes.
                 if (directory.empty()) {
                     // Asset has no prepended directory (use local includes - directory of parent).
                     token = baseDirectory_ + native + asset;
