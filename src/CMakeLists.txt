@@ -37,8 +37,8 @@ set(CORE_SOURCE_FILES
         "common/application/input.cpp"
         "common/camera/camera.cpp"
         "common/camera/fps_camera.cpp"
-        "common/utility/directory_utils.cpp"
-        "common/utility/imgui_log.cpp"
+        "common/utility/directory.cpp"
+        "common/utility/log.cpp"
         "common/geometry/mesh.cpp"
         "common/geometry/model.cpp"
         "common/geometry/model_manager.cpp"
@@ -58,6 +58,7 @@ set(CORE_SOURCE_FILES
         "common/texture/texture_library.cpp"
         "common/lighting/lighting_manager.cpp"
         "common/lighting/light.cpp"
+        "common/utility/reloadable.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})

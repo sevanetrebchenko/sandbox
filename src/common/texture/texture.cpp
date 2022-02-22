@@ -1,7 +1,7 @@
 
 #include "common/texture/texture.h"
-#include "common/utility/directory_utils.h"
-#include "common/utility/imgui_log.h"
+#include "common/utility/directory.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
 

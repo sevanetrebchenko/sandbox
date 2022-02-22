@@ -50,7 +50,6 @@ namespace Sandbox {
             ModelManager modelManager_;
             LightingManager lightingManager_;
 
-            ShaderLibrary shaderLibrary_;
             MaterialLibrary materialLibrary_;
     };
 

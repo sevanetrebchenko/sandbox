@@ -25,7 +25,7 @@ namespace Sandbox {
             ~ShaderType();
 
             [[nodiscard]] GLenum ToOpenGLType() const;
-            [[nodiscard]] const std::string& ToString() const;
+            [[nodiscard]] std::string ToString() const;
 
         private:
             GLenum type_;

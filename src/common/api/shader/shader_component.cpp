@@ -1,7 +1,7 @@
 
 #include "common/api/shader/shader_component.h"
-#include "common/utility/directory_utils.h"
-#include "common/utility/imgui_log.h"
+#include "common/utility/directory.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
 
@@ -9,10 +9,45 @@ namespace Sandbox {
                                                                     path_(ConvertToNativeSeparators(filepath)),
                                                                     baseDirectory_(GetAssetDirectory(filepath)),
                                                                     version_(-1)
-    {
+                                                                    {
         code_ = Process(path_);
         ImGuiLog::Instance().LogTrace("Loaded shader component '%s' (type: %s, version: %i)", path_.c_str(), type_.ToString().c_str(), version_);
-        std::cout << code_ << std::endl;
+    }
+
+    GLuint ShaderComponent::Compile() const {
+        const GLchar* shaderSource = reinterpret_cast<const GLchar*>(code_.c_str());
+
+        // Create shader from source.
+        GLuint shader = glCreateShader(type_.ToOpenGLType());
+        glShaderSource(shader, 1, &shaderSource, nullptr); // If length is NULL, each string is assumed to be null terminated.
+        glCompileShader(shader);
+
+        // Compile shader source code.
+        GLint isCompiled = 0;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+        if (!isCompiled) {
+            // Shader failed to compile - get error information from OpenGL.
+            GLint errorMessageLength = 0;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &errorMessageLength);
+
+            std::vector<GLchar> errorMessageBuffer;
+            errorMessageBuffer.resize(errorMessageLength + 1);
+            glGetShaderInfoLog(shader, errorMessageLength, nullptr, &errorMessageBuffer[0]);
+            std::string errorMessage(errorMessageBuffer.begin(), errorMessageBuffer.end());
+
+            glDeleteShader(shader);
+            throw std::runtime_error("In shader component: '" + path_ + "' (type: " + type_.ToString() + "), error: " + errorMessage);
+        }
+
+        return shader;
+    }
+
+    const ShaderType& ShaderComponent::GetType() const {
+        return type_;
+    }
+
+    const std::string& ShaderComponent::GetCode() const {
+        return code_;
     }
 
     std::string ShaderComponent::Process(const std::string& filepath) {
@@ -193,14 +228,6 @@ namespace Sandbox {
         std::string error = builder.str();
         ImGuiLog::Instance().LogWarning(error.c_str());
         throw std::runtime_error(error);
-    }
-
-    const ShaderType& ShaderComponent::GetType() const {
-        return type_;
-    }
-
-    const std::string& ShaderComponent::GetCode() const {
-        return code_;
     }
 
 }

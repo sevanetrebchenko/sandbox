@@ -1,13 +1,6 @@
 
 # version 450 core
 
-// Global.
-#include "assets/shaders/model.vert"
-#include "assets/shaders/model.vert"
-
-// Local
-#include "model.vert"
-
 layout (location = 0) in vec3 vertexPosition;
 layout (location = 1) in vec3 vertexNormal;
 layout (location = 2) in vec2 vertexUV;

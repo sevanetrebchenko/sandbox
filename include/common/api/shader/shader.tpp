@@ -9,13 +9,13 @@ namespace Sandbox {
 
     template <typename DataType>
     void Shader::SetUniform(const std::string& uniformName, DataType value) {
-        auto uniformLocation = _uniformLocations.find(uniformName);
+        auto uniformLocation = uniformLocations_.find(uniformName);
 
         // Location not found.
-        if (uniformLocation == _uniformLocations.end()) {
+        if (uniformLocation == uniformLocations_.end()) {
             // Find location first.
-            GLint location = glGetUniformLocation(_shaderID, uniformName.c_str());
-            _uniformLocations.emplace(uniformName, location);
+            GLint location = glGetUniformLocation(ID_, uniformName.c_str());
+            uniformLocations_.emplace(uniformName, location);
 
             SetUniformData(location, value);
         }

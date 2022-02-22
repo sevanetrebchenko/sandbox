@@ -1,6 +1,6 @@
 
 #include "common/texture/texture_library.h"
-#include "common/utility/directory_utils.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 

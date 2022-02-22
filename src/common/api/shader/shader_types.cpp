@@ -1,6 +1,6 @@
 
 #include "common/api/shader/shader_types.h"
-#include "common/utility/directory_utils.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 
@@ -54,32 +54,39 @@ namespace Sandbox {
     }
 
     ShaderType::ShaderType(const std::string& filepath) {
-        // Get file extension.
         std::string file = ConvertToNativeSeparators(filepath);
         std::size_t dotPosition = file.find_last_of('.');
 
-        bool valid = false;
+        // Get file extension.
+        std::string extension;
 
         if (dotPosition != std::string::npos) {
-            // Found extension.
-            extension_ = file.substr(dotPosition + 1);
-            if (extension_ == "vert") {
-                // Vertex shader.
-                type_ = GL_VERTEX_SHADER;
-                valid = true;
-            }
-            else if (extension_ == "frag") {
-                type_ = GL_FRAGMENT_SHADER;
-                valid = true;
-            }
-            else if (extension_ == "geom") {
-                type_ = GL_GEOMETRY_SHADER;
-                valid = true;
-            }
-            else if (extension_ == "comp") {
-                type_ = GL_COMPUTE_SHADER;
-                valid = true;
-            }
+            extension = file.substr(dotPosition + 1);
+        }
+        else {
+            extension = filepath;
+        }
+
+        bool valid = false;
+
+        // Found extension.
+        extension_ = extension;
+        if (extension_ == "vert") {
+            // Vertex shader.
+            type_ = GL_VERTEX_SHADER;
+            valid = true;
+        }
+        else if (extension_ == "frag") {
+            type_ = GL_FRAGMENT_SHADER;
+            valid = true;
+        }
+        else if (extension_ == "geom") {
+            type_ = GL_GEOMETRY_SHADER;
+            valid = true;
+        }
+        else if (extension_ == "comp") {
+            type_ = GL_COMPUTE_SHADER;
+            valid = true;
         }
 
         if (!valid) {
@@ -94,8 +101,20 @@ namespace Sandbox {
         return type_;
     }
 
-    const std::string& ShaderType::ToString() const {
-        return extension_;
+    std::string ShaderType::ToString() const {
+        switch (type_) {
+            case GL_VERTEX_SHADER:
+                return "VERTEX";
+            case GL_FRAGMENT_SHADER:
+                return "FRAGMENT";
+            case GL_GEOMETRY_SHADER:
+                return "GEOMETRY";
+            case GL_COMPUTE_SHADER:
+                return "COMPUTE";
+            default:
+                return "INVALID";
+        }
     }
+
 }
 

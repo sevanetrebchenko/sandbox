@@ -1,7 +1,7 @@
 
 #include "common/geometry/mesh.h"
 #include "common/api/backend.h"
-#include "common/utility/imgui_log.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
 

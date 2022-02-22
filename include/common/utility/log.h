@@ -1,6 +1,6 @@
 
-#ifndef SANDBOX_IMGUI_LOG_H
-#define SANDBOX_IMGUI_LOG_H
+#ifndef SANDBOX_LOG_H
+#define SANDBOX_LOG_H
 
 #include "pch.h"
 
@@ -52,4 +52,4 @@ namespace Sandbox {
 
 }
 
-#endif //SANDBOX_IMGUI_LOG_H
+#endif //SANDBOX_LOG_H

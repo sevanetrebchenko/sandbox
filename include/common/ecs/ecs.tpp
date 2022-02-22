@@ -2,7 +2,7 @@
 #pragma once
 
 #include "common/ecs/component/component.h"
-#include "common/utility/imgui_log.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
 

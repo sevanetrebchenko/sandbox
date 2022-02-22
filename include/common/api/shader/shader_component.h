@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "common/api/shader/shader_types.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 
@@ -10,6 +11,8 @@ namespace Sandbox {
         public:
             explicit ShaderComponent(const std::string& filepath);
             ~ShaderComponent() = default;
+
+            [[nodiscard]] GLuint Compile() const;
 
             [[nodiscard]] const ShaderType& GetType() const;
             [[nodiscard]] const std::string& GetCode() const;

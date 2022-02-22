@@ -1,5 +1,5 @@
 
-#include "common/utility/imgui_log.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
 

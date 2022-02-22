@@ -1,6 +1,6 @@
 
 #include "common/api/buffer/fbo.h"
-#include "common/utility/directory_utils.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 

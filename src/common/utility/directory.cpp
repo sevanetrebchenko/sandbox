@@ -1,5 +1,5 @@
 
-#include "common/utility/directory_utils.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 
@@ -98,36 +98,4 @@ namespace Sandbox {
         return files;
     }
 
-
-
-    IReloadable::IReloadable(const std::initializer_list<std::string> &trackingFiles) : _filePaths(trackingFiles) {
-        for (const std::string& filePath : _filePaths) {
-            _fileModifyTimes.emplace_back(std::filesystem::last_write_time(filePath)); // Emplace initial write time at the start of the program.
-        }
-    }
-
-    IReloadable::~IReloadable() {
-        _filePaths.clear();
-        _fileModifyTimes.clear();
-    }
-
-    void IReloadable::RecompileIfModified() {
-        bool changed = false;
-
-        for (int i = 0; i < _filePaths.size(); ++i) {
-            const std::string& filePath = _filePaths[i];
-            const std::filesystem::file_time_type& fileModifyTime = _fileModifyTimes[i];
-
-            std::filesystem::file_time_type updatedModifyTime = std::filesystem::last_write_time(filePath);
-
-            if (fileModifyTime != updatedModifyTime) {
-                changed = true;
-                _fileModifyTimes[i] = updatedModifyTime;
-            }
-        }
-
-        if (changed) {
-            OnFileModified();
-        }
-    }
 }

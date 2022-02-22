@@ -2,7 +2,7 @@
 #include "scenes/cs562/project1/project1.h"
 #include "common/api/window.h"
 #include "common/geometry/object_loader.h"
-#include "common/utility/imgui_log.h"
+#include "common/utility/log.h"
 #include "common/geometry/transform.h"
 #include "common/ecs/ecs.h"
 #include "common/application/time.h"
@@ -32,15 +32,6 @@ namespace Sandbox {
 
     void SceneCS562Project1::OnUpdate() {
         IScene::OnUpdate();
-
-        // Recompile shaders.
-        try {
-            shaderLibrary_.RecompileAllModified();
-        }
-        catch (std::runtime_error& err) {
-            ImGuiLog::Instance().LogError("Shader recompilation failed: %s", err.what());
-        }
-
         camera_.Update();
     }
 
@@ -181,11 +172,13 @@ namespace Sandbox {
     }
 
     void SceneCS562Project1::InitializeShaders() {
-        shaderLibrary_.AddShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
-        shaderLibrary_.AddShader("Global Lighting Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting.frag" });
-        shaderLibrary_.AddShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
-        shaderLibrary_.AddShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
-        shaderLibrary_.AddShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
+        ShaderLibrary& shaderLibrary = ShaderLibrary::Instance();
+
+        shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
+        shaderLibrary.CreateShader("Global Lighting Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting.frag" });
+        shaderLibrary.CreateShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
+        shaderLibrary.CreateShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
+        shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
     }
 
     void SceneCS562Project1::InitializeMaterials() {
@@ -395,7 +388,7 @@ namespace Sandbox {
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
 
-        Shader* geometryShader = shaderLibrary_.GetShader("Geometry Pass");
+        Shader* geometryShader = ShaderLibrary::Instance().GetShader("Geometry Pass");
         geometryShader->Bind();
 
 
@@ -447,7 +440,7 @@ namespace Sandbox {
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
 
-        Shader* globalLightingShader = shaderLibrary_.GetShader("Global Lighting Pass");
+        Shader* globalLightingShader = ShaderLibrary::Instance().GetShader("Global Lighting Pass");
         globalLightingShader->Bind();
 
         // Set camera uniforms.
@@ -476,7 +469,7 @@ namespace Sandbox {
         fbo_.DrawBuffers(5, 1);
         // No clearing here.
 
-        Shader* localLightingShader = shaderLibrary_.GetShader("Local Lighting Pass");
+        Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting Pass");
         localLightingShader->Bind();
 
         localLightingShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
@@ -513,7 +506,7 @@ namespace Sandbox {
         fbo_.DrawBuffers(6, 1);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
 
-        Shader* depthShader = shaderLibrary_.GetShader("Depth");
+        Shader* depthShader = ShaderLibrary::Instance().GetShader("Depth");
         depthShader->Bind();
 
         // Uniforms.

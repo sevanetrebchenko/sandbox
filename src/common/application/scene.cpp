@@ -1,5 +1,7 @@
 
 #include "common/application/scene.h"
+#include "common/api/shader/shader_library.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
 
@@ -13,6 +15,13 @@ namespace Sandbox {
     }
 
     void IScene::OnUpdate() {
+        // Recompile shaders.
+        try {
+            ShaderLibrary::Instance().RecompileModified();
+        }
+        catch (std::runtime_error& err) {
+            ImGuiLog::Instance().LogError("%s", err.what());
+        }
     }
 
     void IScene::OnPreRender() {

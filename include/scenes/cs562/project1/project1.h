@@ -53,7 +53,6 @@ namespace Sandbox {
             FrameBufferObject fbo_;
             FPSCamera camera_;
 
-            ShaderLibrary shaderLibrary_;
             MaterialLibrary materialLibrary_;
 
             DirectionalLight directionalLight_;

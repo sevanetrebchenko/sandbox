@@ -1,6 +1,6 @@
 
-#ifndef SANDBOX_DIRECTORY_UTILS_H
-#define SANDBOX_DIRECTORY_UTILS_H
+#ifndef SANDBOX_DIRECTORY_H
+#define SANDBOX_DIRECTORY_H
 
 #include "pch.h"
 
@@ -22,19 +22,6 @@ namespace Sandbox {
 
     [[nodiscard]] std::vector<std::string> GetFiles(const std::string& directory);
 
-    class IReloadable {
-        public:
-            IReloadable(const std::initializer_list<std::string>& trackingFiles);
-            ~IReloadable();
-
-            void RecompileIfModified();
-
-        private:
-            virtual void OnFileModified() = 0;
-            std::vector<std::string> _filePaths;
-            std::vector<std::filesystem::file_time_type> _fileModifyTimes;
-    };
-
 }
 
-#endif //SANDBOX_DIRECTORY_UTILS_H
+#endif //SANDBOX_DIRECTORY_H
