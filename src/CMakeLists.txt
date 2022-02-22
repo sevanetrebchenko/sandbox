@@ -49,6 +49,7 @@ set(CORE_SOURCE_FILES
         "common/application/scene.cpp"
         "common/api/shader/shader.cpp"
         "common/api/shader/shader_types.cpp"
+        "common/api/shader/shader_component.cpp"
         "common/api/shader/shader_library.cpp"
         "common/api/shader/shader_uniform.cpp"
         "common/texture/texture.cpp"

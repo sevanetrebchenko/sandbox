@@ -15,7 +15,7 @@ namespace Sandbox {
     void TextureLibrary::AddTexture(const std::string& textureName, const std::string &textureFilepath) {
         Texture* texture = new Texture(textureName);
         texture->Bind();
-        texture->ReserveData(NativePathConverter::ConvertToNativeSeparators(textureFilepath));
+        texture->ReserveData(ConvertToNativeSeparators(textureFilepath));
         texture->Unbind();
 
         _textures.emplace(textureName, texture);

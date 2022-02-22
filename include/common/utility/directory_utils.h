@@ -6,20 +6,21 @@
 
 namespace Sandbox {
 
-    class DirectoryReader {
-        public:
-            [[nodiscard]] static std::vector<std::string> GetFiles(std::string directoryPath);
+    [[nodiscard]] std::string ToLower(const std::string& in);
 
-            [[nodiscard]] static std::vector<std::string> GetAssetNames(const std::vector<std::string>& filePaths);
-            [[nodiscard]] static std::string GetAssetName(const std::string& assetPath);
+    [[nodiscard]] std::string ConvertToNativeSeparators(const std::string& in);
+    [[nodiscard]] char GetNativeSeparator();
 
-            [[nodiscard]] static std::string GetAssetExtension(const std::string& assetPath);
-    };
+    // Returns ONLY the asset name.
+    [[nodiscard]] std::string GetAssetName(const std::string& file);
 
-    class NativePathConverter {
-        public:
-            [[nodiscard]] static std::string ConvertToNativeSeparators(std::string path);
-    };
+    // Returns ONLY the asset extension.
+    [[nodiscard]] std::string GetAssetExtension(const std::string& file);
+
+    // Returns asset directory with no leading separator.
+    [[nodiscard]] std::string GetAssetDirectory(const std::string& file);
+
+    [[nodiscard]] std::vector<std::string> GetFiles(const std::string& directory);
 
     class IReloadable {
         public:

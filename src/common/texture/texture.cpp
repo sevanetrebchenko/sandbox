@@ -83,7 +83,7 @@ namespace Sandbox {
 
         // Load in texture data.
         int width, height, channels;
-        stbi_uc* data = stbi_load(NativePathConverter::ConvertToNativeSeparators(textureName).c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        stbi_uc* data = stbi_load(ConvertToNativeSeparators(textureName).c_str(), &width, &height, &channels, STBI_rgb_alpha);
         if (data) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 

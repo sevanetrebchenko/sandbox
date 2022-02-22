@@ -55,7 +55,7 @@ namespace Sandbox {
 
     ShaderType::ShaderType(const std::string& filepath) {
         // Get file extension.
-        std::string file = NativePathConverter::ConvertToNativeSeparators(filepath);
+        std::string file = ConvertToNativeSeparators(filepath);
         std::size_t dotPosition = file.find_last_of('.');
 
         bool valid = false;

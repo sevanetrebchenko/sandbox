@@ -128,7 +128,7 @@ namespace Sandbox {
     }
 
     void FrameBufferObject::SaveRenderTargetsToDirectory(const std::string &directoryPath) const {
-        std::string appendedDirectory = NativePathConverter::ConvertToNativeSeparators(directoryPath + "screenshots/");
+        std::string appendedDirectory = ConvertToNativeSeparators(directoryPath + "screenshots/");
 
         for (const auto& renderTarget : _renderTargetsMap) {
             std::string name = renderTarget.first;

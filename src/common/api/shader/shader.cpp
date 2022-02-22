@@ -15,7 +15,7 @@ namespace Sandbox {
 
         // Get shader types.
         std::for_each(_shaderComponentPaths.begin(), _shaderComponentPaths.end(), [&](std::string file) {
-            file = NativePathConverter::ConvertToNativeSeparators(file);
+            file = ConvertToNativeSeparators(file);
             std::size_t dotPosition = file.find_last_of('.');
 
             // Found extension.
