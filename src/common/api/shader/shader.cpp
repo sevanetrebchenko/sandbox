@@ -1,5 +1,7 @@
 
 #include "common/api/shader/shader.h"
+#include "common/utility/log.h"
+#include "common/application/application.h"
 
 #define INVALID (-1)
 
@@ -34,6 +36,8 @@ namespace Sandbox {
                 throw std::runtime_error("Unknown or unsupported shader of type: \"" + type.ToString() + "\"");
             }
         }
+
+        Recompile();
     }
 
     Shader::~Shader() {
@@ -48,8 +52,8 @@ namespace Sandbox {
     void Shader::CompileShader() {
         GLuint shaderProgram = glCreateProgram();
         unsigned numShaderComponents = shaderComponents_.size();
-        GLuint* shaders = new GLenum[numShaderComponents];
-        unsigned currentShaderIndex = 0;
+        GLuint shaders[numShaderComponents];
+        unsigned currentComponentIndex = 0;
 
         //--------------------------------------------------------------------------------------------------------------
         // SHADER COMPONENT COMPILING
@@ -67,7 +71,7 @@ namespace Sandbox {
 
             // Shader successfully compiled.
             glAttachShader(shaderProgram, shader);
-            shaders[currentShaderIndex++] = shader;
+            shaders[currentComponentIndex++] = shader;
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -98,18 +102,49 @@ namespace Sandbox {
             throw std::runtime_error("Shader: " + name_ + " failed to link. Provided error information: " + errorMessage);
         }
 
-        // Shader has already been initialized, delete prior shader program.
+        // Shader has already been initialized, do cleanup first.
         if (ID_ != INVALID) {
             glDeleteProgram(ID_);
+            uniformLocations_.clear();
         }
         ID_ = shaderProgram;
-        uniformLocations_.clear();
 
         // Shader types are no longer necessary.
         for (int i = 0; i < numShaderComponents; ++i) {
             GLuint shaderComponentID = shaders[i];
             glDetachShader(shaderProgram, shaderComponentID);
             glDeleteShader(shaderComponentID);
+        }
+
+        CacheShaderBinary();
+    }
+
+    void Shader::CacheShaderBinary() {
+        GLint numFormats = 0;
+        glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &numFormats);
+
+        if (numFormats < 1) {
+            LogWarningOnce("Driver does not support shader binary formats. Shaders will always be recompiled on program startup.");
+        }
+        else {
+            GLint length = 0;
+            glGetProgramiv(ID_, GL_PROGRAM_BINARY_LENGTH, &length);
+
+            // Retrieve shader program binary.
+            std::vector<GLubyte> buffer(length);
+            GLenum format = 0;
+            glGetProgramBinary(ID_, length, nullptr, &format, buffer.data());
+
+            // Write the binary to a file.
+            const std::string& directory = Application::Instance().GetSceneManager().GetActiveScene()->GetShaderCacheDirectory();
+            std::string filepath = ConvertToNativeSeparators(directory + "/" + name_ + ".bin");
+
+            std::ofstream writer(filepath.c_str(), std::ios::out | std::ios::binary);
+            if (writer.is_open()) {
+                writer.write(reinterpret_cast<char*>(buffer.data()), length);
+                writer.flush();
+                writer.close();
+            }
         }
     }
 

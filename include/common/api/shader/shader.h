@@ -26,6 +26,7 @@ namespace Sandbox {
             void Recompile() override;
 
             void CompileShader();
+            void CacheShaderBinary();
 
             template<typename DataType>
             void SetUniformData(GLuint uniformLocation, DataType value);

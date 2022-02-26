@@ -52,4 +52,29 @@ namespace Sandbox {
 
 }
 
+// Defines for logging messages once (useful for eliminating log message spam from errors happening in repeated function calls).
+#define LogTraceOnce(MESSAGE, ...)      do {                                                             \
+                                            static bool _logged = false;                                 \
+                                            if (!_logged) {                                              \
+                                                ImGuiLog::Instance().LogTrace(MESSAGE, ##__VA_ARGS__);   \
+                                                _logged = true;                                          \
+                                            }                                                            \
+                                        } while (false)
+
+#define LogWarningOnce(MESSAGE, ...)    do {                                                             \
+                                            static bool _logged = false;                                 \
+                                            if (!_logged) {                                              \
+                                                ImGuiLog::Instance().LogWarning(MESSAGE, ##__VA_ARGS__); \
+                                                _logged = true;                                          \
+                                            }                                                            \
+                                        } while (false)
+
+#define LogErrorOnce(MESSAGE, ...)      do {                                                             \
+                                            static bool _logged = false;                                 \
+                                            if (!_logged) {                                              \
+                                                ImGuiLog::Instance().LogError(MESSAGE, ##__VA_ARGS__);   \
+                                                _logged = true;                                          \
+                                            }                                                            \
+                                        } while (false)
+
 #endif //SANDBOX_LOG_H

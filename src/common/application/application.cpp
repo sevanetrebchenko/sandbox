@@ -9,15 +9,14 @@ namespace Sandbox {
     Application::Application() {
     }
 
-    Application::Application(int width, int height) {
-        Window::Instance().SetDimensions(glm::ivec2(width, height));
-    }
-
     Application::~Application() {
     }
 
-    void Application::Init() {
-        Window::Instance().Init();
+    void Application::Init(int width, int height) {
+        Window& window = Window::Instance();
+        window.SetDimensions(glm::ivec2(width, height));
+        window.Init();
+
         ECS::Instance().Init();
         sceneManager_.Init();
     }
@@ -25,7 +24,6 @@ namespace Sandbox {
     void Application::Run() {
         static float current = 0.0f;
         static float previous = 0.0f;
-        static float dt = 0.0f;
 
         Window& window = Window::Instance();
 
@@ -33,10 +31,8 @@ namespace Sandbox {
             // Prepare for a new frame.
             // dt calculations.
             current = static_cast<float>(glfwGetTime());
-            dt = current - previous;
+            Time::Instance().dt = current - previous;
             previous = current;
-
-            Time::Instance().dt = dt;
 
             // Clear canvas.
             Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -60,7 +56,7 @@ namespace Sandbox {
             ecs.Update();
 
             // Scene processing.
-            IScene* scene = sceneManager_.GetCurrentScene();
+            IScene* scene = sceneManager_.GetActiveScene();
             if (scene) {
                 // Events.
                 if (window.CheckForResize()) {

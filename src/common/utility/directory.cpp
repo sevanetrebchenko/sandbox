@@ -71,31 +71,72 @@ namespace Sandbox {
         }
     }
 
-    std::string GetAssetDirectory(const std::string& file) {
-        std::string directory = ConvertToNativeSeparators(file);
-        std::size_t slashPosition = directory.find_last_of(GetNativeSeparator());
+    std::string GetAssetDirectory(const std::string& in) {
+        std::string file = ConvertToNativeSeparators(in);
+        std::string extension = GetAssetExtension(file);
 
-        if (slashPosition == std::string::npos) {
-            return { "" };
+        if (extension.empty()) {
+            throw std::runtime_error("Path provided to GetAssetDirectory is not a file.");
         }
-        else {
-            return directory.substr(0, slashPosition);
+
+        if (!Exists(file)) {
+            throw std::runtime_error("File provided to GetAssetDirectory does not exist.");
         }
+
+        return std::filesystem::path(file).parent_path().string();
     }
 
-    std::vector<std::string> GetFiles(const std::string& directory) {
-        std::filesystem::path path { ConvertToNativeSeparators(directory) };
-        if (!std::filesystem::is_directory(path)) {
-            throw std::runtime_error("Provided directory does not exist.");
+    std::vector<std::string> GetFiles(const std::string& in) {
+        std::string directory = ConvertToNativeSeparators(in);
+        std::string extension = GetAssetExtension(directory);
+
+        if (!extension.empty()) {
+            throw std::runtime_error("Path provided to GetFiles is not a directory.");
+        }
+
+        if (!Exists(directory)) {
+            throw std::runtime_error("Directory provided to GetFiles does not exist.");
         }
 
         std::vector<std::string> files;
 
-        for (auto& file : std::filesystem::directory_iterator(path)) {
+        for (auto& file : std::filesystem::directory_iterator(std::filesystem::path(directory))) {
             files.push_back(file.path().string());
         }
 
         return files;
+    }
+
+    bool Exists(const std::string& in) {
+        return std::filesystem::exists({ ConvertToNativeSeparators(in) });
+    }
+
+    void CreateDirectory(const std::string& in) {
+        std::filesystem::create_directories(ConvertToNativeSeparators(in));
+    }
+
+    void CreateFile(const std::string& in) {
+        std::string filepath = ConvertToNativeSeparators(in);
+        std::string extension = GetAssetExtension(filepath);
+
+        if (extension.empty()) {
+            throw std::runtime_error("Directory passed into CreateFile. Use CreateDirectory instead.");
+        }
+
+        // Create required directories.
+        std::filesystem::path path = std::filesystem::path(filepath).parent_path();
+        std::filesystem::create_directories(path);
+
+        // Destructor closes stream.
+        std::ofstream(filepath, std::ios::app); // Open for append to not erase any existing contents.
+    }
+
+    std::string GetWorkingDirectory() {
+        return ConvertToNativeSeparators(std::filesystem::current_path().string());
+    }
+
+    std::string GetGlobalPath(const std::string& in) {
+        return ConvertToNativeSeparators(GetWorkingDirectory() + GetNativeSeparator() + in);
     }
 
 }

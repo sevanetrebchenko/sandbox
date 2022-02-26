@@ -1,5 +1,6 @@
 
 #include "common/utility/log.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 
@@ -165,6 +166,8 @@ namespace Sandbox {
     }
 
     void ImGuiLog::WriteToFile(const std::string &outputFile) const {
+        CreateFile(outputFile);
+
         std::ofstream fileStream;
         fileStream.open(outputFile.c_str());
 

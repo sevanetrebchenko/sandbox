@@ -4,22 +4,24 @@
 
 #include "common/api/window.h"
 #include "common/application/scene_manager.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
-    class Application {
+    class Application : public Singleton<Application> {
         public:
-            Application();
-            Application(int width, int height);
-            ~Application();
+            REGISTER_SINGLETON(Application);
 
-            void Init();
+            void Init(int width, int height);
             void Run();
             void Shutdown();
 
             [[nodiscard]] SceneManager& GetSceneManager();
 
         private:
+            Application();
+            ~Application() override;
+
             SceneManager sceneManager_;
     };
 

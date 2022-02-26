@@ -1,6 +1,7 @@
 
 #include "common/application/scene_manager.h"
 #include "common/utility/log.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 
@@ -25,8 +26,10 @@ namespace Sandbox {
 
             	int index = 0;
 
-                for (const SceneData& data : scenes_) {
-                    if (ImGui::MenuItem(data.prettyName_.c_str())) {
+                for (ISceneType* type : scenes_) {
+                    assert(!type); // Should never happen.
+
+                    if (ImGui::MenuItem(type->name_.c_str())) {
                     	currentIndex_ = index;
                     }
 
@@ -48,30 +51,17 @@ namespace Sandbox {
         UnloadSceneData();
 
         // Save log file.
-        const std::string file = "data/log.txt";
+        const std::string file = ConvertToNativeSeparators(GetWorkingDirectory() + "/out/log.txt");
         log.LogTrace("Saving ImGui log to: %s", file.c_str());
         log.WriteToFile(file);
-
-        for (const SceneData& data : scenes_) {
-            delete data.scene_;
-        }
     }
 
-    void SceneManager::AddScene(const std::string& name, IScene* scene) {
-        scenes_.emplace_back(name, scene);
+    IScene* SceneManager::GetActiveScene() const {
+        ISceneType* current = GetActiveSceneType();
+        return current ? current->scene_ : nullptr;
     }
 
-    IScene* SceneManager::GetCurrentScene() const {
-        const SceneData* data = GetCurrentSceneData();
-
-        if (!data) {
-            return nullptr;
-        }
-
-        return data->scene_;
-    }
-
-    void SceneManager::SetStartupScene(const std::string& name) {
+    void SceneManager::SetActiveScene(const std::string& name) {
         if (currentIndex_ != -1) {
             // Function only does something when no scene has been loaded.
             return;
@@ -81,8 +71,8 @@ namespace Sandbox {
 
         // Find scene data with given scene name.
         for (int i = 0; i < scenes_.size(); ++i) {
-            const SceneData& data = scenes_[i];
-            const std::string& sceneName = data.prettyName_;
+            ISceneType* type = scenes_[i];
+            const std::string& sceneName = type->name_;
 
             if (sceneName == name) {
                 log.LogTrace("Setting startup scene as: '%s'", sceneName.c_str());
@@ -92,33 +82,71 @@ namespace Sandbox {
         }
     }
 
+    bool SceneManager::ValidateSceneName(const std::string& name) const {
+        for (ISceneType* type : scenes_) {
+            if (type->name_ == name) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    SceneManager::ISceneType* SceneManager::GetActiveSceneType() const {
+        // Current index can be negative (no active scenes).
+        if (currentIndex_ < 0) {
+            return nullptr;
+        }
+
+        if (currentIndex_ >= scenes_.size()) {
+            throw std::out_of_range("In SceneManager::GetActiveSceneType, invalid SceneManager configuration.");
+        }
+
+        return scenes_[currentIndex_];
+    }
+
     void SceneManager::LoadSceneData() const {
     	ImGuiLog& log = ImGuiLog::Instance();
 
-		const SceneData* data = GetCurrentSceneData();
-        if (!data) {
+        ISceneType* type = GetActiveSceneType();
+        if (!type) {
+            // No active scene to load.
             return;
         }
 
-		log.LogTrace("Loading scene: '%s'", data->prettyName_.c_str());
+        auto start = std::chrono::high_resolution_clock::now();
 
-		auto start = std::chrono::high_resolution_clock::now();
+        type->Create(); // Create instance of scene.
 
-		// Load any saved ImGui settings.
-		if (std::filesystem::exists(data->imGuiIniPath_)) {
-			log.LogTrace("Found existing ImGui layout file: %s", data->imGuiIniPath_.c_str());
-			ImGui::LoadIniSettingsFromDisk(data->imGuiIniPath_.c_str());
-		}
-		else {
-			log.LogTrace("Creating new ImGui layout file: %s", data->imGuiIniPath_.c_str());
-		}
+        IScene* scene = type->scene_;
+        scene->OnInit();
+
+        std::string name = scene->GetName();
+        if (name.empty()) {
+            // Name was not set in the constructor or the OnInit function of the scene.
+            // Set the name to be the one the scene was registered in the SceneManager with.
+            name = type->name_;
+            scene->SetName(name);
+        }
+
+        scene->Lock(); // No more changes to scene name / data directory after this.
+
+        log.LogTrace("Loading scene: '%s'", name.c_str());
 
         // Enable manual save settings.
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = nullptr;
 
-		IScene* current = data->scene_;
-		current->OnInit();
+		// Load saved ImGui settings.
+        const std::string& uiLayout = scene->GetUILayoutFile();
+        if (std::filesystem::file_size({ uiLayout }) > 0) {
+            // Load from .ini file only if it exists.
+            log.LogTrace("Loading ImGui layout file: %s", uiLayout.c_str());
+            ImGui::LoadIniSettingsFromDisk(uiLayout.c_str());
+        }
+        else {
+            log.LogTrace("Creating ImGui layout file: %s", uiLayout.c_str());
+        }
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -126,41 +154,32 @@ namespace Sandbox {
 		log.LogTrace("Scene loaded in: %i ms.", duration.count());
     }
 
-	const SceneManager::SceneData* SceneManager::GetCurrentSceneData() const {
-        // Current index can be negative (no active scenes).
-        if (currentIndex_ < 0) {
-            return nullptr;
-        }
-
-    	if (currentIndex_ >= scenes_.size()) {
-    		throw std::out_of_range("Invalid SceneManager configuration.");
-    	}
-
-    	return &scenes_[currentIndex_];
-	}
-
 	void SceneManager::UnloadSceneData() const {
         ImGuiLog& log = ImGuiLog::Instance();
-    	const SceneData* data = GetCurrentSceneData();
 
-        if (!data) {
+        ISceneType* type = GetActiveSceneType();
+        if (!type) {
+            // No active scene to load.
             return;
         }
 
-        log.LogTrace("Unloading scene: '%s'", data->prettyName_.c_str());
-
         auto start = std::chrono::high_resolution_clock::now();
 
-        // Shutdown current scene.
-        IScene* scene = data->scene_;
-        scene->OnShutdown();
+        IScene* scene = type->scene_;
+        assert(scene);
 
-        // TODO: Create directory if it doesn't exist.
+        const std::string& name = scene->GetName();
+
+        log.LogTrace("Unloading scene: '%s'", name.c_str());
 
     	// Save ImGui settings.
-    	const std::string& ini = data->imGuiIniPath_;
+    	const std::string& ini = scene->GetUILayoutFile();
     	log.LogTrace("Saving ImGui settings to: %s", ini.c_str());
     	ImGui::SaveIniSettingsToDisk(ini.c_str());
+
+        // Shutdown current scene.
+        scene->OnShutdown();
+        type->Destroy();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -184,29 +203,11 @@ namespace Sandbox {
         previousIndex_ = currentIndex_;
     }
 
-    SceneManager::SceneData::SceneData(std::string sceneName, IScene* scene) : scene_(scene),
-																			   prettyName_(std::move(sceneName))
-																			   {
-    	ImGuiLog& log = ImGuiLog::Instance();
+    SceneManager::ISceneType::ISceneType(const std::string& name) : scene_(nullptr),
+                                                                    name_(name)
+                                                                    {
+    }
 
-    	// Convert name to all lowercase, with underscores instead of spaces.
-    	std::stringstream builder;
-    	for (char character : prettyName_) {
-    		if (character == ' ') {
-    			builder << '_';
-    		}
-            else if (character == ':') {
-                continue;
-            }
-    		else {
-    			builder << static_cast<char>(std::tolower(character));
-    		}
-    	}
-    	name_ = builder.str();
-    	imGuiIniPath_ = "data/scenes/" + name_ + "/" + name_ + "_gui.ini";
-	}
-
-	SceneManager::SceneData::~SceneData() {
-	}
+    SceneManager::ISceneType::~ISceneType() = default;
 
 }

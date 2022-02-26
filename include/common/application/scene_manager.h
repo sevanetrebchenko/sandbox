@@ -1,6 +1,5 @@
 
-#ifndef SANDBOX_SCENE_MANAGER_H
-#define SANDBOX_SCENE_MANAGER_H
+#pragma once
 
 #include "pch.h"
 #include "common/application/scene.h"
@@ -18,35 +17,47 @@ namespace Sandbox {
 
             // Takes name by which the scene will be referenced in the editor.
             // Scenes will appear in the order they are added.
-            void AddScene(const std::string& name, IScene* scene);
+            template <typename T>
+            void AddScene(const std::string& sceneName);
 
-            [[nodiscard]] IScene* GetCurrentScene() const;
+            [[nodiscard]] IScene* GetActiveScene() const;
             [[nodiscard]] bool SceneChangeRequested() const;
 
             void SwitchScenes();
 
-            void SetStartupScene(const std::string& name);
+            void SetActiveScene(const std::string& name);
 
         private:
-            struct SceneData {
-            	SceneData(std::string sceneName, IScene* scene);
-            	~SceneData();
+            // Interface for capturing scene type into a class to be able to destroy/create scenes on load.
+            // Type erasure of scene type into void*, as SceneManager only needs to interface with IScene*.
+            struct ISceneType {
+                explicit ISceneType(const std::string& name);
+                virtual ~ISceneType();
+
+                virtual void Create() = 0;
+                virtual void Destroy() = 0;
 
                 IScene* scene_;
-
-                std::string prettyName_; // Public facing name, used for GUI and whatnot.
-                std::string name_;
-                std::string imGuiIniPath_;
+                std::string name_; // Name the scene was registered in the SceneManager with.
+                                   // Scenes will default to this name if not otherwise set in scene either the constructor or OnInit function.
             };
 
-            [[nodiscard]] const SceneData* GetCurrentSceneData() const;
+            template <typename T>
+            struct SceneType : public ISceneType {
+                explicit SceneType(const std::string& name);
+                ~SceneType() override;
 
+                void Create() override;
+                void Destroy() override;
+            };
+
+            [[nodiscard]] bool ValidateSceneName(const std::string& name) const;
+
+            [[nodiscard]] ISceneType* GetActiveSceneType() const;
             void UnloadSceneData() const;
             void LoadSceneData() const;
 
-            // Scene stubs, stored uninitialized.
-            // Scenes are not going to be changed after initialization, we can get away with using a vector instead of a map.
-            std::vector<SceneData> scenes_;
+            std::vector<ISceneType*> scenes_;
             int previousIndex_;
             int currentIndex_;
 
@@ -55,4 +66,4 @@ namespace Sandbox {
 
 }
 
-#endif //SANDBOX_SCENE_MANAGER_H
+#include "common/application/scene_manager.tpp"

@@ -12,6 +12,7 @@ namespace Sandbox {
             explicit ShaderComponent(const std::string& filepath);
             ~ShaderComponent() = default;
 
+            // Returns the ID of the shader component.
             [[nodiscard]] GLuint Compile() const;
 
             [[nodiscard]] const ShaderType& GetType() const;

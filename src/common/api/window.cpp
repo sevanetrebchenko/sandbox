@@ -34,7 +34,7 @@ namespace Sandbox {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         // Create window.
-        window_ = glfwCreateWindow(1280, 720, "OpenGL Sandbox", nullptr, nullptr);
+        window_ = glfwCreateWindow(dimensions_.x, dimensions_.y, "OpenGL Sandbox", nullptr, nullptr);
         if (!window_) {
             throw std::runtime_error("Failed to create GLFW window.");
         }
@@ -55,7 +55,8 @@ namespace Sandbox {
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
 
-        io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/inconsolata/Inconsolata-Regular.ttf", 17.0f);
+        std::string fontFilepath = ConvertToNativeSeparators(GetWorkingDirectory() + "/assets/fonts/inconsolata/Inconsolata-Regular.ttf");
+        io.FontDefault = io.Fonts->AddFontFromFileTTF(fontFilepath.c_str(), 17.0f);
         ImGui::StyleColorsDark();
 
         // Initialize ImGui Flags.

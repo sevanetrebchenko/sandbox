@@ -1,6 +1,5 @@
 
-#ifndef SANDBOX_SHADER_TPP
-#define SANDBOX_SHADER_TPP
+#pragma once
 
 #include "common/texture/texture.h"
 #include "common/api/backend.h"
@@ -64,8 +63,10 @@ namespace Sandbox {
             glUniform1i(uniformLocation, textureSamplerID);
             texture->Bind();
         }
+        else {
+            throw std::runtime_error("");
+        }
     }
 
 }
 
-#endif //SANDBOX_SHADER_TPP
