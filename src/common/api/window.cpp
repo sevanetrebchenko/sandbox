@@ -5,15 +5,8 @@
 
 namespace Sandbox {
 
-    Window& Window::Instance() {
-        // Scott Meyers singleton.
-        static Window window;
-        return window;
-    }
-
     Window::Window() : window_(nullptr),
-                       dimensions_(glm::ivec2(1280, 720)),
-                       initialized_(false)
+                       dimensions_(glm::ivec2(1280, 720))
                        {
     }
 

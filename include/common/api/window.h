@@ -3,12 +3,13 @@
 #define SANDBOX_WINDOW_H
 
 #include "pch.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
-    class Window {
+    class Window : public Singleton<Window> {
         public:
-            static Window& Instance();
+            REGISTER_SINGLETON(Window);
 
             void Init();
             void Shutdown();
@@ -34,12 +35,11 @@ namespace Sandbox {
 
         private:
             Window();
-            ~Window();
+            ~Window() override;
 
             // Window data.
             GLFWwindow* window_;
             glm::ivec2 dimensions_;
-            bool initialized_;
     };
 
 }

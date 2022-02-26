@@ -3,12 +3,13 @@
 #define SANDBOX_LOG_H
 
 #include "pch.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
-    class ImGuiLog {
+    class ImGuiLog : public Singleton<ImGuiLog> {
         public:
-            static ImGuiLog& Instance();
+            REGISTER_SINGLETON(ImGuiLog);
 
             void OnImGui();
             void ClearLog();

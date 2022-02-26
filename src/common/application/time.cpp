@@ -3,11 +3,6 @@
 
 namespace Sandbox {
 
-    Time& Time::Instance() {
-        static Time instance;
-        return instance;
-    }
-
     Time::Time() : dt(0) {
     }
 

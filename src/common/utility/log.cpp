@@ -4,11 +4,6 @@
 
 namespace Sandbox {
 
-    ImGuiLog& ImGuiLog::Instance() {
-        static ImGuiLog instance;
-        return instance;
-    }
-
     ImGuiLog::ImGuiLog() : _processingBufferSize(64u),
                            _processingBuffer(new char[_processingBufferSize])
                            {

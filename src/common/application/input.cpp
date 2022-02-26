@@ -4,11 +4,6 @@
 
 namespace Sandbox {
 
-    Input& Input::Instance() {
-        static Input instance;
-        return instance;
-    }
-
     Input::Input() {
     }
 

@@ -3,17 +3,20 @@
 #define SANDBOX_TIME_H
 
 #include "pch.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
-    class Time {
+    class Time : public Singleton<Time> {
         public:
-            static Time& Instance();
+            REGISTER_SINGLETON(Time);
+
+            // Public fields.
             float dt;
 
         private:
             Time();
-            ~Time();
+            ~Time() override;
     };
 
 }

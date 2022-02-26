@@ -3,12 +3,13 @@
 #define SANDBOX_INPUT_H
 
 #include "pch.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
-    class Input {
+    class Input : public Singleton<Input> {
         public:
-            static Input& Instance();
+            REGISTER_SINGLETON(Input);
 
             [[nodiscard]] int GetKeyState(int key) const;
             [[nodiscard]] bool IsKeyPressed(int key) const;
@@ -20,7 +21,7 @@ namespace Sandbox {
 
         private:
             Input();
-            ~Input();
+            ~Input() override;
     };
 
 }

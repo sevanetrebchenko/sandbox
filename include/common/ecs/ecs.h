@@ -8,13 +8,14 @@
 #include "common/ecs/component/component_list.h"
 #include "common/ecs/iterator/entity_component_iterator.h"
 #include "common/ecs/component/component_wrapper.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
     // Public interface for everything to do with managing entities and their components.
-    class ECS {
+    class ECS : public Singleton<ECS> {
         public:
-            static ECS& Instance();
+            REGISTER_SINGLETON(ECS);
 
             void Init();
             void Update(); // Updates all systems.
@@ -97,7 +98,7 @@ namespace Sandbox {
 
         private:
             ECS();
-            ~ECS();
+            ~ECS() override;
 
             template <typename T>
             ComponentManager<T>* AddComponentManager();

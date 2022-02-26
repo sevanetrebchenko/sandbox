@@ -3,11 +3,6 @@
 
 namespace Sandbox {
 
-    VAOManager& VAOManager::Instance() {
-        static VAOManager instance;
-        return instance;
-    }
-
     VertexArrayObject* VAOManager::GetVAO(const std::string& filepath) {
         auto iterator = vaos_.find(filepath);
         if (iterator == vaos_.end()) {

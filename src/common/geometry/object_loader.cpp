@@ -4,11 +4,6 @@
 
 namespace Sandbox {
 
-    OBJLoader &OBJLoader::Instance() {
-        static OBJLoader instance;
-        return instance;
-    }
-
     OBJLoader::OBJLoader() {
     }
 

@@ -6,11 +6,6 @@
 
 namespace Sandbox {
 
-    ECS& ECS::Instance() {
-        static ECS instance;
-        return instance;
-    }
-
     ECS::ECS() : refreshSystems_(false) {
     }
 

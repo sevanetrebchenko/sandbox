@@ -3,12 +3,15 @@
 #define SANDBOX_OBJECT_LOADER_H
 
 #include "pch.h"
-#include "mesh.h"
+#include "common/geometry/mesh.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
-    class OBJLoader {
+    class OBJLoader : public Singleton<OBJLoader> {
         public:
+            REGISTER_SINGLETON(OBJLoader);
+
             struct Request {
                 explicit Request(std::string filepath);
                 ~Request();
@@ -16,7 +19,6 @@ namespace Sandbox {
                 std::string filepath_;
             };
 
-            static OBJLoader& Instance();
             Mesh LoadFromFile(const Request& request);
 
         private:
