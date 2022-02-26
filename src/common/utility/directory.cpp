@@ -139,4 +139,34 @@ namespace Sandbox {
         return ConvertToNativeSeparators(GetWorkingDirectory() + GetNativeSeparator() + in);
     }
 
+    std::string ProcessName(const std::string& in) {
+        // Convert name to all lowercase, with underscores instead of spaces.
+        std::vector<char> disallowedCharacters = { '/', '\\', ':', '*', '?', '"', '<', '>', '|' }; // Windows.
+
+        std::stringstream builder;
+        for (char character : in) {
+            if (character == ' ') {
+                builder << '_';
+            }
+            else {
+                bool skipCharacter = false;
+
+                for (char c : disallowedCharacters) {
+                    if (character == c) {
+                        skipCharacter = true;
+                        break;
+                    }
+                }
+
+                if (skipCharacter) {
+                    continue;
+                }
+
+                builder << static_cast<char>(std::tolower(character));
+            }
+        }
+
+        return builder.str();
+    }
+
 }

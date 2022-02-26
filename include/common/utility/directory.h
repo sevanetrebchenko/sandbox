@@ -35,6 +35,9 @@ namespace Sandbox {
     // Note: assumes 'in' is contained within the scope of the project.
     [[nodiscard]] std::string GetGlobalPath(const std::string& in);
 
+    // Returns filesystem-friendly scene name, for path construction purposes.
+    [[nodiscard]] std::string ProcessName(const std::string& in);
+
 }
 
 #endif //SANDBOX_DIRECTORY_H

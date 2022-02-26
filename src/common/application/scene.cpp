@@ -2,6 +2,7 @@
 #include "common/application/scene.h"
 #include "common/api/shader/shader_library.h"
 #include "common/utility/log.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 
@@ -43,7 +44,7 @@ namespace Sandbox {
 
     void IScene::SetName(const std::string& name) {
         if (isLocked_) {
-            LogWarningOnce("Function SetName called on a locked Scene instance - call has no effect. SetName should be called only in scene constructors or derived OnInit functions.");
+            LogWarningOnce("Function SetName called on a locked Scene instance - call has no effect. SetName should be called only in scene constructors.");
             return;
         }
 
@@ -54,7 +55,7 @@ namespace Sandbox {
     void IScene::SetDataDirectory(const std::string& dataDirectory) {
         // Setting the name is only possible if the scene is not locked.
         if (isLocked_) {
-            LogWarningOnce("Function SetDataDirectory calle on a locked Scene instance - call has no effect. SetDataDirectory should be called only in scene constructors or derived OnInit functions.");
+            LogWarningOnce("Function SetDataDirectory called on a locked Scene instance - call has no effect. SetDataDirectory should be called only in scene constructors.");
             return;
         }
 
@@ -69,7 +70,7 @@ namespace Sandbox {
 
         if (dataDirectory_.empty()) {
             // Data directory was not set, generate it from the name.
-            std::string generatedName = ProcessName();
+            std::string generatedName = ProcessName(name_);
             dataDirectory_ = ConvertToNativeSeparators(GetWorkingDirectory() + "/data/scenes/" + generatedName);
         }
 
@@ -98,36 +99,6 @@ namespace Sandbox {
 
     const std::string& IScene::GetShaderCacheDirectory() const {
         return shaderCache_;
-    }
-
-    std::string IScene::ProcessName() const {
-        // Convert name to all lowercase, with underscores instead of spaces.
-        std::vector<char> disallowedCharacters = { '/', '\\', ':', '*', '?', '"', '<', '>', '|' }; // Windows.
-
-        std::stringstream builder;
-        for (char character : name_) {
-            if (character == ' ') {
-                builder << '_';
-            }
-            else {
-                bool skipCharacter = false;
-
-                for (char c : disallowedCharacters) {
-                    if (character == c) {
-                        skipCharacter = true;
-                        break;
-                    }
-                }
-
-                if (skipCharacter) {
-                    continue;
-                }
-
-                builder << static_cast<char>(std::tolower(character));
-            }
-        }
-
-        return builder.str();
     }
 
 }

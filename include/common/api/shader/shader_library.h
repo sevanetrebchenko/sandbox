@@ -3,17 +3,16 @@
 
 #include "pch.h"
 #include "common/api/shader/shader.h"
-#include "common/utility/reloadable.h"
+#include "common/utility/singleton.h"
 
 namespace Sandbox {
 
-    class ShaderLibrary {
+    class ShaderLibrary : public Singleton<ShaderLibrary> {
         public:
-            static ShaderLibrary& Instance();
+            REGISTER_SINGLETON(ShaderLibrary);
 
             Shader* CreateShader(const std::string& name, const std::initializer_list<std::string>& shaderComponentPaths);
             void DestroyShader(const std::string& name);
-
             Shader* GetShader(const std::string& name) const;
 
             void RecompileModified();
@@ -21,10 +20,9 @@ namespace Sandbox {
 
         private:
             ShaderLibrary();
-            ~ShaderLibrary();
+            ~ShaderLibrary() override;
 
             std::unordered_map<std::string, Shader*> shaders_;
-            std::vector<IReloadable*> _recompileTargets;
     };
 
 }

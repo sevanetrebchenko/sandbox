@@ -20,13 +20,17 @@ namespace Sandbox {
 
         private:
             friend class ShaderLibrary;
+            // Shader needs to know component paths (even if binary is cached) to support shader hot loading.
             Shader(const std::string& name, const std::initializer_list<std::string>& shaderComponentPaths);
             ~Shader();
 
             void Recompile() override;
-
-            void CompileShader();
+            void CompileFromSource();
+            void CompileFromBinary();
             void CacheShaderBinary();
+
+            // Returns the filepath of the cached shader binary.
+            [[nodiscard]] std::string GetCachedBinaryPath() const;
 
             template<typename DataType>
             void SetUniformData(GLuint uniformLocation, DataType value);

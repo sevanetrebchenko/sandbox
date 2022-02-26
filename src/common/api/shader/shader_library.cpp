@@ -1,12 +1,8 @@
 
 #include "common/api/shader/shader_library.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
-
-    ShaderLibrary& ShaderLibrary::Instance() {
-        static ShaderLibrary instance;
-        return instance;
-    }
 
     ShaderLibrary::ShaderLibrary() {
     }

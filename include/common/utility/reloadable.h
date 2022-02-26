@@ -7,20 +7,22 @@ namespace Sandbox {
 
     class IReloadable {
         public:
-            IReloadable(const std::initializer_list<std::string>& files);
             explicit IReloadable(const std::string& file);
+            IReloadable(const std::initializer_list<std::string>& files);
             ~IReloadable();
 
             [[nodiscard]] bool IsModified() const;
             virtual void Recompile() = 0;
 
         protected:
+            [[nodiscard]] const std::vector<std::filesystem::file_time_type>& GetEditTimes() const;
+
             // Updates recompile time.
-            void Clear();
+            void UpdateEditTimes();
 
         private:
             std::vector<std::string> files_;
-            std::vector<std::filesystem::file_time_type> modifyTimes_;
+            std::vector<std::filesystem::file_time_type> editTimes_;
     };
 
 }

@@ -28,12 +28,14 @@ namespace Sandbox {
         }
 
         // Validate extensions.
-        for (std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
-            ShaderComponent& component = data.second;
+        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+            const std::string& componentPath = data.first;
+            const ShaderComponent& component = data.second;
             const ShaderType& type = component.GetType();
 
             if (type.ToOpenGLType() == GL_INVALID_VALUE) {
-                throw std::runtime_error("Unknown or unsupported shader of type: \"" + type.ToString() + "\"");
+                ImGuiLog::Instance().LogError("Encountered unknown / unsupported shader of type '%s' in ShaderComponent '%s'.", type.ToString().c_str(), componentPath.c_str());
+                throw std::runtime_error("Encountered unknown / unsupported shader of type. See out/log.txt for details.");
             }
         }
 
@@ -45,11 +47,70 @@ namespace Sandbox {
     }
 
     void Shader::Recompile() {
-        CompileShader();
-        Clear();
+        UpdateEditTimes();
+
+        std::string path = GetCachedBinaryPath();
+        if (Exists(path)) {
+            // Shader should be loaded directly from the shader cache if the last edit time on ALL the individual shader components
+            // is before the last edit time of the shader binary code (shader source has not been edited, and shader binary still
+            // holds the most up-to-date versions of the components).
+            bool binaryOutdated = false;
+            std::filesystem::file_time_type binaryEditTime = std::filesystem::last_write_time(GetCachedBinaryPath());
+
+            for (const std::filesystem::file_time_type& componentEditTime : GetEditTimes()) {
+                if (componentEditTime > binaryEditTime) {
+                    binaryOutdated = true;
+                    break;
+                }
+            }
+
+            if (binaryOutdated) {
+                CompileFromSource();
+            }
+            else {
+                CompileFromBinary();
+            }
+        }
+        else {
+            // Binary file has not been created yet.
+            CompileFromSource();
+        }
     }
 
-    void Shader::CompileShader() {
+    void Shader::CacheShaderBinary() {
+        GLint numFormats = 0;
+        glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &numFormats);
+        if (numFormats < 1) {
+            ImGuiLog::Instance().LogError("Function Shader::CacheShaderBinary called, but hardware does not support shader binary formats.");
+            throw std::runtime_error("Failed to cache binary shader code for shader '" + name_ + "'. See out/log.txt for details.");
+        }
+
+        GLint length = 0;
+        glGetProgramiv(ID_, GL_PROGRAM_BINARY_LENGTH, &length);
+
+        // Retrieve shader program binary.
+        std::vector<GLubyte> buffer(length);
+        GLenum format = 0;
+        glGetProgramBinary(ID_, length, nullptr, &format, buffer.data());
+
+        // Write the binary to a file.
+        std::string path = GetCachedBinaryPath();
+
+        std::ofstream writer(path.c_str(), std::ios::out | std::ios::binary);
+        if (writer.is_open()) {
+            writer.write(reinterpret_cast<char*>(buffer.data()), length);
+            writer.flush();
+            writer.close();
+        }
+        else {
+            ImGuiLog::Instance().LogError("Failed to open file '%s' for shader binary.", path.c_str());
+            throw std::runtime_error("Failed to cache binary shader code for shader '" + name_ + "'. See out/log.txt for details.");
+        }
+    }
+
+    void Shader::CompileFromSource() {
+        ImGuiLog::Instance().LogTrace("Compiling Shader '%s' from source.", name_.c_str());
+
         GLuint shaderProgram = glCreateProgram();
         unsigned numShaderComponents = shaderComponents_.size();
         GLuint shaders[numShaderComponents];
@@ -59,19 +120,28 @@ namespace Sandbox {
         // SHADER COMPONENT COMPILING
         //--------------------------------------------------------------------------------------------------------------
         for (std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+            const std::string& path = data.first;
             ShaderComponent& component = data.second;
+            ShaderComponent::CompilationResult result = component.Compile();
 
-            GLuint shader;
-            try {
-                shader = component.Compile();
-            }
-            catch (std::runtime_error& e) {
-                throw std::runtime_error("Shader '" + name_ + "' failed to compile. " + e.what());
-            }
+            if (result.success) {
+                GLuint componentID = result.ID;
 
-            // Shader successfully compiled.
-            glAttachShader(shaderProgram, shader);
-            shaders[currentComponentIndex++] = shader;
+                if (result.numWarnings > 0) {
+                    ImGuiLog::Instance().LogWarning("ShaderComponent '%s' of Shader '%s' successfully compiled with %i warnings.", path.c_str(), name_.c_str(), result.numWarnings);
+                }
+                else {
+                    ImGuiLog::Instance().LogWarning("ShaderComponent '%s' of Shader '%s' successfully compiled.", path.c_str(), name_.c_str());
+                }
+
+                // Shader successfully compiled.
+                glAttachShader(shaderProgram, componentID);
+                shaders[currentComponentIndex++] = componentID;
+            }
+            else {
+                ImGuiLog::Instance().LogError("ShaderComponent '%s' of Shader '%s' compiled with %i warnings and %i errors.", name_.c_str(), path.c_str(), result.numWarnings, result.numErrors);
+                throw std::runtime_error("Shader '" + name_ + "' failed to compile. See out/log.txt for details.");
+            }
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -81,7 +151,7 @@ namespace Sandbox {
 
         GLint isLinked = 0;
         glGetProgramiv(shaderProgram, GL_LINK_STATUS, &isLinked);
-        if (!isLinked) {
+        if (isLinked == GL_FALSE) {
             // Shader failed to link - get error information from OpenGL.
             GLint errorMessageLength = 0;
             glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &errorMessageLength);
@@ -99,7 +169,8 @@ namespace Sandbox {
                 glDeleteShader(shaders[i]);
             }
 
-            throw std::runtime_error("Shader: " + name_ + " failed to link. Provided error information: " + errorMessage);
+            ImGuiLog::Instance().LogError("%s", errorMessage.c_str());
+            throw std::runtime_error("Shader '" + name_ + "' failed to link. See out/log.txt for details.");
         }
 
         // Shader has already been initialized, do cleanup first.
@@ -116,36 +187,55 @@ namespace Sandbox {
             glDeleteShader(shaderComponentID);
         }
 
+        // Shader has been updated, update binary cache.
         CacheShaderBinary();
     }
 
-    void Shader::CacheShaderBinary() {
+    void Shader::CompileFromBinary() {
+        ImGuiLog::Instance().LogTrace("Compiling Shader '%s' from binary.", name_.c_str());
+        GLuint shaderProgram = glCreateProgram();
+
+        // Read shader binary.
+        std::string path = GetCachedBinaryPath();
+        std::ifstream reader(path, std::ios::binary);
+
+        if (!reader.is_open()) {
+            ImGuiLog::Instance().LogError("Failed to open binary file of Shader '%s' (%s).", name_.c_str(), path.c_str());
+            throw std::runtime_error("Failed to compile Shader '" + name_ + "' from binary. See out/log.txt for details.");
+        }
+
+        std::vector<char> buffer(std::istreambuf_iterator<char>(reader), { });
+        reader.close();
+
+        // Construct shader program.
         GLint numFormats = 0;
         glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &numFormats);
+        GLenum binaryFormats[numFormats];
+        glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, binaryFormats);
 
-        if (numFormats < 1) {
-            LogWarningOnce("Driver does not support shader binary formats. Shaders will always be recompiled on program startup.");
+        GLint format;
+        glProgramBinary(shaderProgram, binaryFormats, buffer.data(), buffer.size() );
+
+        GLint isLinked = 0;
+        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &isLinked);
+        if (!isLinked) {
+            // Failed to link shader binary.
+            ImGuiLog::Instance().LogError("Failed to construct Shader '%s' from binary, defaulting back to full recompilation from source.", name_.c_str());
+            CompileFromSource(); // Shader ID gets set, shader binary gets re-cached.
         }
         else {
-            GLint length = 0;
-            glGetProgramiv(ID_, GL_PROGRAM_BINARY_LENGTH, &length);
-
-            // Retrieve shader program binary.
-            std::vector<GLubyte> buffer(length);
-            GLenum format = 0;
-            glGetProgramBinary(ID_, length, nullptr, &format, buffer.data());
-
-            // Write the binary to a file.
-            const std::string& directory = Application::Instance().GetSceneManager().GetActiveScene()->GetShaderCacheDirectory();
-            std::string filepath = ConvertToNativeSeparators(directory + "/" + name_ + ".bin");
-
-            std::ofstream writer(filepath.c_str(), std::ios::out | std::ios::binary);
-            if (writer.is_open()) {
-                writer.write(reinterpret_cast<char*>(buffer.data()), length);
-                writer.flush();
-                writer.close();
+            if (ID_ != INVALID) {
+                glDeleteProgram(ID_);
+                uniformLocations_.clear();
             }
+            ID_ = shaderProgram;
         }
+    }
+
+    std::string Shader::GetCachedBinaryPath() const {
+        const std::string& directory = Application::Instance().GetSceneManager().GetActiveScene()->GetShaderCacheDirectory();
+        std::string name = ProcessName(name_);
+        return ConvertToNativeSeparators(directory + "/" + name + ".bin");
     }
 
 }

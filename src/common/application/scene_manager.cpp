@@ -119,17 +119,17 @@ namespace Sandbox {
         type->Create(); // Create instance of scene.
 
         IScene* scene = type->scene_;
-        scene->OnInit();
 
         std::string name = scene->GetName();
         if (name.empty()) {
-            // Name was not set in the constructor or the OnInit function of the scene.
+            // Name was not set in the constructor of the scene.
             // Set the name to be the one the scene was registered in the SceneManager with.
             name = type->name_;
             scene->SetName(name);
         }
 
         scene->Lock(); // No more changes to scene name / data directory after this.
+        scene->OnInit();
 
         log.LogTrace("Loading scene: '%s'", name.c_str());
 

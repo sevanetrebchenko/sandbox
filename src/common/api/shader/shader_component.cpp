@@ -3,6 +3,7 @@
 #include "common/utility/directory.h"
 #include "common/utility/log.h"
 
+
 namespace Sandbox {
 
     ShaderComponent::ShaderComponent(const std::string& filepath) : type_(GetAssetExtension(filepath)),
@@ -10,12 +11,13 @@ namespace Sandbox {
                                                                     baseDirectory_(GetAssetDirectory(filepath)),
                                                                     version_(-1)
                                                                     {
-        code_ = Process(path_);
-        ImGuiLog::Instance().LogTrace("Loaded shader component '%s' (type: %s, version: %i)", path_.c_str(), type_.ToString().c_str(), version_);
     }
 
-    GLuint ShaderComponent::Compile() const {
-        const GLchar* shaderSource = reinterpret_cast<const GLchar*>(code_.c_str());
+    ShaderComponent::CompilationResult ShaderComponent::Compile() {
+        Reset();
+
+        source_ = Process(path_);
+        const GLchar* shaderSource = reinterpret_cast<const GLchar*>(source_.c_str());
 
         // Create shader from source.
         GLuint shader = glCreateShader(type_.ToOpenGLType());
@@ -36,18 +38,29 @@ namespace Sandbox {
             std::string errorMessage(errorMessageBuffer.begin(), errorMessageBuffer.end());
 
             glDeleteShader(shader);
-            throw std::runtime_error("In shader component: '" + path_ + "' (type: " + type_.ToString() + "), error: " + errorMessage);
+
+            result_.success = false;
+            ++result_.numErrors;
+            ImGuiLog::Instance().LogError("%s", errorMessage.c_str());
+        }
+        else {
+            result_.success = true;
+            result_.ID = shader;
         }
 
-        return shader;
+        return result_;
     }
 
     const ShaderType& ShaderComponent::GetType() const {
         return type_;
     }
 
-    const std::string& ShaderComponent::GetCode() const {
-        return code_;
+    int ShaderComponent::GetVersion() const {
+        return version_;
+    }
+
+    const std::string& ShaderComponent::GetSource() const {
+        return source_;
     }
 
     std::string ShaderComponent::Process(const std::string& filepath) {
@@ -63,7 +76,7 @@ namespace Sandbox {
 
         // Parser for processing individual lines.
         std::string line;
-        int lineNumber = 1;
+        unsigned lineNumber = 1;
 
         std::stringstream tokenizer;
         std::string token;
@@ -82,8 +95,8 @@ namespace Sandbox {
 
             tokenizer >> token;
 
-            bool include = false;
-            bool version = false;
+            bool hasInclude = false;
+            bool hasVersion = false;
             int length = 0;
 
             // Spaces are allowed between the '#' and "include' / 'pragma' directives, as long as they are on the same line.
@@ -104,7 +117,7 @@ namespace Sandbox {
                     }
 
                     tokenizer >> token; // Filename.
-                    include = true;
+                    hasInclude = true;
                 }
                 else if (token == "version") {
                     length += static_cast<int>(token.length());
@@ -114,7 +127,7 @@ namespace Sandbox {
 
                     // Version number.
                     tokenizer >> token;
-                    version = true;
+                    hasVersion = true;
                 }
             }
             else if (token == "#include") {
@@ -124,7 +137,7 @@ namespace Sandbox {
                 }
 
                 tokenizer >> token; // Filename.
-                include = true;
+                hasInclude = true;
             }
             else if (token == "#version") {
                 length += static_cast<int>(token.length());
@@ -134,10 +147,10 @@ namespace Sandbox {
 
                 // Version number.
                 tokenizer >> token;
-                version = true;
+                hasVersion = true;
             }
 
-            if (include) {
+            if (hasInclude) {
                 token = ConvertToNativeSeparators(token);
 
                 // Process given filepath for correct formatting.
@@ -161,33 +174,48 @@ namespace Sandbox {
                 char native = GetNativeSeparator();
 
                 // TODO: this needs to be updated when caching / builds with asset directories are a thing.
-                // TODO: warnings for double includes.
                 if (directory.empty()) {
                     // Asset has no prepended directory (use local includes - directory of parent).
                     token = baseDirectory_ + native + asset;
                 }
 
-                auto iterator = dependencies_.find(token);
+                ShaderInclude data { token, lineNumber };
+                auto iterator = dependencies_.find(data);
+
                 if (iterator != dependencies_.end()) {
+                    unsigned original = iterator->lineNumber_;
+                    ++result_.numWarnings;
+                    ImGuiLog::Instance().LogWarning("Duplicate include of file '%s' encountered on line %i (original include on line %i).", token.c_str(), lineNumber, original);
+
                     // Any repeats of already included files are ignored.
                     file << "// Comments auto-generated : file '" << token << "' included above." << std::endl;
                     file << "// " << line << std::endl;
                 }
                 else {
-                    dependencies_.emplace(token);
+                    dependencies_.emplace(data);
                     file << Process(token) << std::endl;
                 }
             }
-            else if (version) {
-                if (version_ == -1) {
+            else if (hasVersion) {
+                if (version_ != -1) {
+                    int version = std::stoi(token);
+                    if (version != version_) {
+                        // Found different shader version number.
+                        ++result_.numWarnings;
+                        ImGuiLog::Instance().LogWarning("Version mismatch (%i) encountered on line %i (shader is version %i).", version, lineNumber, version_);
+
+                        // Include commented out version number.
+                        file << "// Comments auto-generated : shader has version " << std::stoi(token) << "." << std::endl;
+                        file << "// " << line << std::endl;
+                    }
+                    else {
+                        file << "// " << line << std::endl;
+                    }
+                }
+                else {
                     // Keep the first found shader version.
                     version_ = std::stoi(token);
                     file << line << std::endl;
-                }
-                else {
-                    // Include commented out version number.
-                    file << "// Comments auto-generated : shader has version " << std::stoi(token) << "." << std::endl;
-                    file << "// " << line << std::endl;
                 }
             }
             else {
@@ -200,6 +228,15 @@ namespace Sandbox {
         }
 
         return file.str();
+    }
+
+    void ShaderComponent::Reset() {
+        // Type, path, and base directory don't change.
+        version_ = -1;
+        source_.clear();
+        dependencies_.clear();
+
+        result_.Clear();
     }
 
     std::string ShaderComponent::GetLine(std::ifstream& stream) const {
@@ -218,7 +255,7 @@ namespace Sandbox {
         return std::move(line);
     }
 
-    void ShaderComponent::ThrowFormattedError(const std::string& line, int lineNumber, const std::string& message, int index) const {
+    void ShaderComponent::ThrowFormattedError(const std::string& line, unsigned lineNumber, const std::string& message, int index) const {
         std::stringstream builder;
 
         // file:line number:offset: error: message
@@ -229,6 +266,34 @@ namespace Sandbox {
         std::string error = builder.str();
         ImGuiLog::Instance().LogWarning(error.c_str());
         throw std::runtime_error(error);
+    }
+
+    ShaderComponent::CompilationResult::CompilationResult() : ID(-1),
+                                                              numWarnings(0)
+                                                              {
+    }
+
+    void ShaderComponent::CompilationResult::Clear() {
+        ID = -1;
+        numWarnings = 0;
+        numErrors = 0;
+    }
+
+    ShaderComponent::CompilationResult::~CompilationResult() = default;
+
+    ShaderComponent::ShaderInclude::ShaderInclude(const std::string& filename, unsigned int lineNumber) : filename_(filename),
+                                                                                                          lineNumber_(lineNumber)
+                                                                                                          {
+    }
+
+    bool ShaderComponent::ShaderInclude::operator==(const ShaderComponent::ShaderInclude& other) const {
+        return filename_ == other.filename_;
+    }
+
+    ShaderComponent::ShaderInclude::~ShaderInclude() = default;
+
+    std::size_t ShaderComponent::ShaderIncludeHash::operator()(const ShaderComponent::ShaderInclude& data) const noexcept {
+        return std::hash<std::string>{}(data.filename_);
     }
 
 }
