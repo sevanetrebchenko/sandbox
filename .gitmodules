@@ -13,3 +13,9 @@
 [submodule "lib/assimp"]
 	path = lib/assimp
 	url = git@github.com:assimp/assimp.git
+[submodule "lib/shaderc"]
+	path = lib/shaderc
+	url = git@github.com:google/shaderc.git
+[submodule "lib/spirv-cross"]
+	path = lib/spirv-cross
+	url = git@github.com:KhronosGroup/SPIRV-Cross.git
