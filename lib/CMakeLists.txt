@@ -25,7 +25,7 @@ message(STATUS "--------------------")
 
 # Build ImGui.
 message(STATUS "Building ImGui.")
-include(imgui_setup IMGUI_SETUP_RESULT)
+include(imgui_setup)
 message(STATUS "--------------------")
 
 # Build STB
@@ -40,6 +40,10 @@ message(STATUS "--------------------")
 
 # Build Shaderc.
 message(STATUS "Building Shaderc.")
+
+# Configure Shaderc dependencies.
+include(shaderc_setup)
+
 set(SHADERC_SKIP_TESTS ON)
 set(SHADERC_SKIP_EXAMPLES ON)
 set(SHADERC_SKIP_COPYRIGHT_CHECK ON)

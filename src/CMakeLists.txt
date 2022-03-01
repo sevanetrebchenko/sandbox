@@ -52,6 +52,7 @@ set(CORE_SOURCE_FILES
         "common/api/shader/shader_component.cpp"
         "common/api/shader/shader_library.cpp"
         "common/api/shader/shader_uniform.cpp"
+        "common/api/shader/shader_parser.cpp"
         "common/texture/texture.cpp"
         "common/geometry/transform.cpp"
         "common/api/window.cpp"
@@ -98,6 +99,14 @@ target_link_libraries(Sandbox tinyobjloader)
 # ImGui.
 message(STATUS "Linking ImGui to Sandbox project.")
 target_link_libraries(Sandbox imgui)
+
+# Shaderc.
+message(STATUS "Linking Shaderc to Sandbox project.")
+target_link_libraries(Sandbox shaderc)
+
+## SPIRV-Cross.
+#message(STATUS "Linking SPIRV-Cross to Sandbox project.")
+#target_link_libraries(Sandbox SPIRV-Cross)
 
 
 

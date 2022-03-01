@@ -15,4 +15,4 @@
 	url = git@github.com:assimp/assimp.git
 [submodule "lib/shaderc"]
 	path = lib/shaderc
-	url = git@github.com:sevanetrebchenko/shaderc.git
+	url = git@github.com:google/shaderc.git
