@@ -11,7 +11,8 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 # Set directory for .cmake includes.
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-# include(submodule_setup)
+set(SKIP_GIT_SUBMODULE_UPDATE ON)
+include(submodule_setup)
 
 # Build third-party dependencies.
 message(STATUS "Adding library subdirectory")
