@@ -26,9 +26,12 @@ namespace Sandbox {
 
             [[nodiscard]] GLenum ToOpenGLType() const;
             [[nodiscard]] std::string ToString() const;
+            [[nodiscard]] shaderc_shader_kind ToSPIRVType() const;
 
         private:
-            GLenum type_;
+            GLenum openGL_;
+            shaderc_shader_kind spirv_;
+
             std::string extension_;
     };
 

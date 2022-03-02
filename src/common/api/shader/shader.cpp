@@ -68,7 +68,8 @@ namespace Sandbox {
                 CompileFromSource();
             }
             else {
-                CompileFromBinary();
+                CompileFromSource();
+//                CompileFromBinary();
             }
         }
         else {
@@ -192,50 +193,77 @@ namespace Sandbox {
     }
 
     void Shader::CompileFromBinary() {
-        ImGuiLog::Instance().LogTrace("Compiling Shader '%s' from binary.", name_.c_str());
-        GLuint shaderProgram = glCreateProgram();
-
-        // Read shader binary.
-        std::string path = GetCachedBinaryPath();
-        std::ifstream reader(path, std::ios::binary);
-
-        if (!reader.is_open()) {
-            ImGuiLog::Instance().LogError("Failed to open binary file of Shader '%s' (%s).", name_.c_str(), path.c_str());
-            throw std::runtime_error("Failed to compile Shader '" + name_ + "' from binary. See out/log.txt for details.");
-        }
-
-        std::vector<char> buffer(std::istreambuf_iterator<char>(reader), { });
-        reader.close();
-
-        // Construct shader program.
-        GLint numFormats = 0;
-        glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &numFormats);
-        GLenum binaryFormats[numFormats];
-        glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, binaryFormats);
-
-        GLint format;
-        glProgramBinary(shaderProgram, binaryFormats, buffer.data(), buffer.size() );
-
-        GLint isLinked = 0;
-        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &isLinked);
-        if (!isLinked) {
-            // Failed to link shader binary.
-            ImGuiLog::Instance().LogError("Failed to construct Shader '%s' from binary, defaulting back to full recompilation from source.", name_.c_str());
-            CompileFromSource(); // Shader ID gets set, shader binary gets re-cached.
-        }
-        else {
-            if (ID_ != INVALID) {
-                glDeleteProgram(ID_);
-                uniformLocations_.clear();
-            }
-            ID_ = shaderProgram;
-        }
+//        ImGuiLog::Instance().LogTrace("Compiling Shader '%s' from binary.", name_.c_str());
+//        GLuint shaderProgram = glCreateProgram();
+//
+//        // Read shader binary.
+//        std::string path = GetCachedBinaryPath();
+//        std::ifstream reader(path, std::ios::binary);
+//
+//        if (!reader.is_open()) {
+//            ImGuiLog::Instance().LogError("Failed to open binary file of Shader '%s' (%s).", name_.c_str(), path.c_str());
+//            throw std::runtime_error("Failed to compile Shader '" + name_ + "' from binary. See out/log.txt for details.");
+//        }
+//
+//        std::vector<char> buffer(std::istreambuf_iterator<char>(reader), { });
+//        reader.close();
+//
+//        // Construct shader program.
+//        GLint numFormats = 0;
+//        glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &numFormats);
+//        GLenum binaryFormats[numFormats];
+//        glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, binaryFormats);
+//
+//        GLint format;
+//        glProgramBinary(shaderProgram, binaryFormats, buffer.data(), buffer.size() );
+//
+//        GLint isLinked = 0;
+//        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &isLinked);
+//        if (!isLinked) {
+//            // Failed to link shader binary.
+//            ImGuiLog::Instance().LogError("Failed to construct Shader '%s' from binary, defaulting back to full recompilation from source.", name_.c_str());
+//            CompileFromSource(); // Shader ID gets set, shader binary gets re-cached.
+//        }
+//        else {
+//            if (ID_ != INVALID) {
+//                glDeleteProgram(ID_);
+//                uniformLocations_.clear();
+//            }
+//            ID_ = shaderProgram;
+//        }
     }
 
     std::string Shader::GetCachedBinaryPath() const {
         const std::string& directory = Application::Instance().GetSceneManager().GetActiveScene()->GetShaderCacheDirectory();
         std::string name = ProcessName(name_);
         return ConvertToNativeSeparators(directory + "/" + name + ".bin");
+    }
+
+    void Shader::CompileToSPIRV() {
+//        shaderc::Compiler compiler;
+//        shaderc::CompileOptions options;
+//
+//        // No difference between OpenGL 4.5 and 4.6 (from documentation).
+//        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
+//        options.SetOptimizationLevel(shaderc_optimization_level_performance);
+//
+//        using word = std::uint32_t;
+//        std::unordered_map<std::string, std::vector<word>> componentBinary;
+//        std::vector<std::vector<std::uint32_t>> binary { };
+//
+//        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+//            const std::string& path = data.first;
+//            const ShaderComponent& component = data.second;
+//            shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(component.GetSource(), component.GetType().ToSPIRVType(), path.c_str(), "main", options);
+//
+//            if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
+//                // TODO.
+//            }
+//
+//            binary.emplace_back(module.cbegin(), module.cend());
+//        }
+//
+//        return {module.cbegin(), module.cend()};
     }
 
 }
