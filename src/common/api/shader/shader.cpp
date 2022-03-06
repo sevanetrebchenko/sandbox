@@ -2,6 +2,7 @@
 #include "common/api/shader/shader.h"
 #include "common/utility/log.h"
 #include "common/application/application.h"
+#include "common/api/shader/shader_preprocessor.h"
 
 #define INVALID (-1)
 
@@ -240,30 +241,32 @@ namespace Sandbox {
     }
 
     void Shader::CompileToSPIRV() {
-//        shaderc::Compiler compiler;
-//        shaderc::CompileOptions options;
-//
-//        // No difference between OpenGL 4.5 and 4.6 (from documentation).
-//        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
-//        options.SetOptimizationLevel(shaderc_optimization_level_performance);
-//
-//        using word = std::uint32_t;
-//        std::unordered_map<std::string, std::vector<word>> componentBinary;
-//        std::vector<std::vector<std::uint32_t>> binary { };
-//
-//        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
-//            const std::string& path = data.first;
-//            const ShaderComponent& component = data.second;
-//            shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(component.GetSource(), component.GetType().ToSPIRVType(), path.c_str(), "main", options);
-//
-//            if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-//                // TODO.
-//            }
-//
-//            binary.emplace_back(module.cbegin(), module.cend());
-//        }
-//
-//        return {module.cbegin(), module.cend()};
+        shaderc::Compiler compiler;
+        shaderc::CompileOptions options;
+
+        // No difference between OpenGL 4.5 and 4.6 (from documentation).
+        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
+        options.SetSourceLanguage(shaderc_source_language_glsl);
+        options.SetForcedVersionProfile(, shaderc_profile_core); // TODO;
+        options.SetOptimizationLevel(shaderc_optimization_level_performance);
+
+        using word = std::uint32_t;
+        std::unordered_map<std::string, std::vector<word>> componentBinary;
+        std::vector<std::vector<std::uint32_t>> binary { };
+
+        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+            const std::string& path = data.first;
+            const ShaderComponent& component = data.second;
+            shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(component.GetSource(), component.GetType().ToSPIRVType(), path.c_str(), "main", options);
+
+            if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
+                // TODO.
+            }
+
+            binary.emplace_back(module.cbegin(), module.cend());
+        }
+
+        return {module.cbegin(), module.cend()};
     }
 
 }

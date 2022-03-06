@@ -15,26 +15,6 @@ namespace Sandbox {
 
     std::size_t ShaderDataTypeSize(ShaderDataType shaderDataType);
 
-
-    // Shader types.
-    class ShaderType {
-        public:
-            explicit ShaderType(GLenum type);
-            explicit ShaderType(const std::string& filepath);
-
-            ~ShaderType();
-
-            [[nodiscard]] GLenum ToOpenGLType() const;
-            [[nodiscard]] std::string ToString() const;
-            [[nodiscard]] shaderc_shader_kind ToSPIRVType() const;
-
-        private:
-            GLenum openGL_;
-            shaderc_shader_kind spirv_;
-
-            std::string extension_;
-    };
-
 }
 
 #endif //SANDBOX_SHADER_TYPES_H

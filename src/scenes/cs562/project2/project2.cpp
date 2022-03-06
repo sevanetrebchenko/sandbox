@@ -177,6 +177,7 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
         shaderLibrary.CreateShader("Global Lighting Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting.frag" });
         shaderLibrary.CreateShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
+        shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
         shaderLibrary.CreateShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
     }
@@ -202,7 +203,7 @@ namespace Sandbox {
         // Bunny.
         int bunny = ecs.CreateEntity("Bunny");
 
-        ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny.obj"))).Configure([](Mesh& mesh) {
+        ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
             mesh.Complete();
         });
 
@@ -236,76 +237,21 @@ namespace Sandbox {
     }
 
     void SceneCS562Project2::ConfigureLights() {
-        static std::vector<glm::vec3> colors;
-        static bool initialized = false;
-
-        if (!initialized) {
-            colors.emplace_back(153, 0, 0);
-            colors.emplace_back(255, 0, 0);
-            colors.emplace_back(255, 128, 0);
-            colors.emplace_back(255, 255, 0);
-            colors.emplace_back(128, 255, 0);
-            colors.emplace_back(0, 255, 0);
-            colors.emplace_back(0, 255, 128);
-            colors.emplace_back(0, 255, 255);
-            colors.emplace_back(0, 154, 154);
-            colors.emplace_back(0, 128, 255);
-            colors.emplace_back(0, 0, 255);
-            colors.emplace_back(128, 0, 255);
-            colors.emplace_back(255, 0, 255);
-            colors.emplace_back(154, 0, 154);
-            colors.emplace_back(255, 0, 128);
-            colors.emplace_back(154, 0, 76);
-
-            initialized = true;
-        }
+        directionalLight_.brightness_ = 0.0f;
 
         ECS& ecs = ECS::Instance();
         Mesh mesh = OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"));
 
-        float radius = 4.0f;
-        float angle = 0.0f;
-        int numPerSide = 50;
+        int ID = ecs.CreateEntity("light");
+        ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
+            mesh.Complete();
+        });
 
-        int index = 0;
-
-        for (int x = 0; x < numPerSide; ++x) {
-            for (int z = 0; z < numPerSide; ++z) {
-                int ID = ecs.CreateEntity("light");
-                ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
-                    mesh.Complete();
-                });
-
-                glm::vec3 position = glm::vec3(x - numPerSide / 2, -1.5f, z - numPerSide / 2);
-
-                ecs.GetComponent<Transform>(ID).Configure([position, radius](Transform& transform) {
-                    transform.SetPosition(position);
-                    transform.SetScale(glm::vec3(1.f));
-                });
-                ecs.AddComponent<LocalLight>(ID, colors[++index % colors.size()], 0.02f);
-            }
-        }
-
-//        float angleChange = 360.0f / (float)numLights;
-//
-//        // Push back vertices in a circle.
-//        for (int i = 0; i < numLights; ++i) {
-//            int ID = ecs.CreateEntity("light");
-//            ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
-//                mesh.Complete();
-//            });
-//
-//            glm::vec3 position = glm::vec3(std::cos(glm::radians(angle)), 0.0f, std::sin(glm::radians(angle)));
-//
-//            ecs.GetComponent<Transform>(ID).Configure([position, radius](Transform& transform) {
-//                transform.SetPosition(position * radius);
-//                transform.SetScale(glm::vec3(5.0f));
-//            });
-//
-//            ecs.AddComponent<LocalLight>(ID, colors[i % colors.size()], 0.002f);
-//
-//            angle += angleChange;
-//        }
+        ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
+            transform.SetPosition(glm::vec3(10.0f, 10.0f, 5.0f));
+            transform.SetScale(glm::vec3(20.f));
+        });
+        ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f), 4.0f);
     }
 
     void SceneCS562Project2::ConstructFBO() {
@@ -376,6 +322,13 @@ namespace Sandbox {
 //        depthBuffer->ReserveData(contentWidth, contentHeight);
 //        fbo_.AttachDepthBuffer(depthBuffer);
 
+        // Attachment for rendering from the POV of the light.
+        Texture* shadowTexture = new Texture("shadow");
+        shadowTexture->Bind();
+        shadowTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        shadowTexture->Unbind();
+        fbo_.AttachRenderTarget(shadowTexture);
+
         if (!fbo_.CheckStatus()) {
             throw std::runtime_error("Custom FBO is not complete.");
         }
@@ -391,24 +344,9 @@ namespace Sandbox {
         Shader* geometryShader = ShaderLibrary::Instance().GetShader("Geometry Pass");
         geometryShader->Bind();
 
-
-        static float timer = 0.0f;
-        static float multiplier = 1.0f;
-
-        timer += Time::Instance().dt * multiplier;
-
-        if (timer > 1.0f) {
-            timer = 1.0f;
-            multiplier = -1.0f;
-        }
-        else if (timer < 0.0f) {
-            timer = 0.0f;
-            multiplier = 1.0f;
-        }
-
         // Set camera uniforms.
         geometryShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
-        geometryShader->SetUniform("normalBlend", timer);
+        geometryShader->SetUniform("normalBlend", 1.0f);
 
         // Render models to FBO attachments.
         ECS::Instance().IterateOver<Transform, Mesh, MaterialCollection>([geometryShader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection) {
@@ -499,6 +437,30 @@ namespace Sandbox {
         });
 
         localLightingShader->Unbind();
+    }
+
+    void SceneCS562Project2::ShadowPass() {
+        // Render to 'shadow' texture.
+        fbo_.DrawBuffers(7, 1);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Cache camera information.
+        const glm::vec3& cameraPosition = camera_.GetPosition();
+        const glm::vec3& cameraLookAt = camera_.GetForwardVector();
+        const glm::vec3& cameraUp = camera_.GetUpVector();
+
+        Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Pass");
+        shadowShader->Bind();
+
+        // Position camera at the light looking at the origin.
+
+
+        // Render all geometry.
+        ECS::Instance().IterateOver<Transform, Mesh>([shadowShader](Transform& transform, Mesh& mesh) {
+            mesh.Bind();
+            mesh.Render();
+            mesh.Unbind();
+        });
     }
 
     void SceneCS562Project2::RenderDepthBuffer() {

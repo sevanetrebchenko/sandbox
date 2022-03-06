@@ -18,8 +18,8 @@
 [ WARNING ]  ShaderComponent 'assets/shaders/fsq.frag' of Shader 'FSQ' successfully compiled.
 [ WARNING ]  ShaderComponent 'assets/shaders/fsq.vert' of Shader 'FSQ' successfully compiled.
 [  TRACE  ]  Loading scene: 'CS562: Project 2'
-[  TRACE  ]  Creating ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 518 ms.
+[  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
+[  TRACE  ]  Scene loaded in: 316 ms.
 [  TRACE  ]  Unloading scene: 'CS562: Project 2'
 [  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
 [  TRACE  ]  Scene unloaded in: 0 ms.
