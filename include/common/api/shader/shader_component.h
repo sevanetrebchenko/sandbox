@@ -11,12 +11,10 @@ namespace Sandbox {
         public:
             struct CompilationResult {
                 CompilationResult();
-                ~CompilationResult();
-
-                void Clear();
 
                 bool success;
-                GLuint ID; // ID of shader component.
+                GLint ID;
+                std::vector<std::uint32_t> source;
                 unsigned numWarnings;
                 unsigned numErrors;
             };
@@ -47,9 +45,15 @@ namespace Sandbox {
                 std::size_t operator()(const ShaderInclude& data) const noexcept;
             };
 
-            [[nodiscard]] std::string Process(const std::string& filepath);
-            void Reset();
+            struct ProcessResult {
+                ProcessResult();
 
+                unsigned numWarnings;
+                unsigned numErrors;
+                std::string source;
+            };
+
+            [[nodiscard]] std::string Process(const std::string& filepath);
             [[nodiscard]] std::string GetLine(std::ifstream& stream) const;
             void ThrowFormattedError(const std::string& line, unsigned lineNumber, const std::string& message, int index) const;
 
@@ -59,8 +63,6 @@ namespace Sandbox {
             int version_;
             std::string source_;
             std::unordered_set<ShaderInclude, ShaderIncludeHash> dependencies_;
-
-            CompilationResult result_;
     };
 
 }
