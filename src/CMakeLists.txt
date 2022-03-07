@@ -8,6 +8,7 @@ set(CORE_SOURCE_FILES
         "scenes/deferred_rendering/deferred_rendering.cpp"
         "scenes/cs562/project1/project1.cpp"
         "scenes/cs562/project1/light.cpp"
+        "scenes/cs562/project2/project2.cpp"
 
         # Buffer
         "common/api/buffer/buffer.cpp"
@@ -52,7 +53,8 @@ set(CORE_SOURCE_FILES
         "common/api/shader/shader_component.cpp"
         "common/api/shader/shader_library.cpp"
         "common/api/shader/shader_uniform.cpp"
-        "common/api/shader/shader_parser.cpp"
+        "common/api/shader/shader_preprocessor.cpp"
+        "common/api/shader/shader_element.cpp"
         "common/texture/texture.cpp"
         "common/geometry/transform.cpp"
         "common/api/window.cpp"

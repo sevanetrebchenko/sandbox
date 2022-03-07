@@ -26,6 +26,7 @@ namespace Sandbox {
 
             void Recompile() override;
             void CompileFromSource();
+            void CompileToSPIRV();
             void CompileFromBinary();
             void CacheShaderBinary();
 

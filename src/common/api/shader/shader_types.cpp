@@ -32,8 +32,8 @@ namespace Sandbox {
         }
     }
 
-    ShaderType::ShaderType(GLenum type) : type_(type) {
-        switch (type_) {
+    ShaderType::ShaderType(GLenum type) : openGL_(type) {
+        switch (openGL_) {
             case GL_VERTEX_SHADER:
                 extension_ = "vert";
                 break;
@@ -47,7 +47,7 @@ namespace Sandbox {
                 extension_ = "comp";
                 break;
             default:
-                type_ = GL_INVALID_VALUE;
+                openGL_ = GL_INVALID_VALUE;
                 extension_ = "";
                 break;
         }
@@ -73,24 +73,24 @@ namespace Sandbox {
         extension_ = extension;
         if (extension_ == "vert") {
             // Vertex shader.
-            type_ = GL_VERTEX_SHADER;
+            openGL_ = GL_VERTEX_SHADER;
             valid = true;
         }
         else if (extension_ == "frag") {
-            type_ = GL_FRAGMENT_SHADER;
+            openGL_ = GL_FRAGMENT_SHADER;
             valid = true;
         }
         else if (extension_ == "geom") {
-            type_ = GL_GEOMETRY_SHADER;
+            openGL_ = GL_GEOMETRY_SHADER;
             valid = true;
         }
         else if (extension_ == "comp") {
-            type_ = GL_COMPUTE_SHADER;
+            openGL_ = GL_COMPUTE_SHADER;
             valid = true;
         }
 
         if (!valid) {
-            type_ = GL_INVALID_VALUE;
+            openGL_ = GL_INVALID_VALUE;
             extension_ = "";
         }
     }
@@ -98,11 +98,11 @@ namespace Sandbox {
     ShaderType::~ShaderType() = default;
 
     GLenum ShaderType::ToOpenGLType() const {
-        return type_;
+        return openGL_;
     }
 
     std::string ShaderType::ToString() const {
-        switch (type_) {
+        switch (openGL_) {
             case GL_VERTEX_SHADER:
                 return "VERTEX";
             case GL_FRAGMENT_SHADER:

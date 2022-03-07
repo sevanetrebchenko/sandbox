@@ -1,36 +1,26 @@
 [  TRACE  ]  Vendor: NVIDIA Corporation
 [  TRACE  ]  Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
 [  TRACE  ]  OpenGL Version: 4.6.0 NVIDIA 496.76
-[  TRACE  ]  Setting startup scene as: 'CS562: Project 1'
-[  TRACE  ]  Compiling Shader 'Geometry Pass' from binary.
-[  ERROR  ]  Failed to construct Shader 'Geometry Pass' from binary, defaulting back to full recompilation from source.
+[  TRACE  ]  Setting startup scene as: 'CS562: Project 2'
 [  TRACE  ]  Compiling Shader 'Geometry Pass' from source.
-[ WARNING ]  ShaderComponent 'assets/shaders/geometry_buffer.frag' of Shader 'Geometry Pass' successfully compiled with 0 warnings.
-[ WARNING ]  ShaderComponent 'assets/shaders/geometry_buffer.vert' of Shader 'Geometry Pass' successfully compiled with 0 warnings.
-[  TRACE  ]  Compiling Shader 'Global Lighting Pass' from binary.
-[  ERROR  ]  Failed to construct Shader 'Global Lighting Pass' from binary, defaulting back to full recompilation from source.
+[ WARNING ]  ShaderComponent 'assets/shaders/geometry_buffer.frag' of Shader 'Geometry Pass' successfully compiled.
+[ WARNING ]  ShaderComponent 'assets/shaders/geometry_buffer.vert' of Shader 'Geometry Pass' successfully compiled.
 [  TRACE  ]  Compiling Shader 'Global Lighting Pass' from source.
-[ WARNING ]  ShaderComponent 'assets/shaders/global_lighting.frag' of Shader 'Global Lighting Pass' successfully compiled with 0 warnings.
-[ WARNING ]  ShaderComponent 'assets/shaders/fsq.vert' of Shader 'Global Lighting Pass' successfully compiled with 0 warnings.
-[  TRACE  ]  Compiling Shader 'Local Lighting Pass' from binary.
-[  ERROR  ]  Failed to construct Shader 'Local Lighting Pass' from binary, defaulting back to full recompilation from source.
+[ WARNING ]  ShaderComponent 'assets/shaders/global_lighting.frag' of Shader 'Global Lighting Pass' successfully compiled.
+[ WARNING ]  ShaderComponent 'assets/shaders/fsq.vert' of Shader 'Global Lighting Pass' successfully compiled.
 [  TRACE  ]  Compiling Shader 'Local Lighting Pass' from source.
-[ WARNING ]  ShaderComponent 'assets/shaders/local_lighting.frag' of Shader 'Local Lighting Pass' successfully compiled with 0 warnings.
-[ WARNING ]  ShaderComponent 'assets/shaders/model.vert' of Shader 'Local Lighting Pass' successfully compiled with 0 warnings.
-[  TRACE  ]  Compiling Shader 'Depth' from binary.
-[  ERROR  ]  Failed to construct Shader 'Depth' from binary, defaulting back to full recompilation from source.
+[ WARNING ]  ShaderComponent 'assets/shaders/local_lighting.frag' of Shader 'Local Lighting Pass' successfully compiled.
+[ WARNING ]  ShaderComponent 'assets/shaders/model.vert' of Shader 'Local Lighting Pass' successfully compiled.
 [  TRACE  ]  Compiling Shader 'Depth' from source.
-[ WARNING ]  ShaderComponent 'assets/shaders/depth.frag' of Shader 'Depth' successfully compiled with 0 warnings.
-[ WARNING ]  ShaderComponent 'assets/shaders/depth.vert' of Shader 'Depth' successfully compiled with 0 warnings.
-[  TRACE  ]  Compiling Shader 'FSQ' from binary.
-[  ERROR  ]  Failed to construct Shader 'FSQ' from binary, defaulting back to full recompilation from source.
+[ WARNING ]  ShaderComponent 'assets/shaders/depth.frag' of Shader 'Depth' successfully compiled.
+[ WARNING ]  ShaderComponent 'assets/shaders/depth.vert' of Shader 'Depth' successfully compiled.
 [  TRACE  ]  Compiling Shader 'FSQ' from source.
-[ WARNING ]  ShaderComponent 'assets/shaders/fsq.frag' of Shader 'FSQ' successfully compiled with 0 warnings.
-[ WARNING ]  ShaderComponent 'assets/shaders/fsq.vert' of Shader 'FSQ' successfully compiled with 0 warnings.
-[  TRACE  ]  Loading scene: 'CS562: Project 1'
-[  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_1\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 551 ms.
-[  TRACE  ]  Unloading scene: 'CS562: Project 1'
-[  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_1\ui_layout.ini
+[ WARNING ]  ShaderComponent 'assets/shaders/fsq.frag' of Shader 'FSQ' successfully compiled.
+[ WARNING ]  ShaderComponent 'assets/shaders/fsq.vert' of Shader 'FSQ' successfully compiled.
+[  TRACE  ]  Loading scene: 'CS562: Project 2'
+[  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
+[  TRACE  ]  Scene loaded in: 316 ms.
+[  TRACE  ]  Unloading scene: 'CS562: Project 2'
+[  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
 [  TRACE  ]  Scene unloaded in: 0 ms.
 [  TRACE  ]  Saving ImGui log to: C:\Users\sevan\Desktop\Projects\sandbox\out\log.txt

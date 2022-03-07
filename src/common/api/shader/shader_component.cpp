@@ -14,7 +14,7 @@ namespace Sandbox {
     }
 
     ShaderComponent::CompilationResult ShaderComponent::Compile() {
-        Reset();
+        CompilationResult result;
 
         source_ = Process(path_);
         const GLchar* shaderSource = reinterpret_cast<const GLchar*>(source_.c_str());
@@ -39,16 +39,16 @@ namespace Sandbox {
 
             glDeleteShader(shader);
 
-            result_.success = false;
-            ++result_.numErrors;
+            result.success = false;
+            ++result.numErrors;
             ImGuiLog::Instance().LogError("%s", errorMessage.c_str());
         }
         else {
-            result_.success = true;
-            result_.ID = shader;
+            result.success = true;
+            result.ID = shader;
         }
 
-        return result_;
+        return result;
     }
 
     const ShaderType& ShaderComponent::GetType() const {
@@ -184,7 +184,7 @@ namespace Sandbox {
 
                 if (iterator != dependencies_.end()) {
                     unsigned original = iterator->lineNumber_;
-                    ++result_.numWarnings;
+//                    ++result_.numWarnings;
                     ImGuiLog::Instance().LogWarning("Duplicate include of file '%s' encountered on line %i (original include on line %i).", token.c_str(), lineNumber, original);
 
                     // Any repeats of already included files are ignored.
@@ -201,7 +201,7 @@ namespace Sandbox {
                     int version = std::stoi(token);
                     if (version != version_) {
                         // Found different shader version number.
-                        ++result_.numWarnings;
+//                        ++result_.numWarnings;
                         ImGuiLog::Instance().LogWarning("Version mismatch (%i) encountered on line %i (shader is version %i).", version, lineNumber, version_);
 
                         // Include commented out version number.
@@ -228,15 +228,6 @@ namespace Sandbox {
         }
 
         return file.str();
-    }
-
-    void ShaderComponent::Reset() {
-        // Type, path, and base directory don't change.
-        version_ = -1;
-        source_.clear();
-        dependencies_.clear();
-
-        result_.Clear();
     }
 
     std::string ShaderComponent::GetLine(std::ifstream& stream) const {
@@ -268,32 +259,28 @@ namespace Sandbox {
         throw std::runtime_error(error);
     }
 
-    ShaderComponent::CompilationResult::CompilationResult() : ID(-1),
-                                                              numWarnings(0)
-                                                              {
-    }
-
-    void ShaderComponent::CompilationResult::Clear() {
-        ID = -1;
-        numWarnings = 0;
-        numErrors = 0;
-    }
-
-    ShaderComponent::CompilationResult::~CompilationResult() = default;
-
     ShaderComponent::ShaderInclude::ShaderInclude(const std::string& filename, unsigned int lineNumber) : filename_(filename),
                                                                                                           lineNumber_(lineNumber)
                                                                                                           {
     }
 
     bool ShaderComponent::ShaderInclude::operator==(const ShaderComponent::ShaderInclude& other) const {
-        return filename_ == other.filename_;
     }
 
     ShaderComponent::ShaderInclude::~ShaderInclude() = default;
 
     std::size_t ShaderComponent::ShaderIncludeHash::operator()(const ShaderComponent::ShaderInclude& data) const noexcept {
-        return std::hash<std::string>{}(data.filename_);
+    }
+
+    ShaderComponent::CompilationResult::CompilationResult() : success(false),
+                                                              numWarnings(0),
+                                                              numErrors(0)
+                                                              {
+    }
+
+    ShaderComponent::ProcessResult::ProcessResult() : numWarnings(0),
+                                                      numErrors(0)
+                                                      {
     }
 
 }

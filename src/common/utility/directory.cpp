@@ -36,13 +36,7 @@ namespace Sandbox {
 
     std::string GetAssetName(const std::string& file) {
         std::string path = ConvertToNativeSeparators(file);
-        std::size_t slashPosition;
-
-    #ifdef _WIN32
-        slashPosition = path.find_last_of('\\');
-    #else
-        slashPosition = path.find_last_of('/');
-    #endif
+        std::size_t slashPosition = path.find_last_of(GetNativeSeparator());
 
         // If there exists a slash.
         if (slashPosition != std::string::npos) {
@@ -54,20 +48,36 @@ namespace Sandbox {
                 return path.substr(0, dotPosition);
             }
         }
+
         return path;
     }
 
-    std::string GetAssetExtension(const std::string& file) {
-        std::size_t position = file.find_last_of('.');
+    std::string GetAssetExtension(const std::string& in) {
+        std::string file = ConvertToNativeSeparators(in);
 
-        if (position == std::string::npos) {
-            // No character found.
-            return { "" };
+        std::size_t separator = file.find_last_of(GetNativeSeparator());
+        std::size_t dot = file.find_last_of('.');
+
+        if (separator == std::string::npos) {
+            // Filepath has no leading directories.
+            if (dot == std::string::npos) {
+                // Extension is blank.
+                return { "" };
+            }
+            else {
+                return file.substr(dot + 1);
+            }
         }
         else {
-            // Don't include '.'
-            // TODO: Case sensitive?
-            return file.substr(position + 1);
+            if (dot < separator) {
+                // Position of the dot comes before the last separator.
+                // Case where one of the directories in the path has a dot in it.
+                // Extension is blank.
+                return { "" };
+            }
+            else {
+                return file.substr(dot + 1);
+            }
         }
     }
 
