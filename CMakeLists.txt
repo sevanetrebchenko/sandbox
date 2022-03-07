@@ -8,10 +8,13 @@ project(Sandbox
 set(CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 
+# Prevent clearing of CMake variables (exists for backwards compatibility).
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+
 # Set directory for .cmake includes.
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-set(SKIP_GIT_SUBMODULE_UPDATE ON)
+set(SKIP_GIT_SUBMODULE_UPDATE OFF)
 include(submodule_setup)
 
 # Build third-party dependencies.
