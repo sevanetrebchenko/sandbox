@@ -14,7 +14,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 # Set directory for .cmake includes.
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-set(SKIP_GIT_SUBMODULE_UPDATE OFF)
+set(SKIP_GIT_SUBMODULE_UPDATE ON)
 include(submodule_setup)
 
 # Build third-party dependencies.

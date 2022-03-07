@@ -15,7 +15,7 @@ namespace Sandbox {
         std::string workingDirectory; // Base directory of shader file - allows for local shader includes.
 
         ShaderType type;
-        ShaderProfile profile; // Default (if not specified): CORE
+        ShaderContext context; // Default (if not specified): CORE
         int version;
         std::string source;
         std::unordered_set<ShaderInclude> dependencies;
@@ -24,10 +24,8 @@ namespace Sandbox {
         bool success; // Indicates whether shader file was preprocessed without errors.
         std::vector<std::string> warnings;
         std::vector<std::string> errors;
-    };
 
-    struct PreprocessResult {
-        std::vector<ShaderInfo> data;
+        std::filesystem::file_time_type lastEditTime;
     };
 
     class ShaderPreprocessor : public Singleton<ShaderPreprocessor> {
@@ -52,11 +50,13 @@ namespace Sandbox {
             // Removes all whitespace characters (\n, ' ', \r, \t, \f, \v) from the input string.
             [[nodiscard]] std::string RemoveWhitespace(const std::string& in) const;
 
-            [[nodiscard]] std::string GetFormattedErrorMessage(const std::string& file, unsigned lineNumber, const std::string& message) const;
+            [[nodiscard]] std::string GetFormattedMessage(const std::string& file, unsigned lineNumber, const std::string& message) const;
 
-            std::unordered_map<std::string, ShaderInfo> data_; // Cached information about parsed shader files.
-            std::unordered_set<std::string> parsed_;
+            [[nodiscard]] bool ValidateShaderExtension(const std::string& in) const;
+            [[nodiscard]] bool ValidateShaderVersion(int version) const;
+			[[nodiscard]] bool ValidateShaderType(const std::string& in) const;
 
+            std::unordered_map<std::string, ShaderInfo> parsed_; // Cached information about parsed shader files.
     };
 
 }

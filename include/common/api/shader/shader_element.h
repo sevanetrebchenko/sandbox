@@ -5,10 +5,15 @@
 
 namespace Sandbox {
 
-    enum class ShaderProfile {
+    enum class ShaderContext {
         CORE,
-        COMPATIBILITY
+        COMPATIBILITY,
+
+        INVALID
     };
+
+    [[nodiscard]] std::string ToString(ShaderContext profile);
+    [[nodiscard]] ShaderContext ToShaderContext(const std::string& in);
 
     enum class ShaderType {
         VERTEX,
@@ -19,6 +24,9 @@ namespace Sandbox {
 
         INVALID
     };
+
+    [[nodiscard]] std::string ToString(ShaderType type);
+    [[nodiscard]] ShaderType ToShaderType(const std::string& in);
 
     struct ShaderInclude {
         ShaderInclude(const std::string& filename, unsigned lineNumber);
