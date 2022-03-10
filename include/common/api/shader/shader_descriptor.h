@@ -5,15 +5,16 @@
 
 namespace Sandbox {
 
-    enum class ShaderContext {
+    // https://www.khronos.org/opengl/wiki/OpenGL_Context
+    enum class ShaderProfile {
         CORE,
         COMPATIBILITY,
 
         INVALID
     };
 
-    [[nodiscard]] std::string ToString(ShaderContext profile);
-    [[nodiscard]] ShaderContext ToShaderContext(const std::string& in);
+    [[nodiscard]] std::string ToString(ShaderProfile profile);
+    [[nodiscard]] ShaderProfile ToShaderProfile(const std::string& in);
 
     enum class ShaderType {
         VERTEX,
@@ -29,12 +30,12 @@ namespace Sandbox {
     [[nodiscard]] ShaderType ToShaderType(const std::string& in);
 
     struct ShaderInclude {
-        ShaderInclude(const std::string& filename, unsigned lineNumber);
+        ShaderInclude(const std::string& filepath, unsigned lineNumber);
         ~ShaderInclude();
 
         [[nodiscard]] bool operator==(const ShaderInclude& other) const;
 
-        std::string filename;
+        std::string filepath;
         unsigned lineNumber;
     };
 
@@ -50,4 +51,4 @@ namespace std {
 
 }
 
-#include "common/api/shader/shader_element.tpp"
+#include "common/api/shader/shader_descriptor.tpp"

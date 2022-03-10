@@ -24,23 +24,23 @@ namespace Sandbox {
                                                                                                               name_(name),
                                                                                                               ID_(INVALID)
                                                                                                               {
-        for (const std::string& filepath : shaderComponentPaths) {
-            shaderComponents_.emplace(filepath, ShaderComponent(filepath));
-        }
-
-        // Validate extensions.
-        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
-            const std::string& componentPath = data.first;
-            const ShaderComponent& component = data.second;
-            const ShaderType& type = component.GetType();
-
-            if (type.ToOpenGLType() == GL_INVALID_VALUE) {
-                ImGuiLog::Instance().LogError("Encountered unknown / unsupported shader of type '%s' in ShaderComponent '%s'.", type.ToString().c_str(), componentPath.c_str());
-                throw std::runtime_error("Encountered unknown / unsupported shader of type. See out/log.txt for details.");
-            }
-        }
-
-        Recompile();
+//        for (const std::string& filepath : shaderComponentPaths) {
+//            shaderComponents_.emplace(filepath, ShaderComponent(filepath));
+//        }
+//
+//        // Validate extensions.
+//        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+//            const std::string& componentPath = data.first;
+//            const ShaderComponent& component = data.second;
+//            const ShaderType& type = component.GetType();
+//
+//            if (type.ToOpenGLType() == GL_INVALID_VALUE) {
+//                ImGuiLog::Instance().LogError("Encountered unknown / unsupported shader of type '%s' in ShaderComponent '%s'.", type.ToString().c_str(), componentPath.c_str());
+//                throw std::runtime_error("Encountered unknown / unsupported shader of type. See out/log.txt for details.");
+//            }
+//        }
+//
+//        Recompile();
     }
 
     Shader::~Shader() {
@@ -122,28 +122,28 @@ namespace Sandbox {
         // SHADER COMPONENT COMPILING
         //--------------------------------------------------------------------------------------------------------------
         for (std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
-            const std::string& path = data.first;
-            ShaderComponent& component = data.second;
-            ShaderComponent::CompilationResult result = component.Compile();
-
-            if (result.success) {
-                GLuint componentID = result.ID;
-
-                if (result.numWarnings > 0) {
-                    ImGuiLog::Instance().LogWarning("ShaderComponent '%s' of Shader '%s' successfully compiled with %i warnings.", path.c_str(), name_.c_str(), result.numWarnings);
-                }
-                else {
-                    ImGuiLog::Instance().LogWarning("ShaderComponent '%s' of Shader '%s' successfully compiled.", path.c_str(), name_.c_str());
-                }
-
-                // Shader successfully compiled.
-                glAttachShader(shaderProgram, componentID);
-                shaders[currentComponentIndex++] = componentID;
-            }
-            else {
-                ImGuiLog::Instance().LogError("ShaderComponent '%s' of Shader '%s' compiled with %i warnings and %i errors.", name_.c_str(), path.c_str(), result.numWarnings, result.numErrors);
-                throw std::runtime_error("Shader '" + name_ + "' failed to compile. See out/log.txt for details.");
-            }
+//            const std::string& path = data.first;
+//            ShaderComponent& component = data.second;
+//            ShaderComponent::CompilationResult result = component.Compile();
+//
+//            if (result.success) {
+//                GLuint componentID = result.ID;
+//
+//                if (result.numWarnings > 0) {
+//                    ImGuiLog::Instance().LogWarning("ShaderComponent '%s' of Shader '%s' successfully compiled with %i warnings.", path.c_str(), name_.c_str(), result.numWarnings);
+//                }
+//                else {
+//                    ImGuiLog::Instance().LogWarning("ShaderComponent '%s' of Shader '%s' successfully compiled.", path.c_str(), name_.c_str());
+//                }
+//
+//                // Shader successfully compiled.
+//                glAttachShader(shaderProgram, componentID);
+//                shaders[currentComponentIndex++] = componentID;
+//            }
+//            else {
+//                ImGuiLog::Instance().LogError("ShaderComponent '%s' of Shader '%s' compiled with %i warnings and %i errors.", name_.c_str(), path.c_str(), result.numWarnings, result.numErrors);
+//                throw std::runtime_error("Shader '" + name_ + "' failed to compile. See out/log.txt for details.");
+//            }
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -241,32 +241,32 @@ namespace Sandbox {
     }
 
     void Shader::CompileToSPIRV() {
-        shaderc::Compiler compiler;
-        shaderc::CompileOptions options;
-
-        // No difference between OpenGL 4.5 and 4.6 (from documentation).
-        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
-        options.SetSourceLanguage(shaderc_source_language_glsl);
-        options.SetForcedVersionProfile(, shaderc_profile_core); // TODO;
-        options.SetOptimizationLevel(shaderc_optimization_level_performance);
-
-        using word = std::uint32_t;
-        std::unordered_map<std::string, std::vector<word>> componentBinary;
-        std::vector<std::vector<std::uint32_t>> binary { };
-
-        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
-            const std::string& path = data.first;
-            const ShaderComponent& component = data.second;
-            shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(component.GetSource(), component.GetType().ToSPIRVType(), path.c_str(), "main", options);
-
-            if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-                // TODO.
-            }
-
-            binary.emplace_back(module.cbegin(), module.cend());
-        }
-
-        return {module.cbegin(), module.cend()};
+//        shaderc::Compiler compiler;
+//        shaderc::CompileOptions options;
+//
+//        // No difference between OpenGL 4.5 and 4.6 (from documentation).
+//        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
+//        options.SetSourceLanguage(shaderc_source_language_glsl);
+//        options.SetForcedVersionProfile(, shaderc_profile_core); // TODO;
+//        options.SetOptimizationLevel(shaderc_optimization_level_performance);
+//
+//        using word = std::uint32_t;
+//        std::unordered_map<std::string, std::vector<word>> componentBinary;
+//        std::vector<std::vector<std::uint32_t>> binary { };
+//
+//        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+//            const std::string& path = data.first;
+//            const ShaderComponent& component = data.second;
+//            shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(component.GetSource(), component.GetType().ToSPIRVType(), path.c_str(), "main", options);
+//
+//            if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
+//                // TODO.
+//            }
+//
+//            binary.emplace_back(module.cbegin(), module.cend());
+//        }
+//
+//        return {module.cbegin(), module.cend()};
     }
 
 }

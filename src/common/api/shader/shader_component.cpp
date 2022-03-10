@@ -6,7 +6,7 @@
 
 namespace Sandbox {
 
-    ShaderComponent::ShaderComponent(const std::string& filepath) : type_(GetAssetExtension(filepath)),
+    ShaderComponent::ShaderComponent(const std::string& filepath) :
                                                                     path_(ConvertToNativeSeparators(filepath)),
                                                                     baseDirectory_(GetAssetDirectory(filepath)),
                                                                     version_(-1)
@@ -14,45 +14,41 @@ namespace Sandbox {
     }
 
     ShaderComponent::CompilationResult ShaderComponent::Compile() {
-        CompilationResult result;
-
-        source_ = Process(path_);
-        const GLchar* shaderSource = reinterpret_cast<const GLchar*>(source_.c_str());
-
-        // Create shader from source.
-        GLuint shader = glCreateShader(type_.ToOpenGLType());
-        glShaderSource(shader, 1, &shaderSource, nullptr); // If length is NULL, each string is assumed to be null terminated.
-        glCompileShader(shader);
-
-        // Compile shader source code.
-        GLint isCompiled = 0;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-        if (!isCompiled) {
-            // Shader failed to compile - get error information from OpenGL.
-            GLint errorMessageLength = 0;
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &errorMessageLength);
-
-            std::vector<GLchar> errorMessageBuffer;
-            errorMessageBuffer.resize(errorMessageLength + 1);
-            glGetShaderInfoLog(shader, errorMessageLength, nullptr, &errorMessageBuffer[0]);
-            std::string errorMessage(errorMessageBuffer.begin(), errorMessageBuffer.end());
-
-            glDeleteShader(shader);
-
-            result.success = false;
-            ++result.numErrors;
-            ImGuiLog::Instance().LogError("%s", errorMessage.c_str());
-        }
-        else {
-            result.success = true;
-            result.ID = shader;
-        }
-
-        return result;
-    }
-
-    const ShaderType& ShaderComponent::GetType() const {
-        return type_;
+//        CompilationResult result;
+//
+//        source_ = Process(path_);
+//        const GLchar* shaderSource = reinterpret_cast<const GLchar*>(source_.c_str());
+//
+//        // Create shader from source.
+//        GLuint shader = glCreateShader(type_.ToOpenGLType());
+//        glShaderSource(shader, 1, &shaderSource, nullptr); // If length is NULL, each string is assumed to be null terminated.
+//        glCompileShader(shader);
+//
+//        // Compile shader source code.
+//        GLint isCompiled = 0;
+//        glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+//        if (!isCompiled) {
+//            // Shader failed to compile - get error information from OpenGL.
+//            GLint errorMessageLength = 0;
+//            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &errorMessageLength);
+//
+//            std::vector<GLchar> errorMessageBuffer;
+//            errorMessageBuffer.resize(errorMessageLength + 1);
+//            glGetShaderInfoLog(shader, errorMessageLength, nullptr, &errorMessageBuffer[0]);
+//            std::string errorMessage(errorMessageBuffer.begin(), errorMessageBuffer.end());
+//
+//            glDeleteShader(shader);
+//
+//            result.success = false;
+//            ++result.numErrors;
+//            ImGuiLog::Instance().LogError("%s", errorMessage.c_str());
+//        }
+//        else {
+//            result.success = true;
+//            result.ID = shader;
+//        }
+//
+//        return result;
     }
 
     int ShaderComponent::GetVersion() const {

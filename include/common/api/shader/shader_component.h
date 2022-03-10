@@ -25,7 +25,6 @@ namespace Sandbox {
             // Returns the ID of the shader component.
             [[nodiscard]] CompilationResult Compile();
 
-            [[nodiscard]] const ShaderType& GetType() const;
             [[nodiscard]] int GetVersion() const;
             [[nodiscard]] const std::string& GetSource() const;
 
@@ -57,7 +56,6 @@ namespace Sandbox {
             [[nodiscard]] std::string GetLine(std::ifstream& stream) const;
             void ThrowFormattedError(const std::string& line, unsigned lineNumber, const std::string& message, int index) const;
 
-            ShaderType type_;
             std::string path_;
             std::string baseDirectory_; // Directory parent shader file is based in.
             int version_;

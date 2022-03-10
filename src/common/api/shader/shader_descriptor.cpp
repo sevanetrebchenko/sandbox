@@ -1,32 +1,33 @@
 
-#include "common/api/shader/shader_element.h"
+#include "common/api/shader/shader_descriptor.h"
 #include "common/utility/directory.h"
+#include "common/utility/log.h"
 
 namespace Sandbox {
 
-	std::string ToString(ShaderContext profile) {
+	std::string ToString(ShaderProfile profile) {
 		switch (profile) {
-			case ShaderContext::CORE:
+			case ShaderProfile::CORE:
 				return "core";
-			case ShaderContext::COMPATIBILITY:
+			case ShaderProfile::COMPATIBILITY:
 				return "compatibility";
-			case ShaderContext::INVALID:
+			case ShaderProfile::INVALID:
 			default:
 				return "invalid";
 		}
 	}
 
-	ShaderContext ToShaderProfile(const std::string& in) {
+    ShaderProfile ToShaderProfile(const std::string& in) {
 		std::string profile = ToLower(in);
 
 		if (profile == "core") {
-			return ShaderContext::CORE;
+			return ShaderProfile::CORE;
 		}
 		else if (profile == "compatibility") {
-			return ShaderContext::COMPATIBILITY;
+			return ShaderProfile::COMPATIBILITY;
 		}
 		else {
-			return ShaderContext::INVALID;
+			return ShaderProfile::INVALID;
 		}
 	}
 
@@ -51,19 +52,19 @@ namespace Sandbox {
 	ShaderType ToShaderType(const std::string& in) {
 		std::string type = ToLower(in);
 
-		if (type == "vertex") {
+		if (type == "vert" || type == "vertex") {
 			return ShaderType::VERTEX;
 		}
-		else if (type == "fragment") {
+		else if (type == "frag" || type == "fragment") {
 			return ShaderType::FRAGMENT;
 		}
-		else if (type == "geometry") {
+		else if (type == "geom" || type == "geometry") {
 			return ShaderType::GEOMETRY;
 		}
-		else if (type == "tesselation") {
+		else if (type == "tess" || type == "tesselation") {
 			return ShaderType::TESSELATION;
 		}
-		else if (type == "compute") {
+		else if (type == "comp" || type == "compute") {
 			return ShaderType::COMPUTE;
 		}
 		else {
@@ -71,7 +72,7 @@ namespace Sandbox {
 		}
 	}
 
-    ShaderInclude::ShaderInclude(const std::string& filename, unsigned lineNumber) : filename(filename),
+    ShaderInclude::ShaderInclude(const std::string& filepath, unsigned lineNumber) : filepath(ConvertToNativeSeparators(filepath)),
                                                                                      lineNumber(lineNumber)
                                                                                      {
     }
@@ -79,7 +80,15 @@ namespace Sandbox {
     ShaderInclude::~ShaderInclude() = default;
 
     bool ShaderInclude::operator==(const ShaderInclude& other) const {
-        return filename == other.filename;
+        return filepath == other.filepath;
+    }
+
+}
+
+namespace std {
+
+    std::size_t hash<Sandbox::ShaderInclude>::operator()(const Sandbox::ShaderInclude& data) const {
+        return std::hash<std::string>{ }(data.filepath);
     }
 
 }

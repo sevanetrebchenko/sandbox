@@ -2,30 +2,28 @@
 #pragma once
 
 #include "pch.h"
-#include "common/api/shader/shader_element.h"
+#include "common/api/shader/shader_descriptor.h"
 #include "common/utility/singleton.h"
 
 namespace Sandbox {
 
     // Information about a shader source file of one type.
+    // Should only be used with concrete shader source types (.vert, .frag, .geom, .tess, .comp).
     struct ShaderInfo {
-        explicit ShaderInfo(const std::string& filepath);
+        ShaderInfo();
 
         std::string filepath;
-        std::string workingDirectory; // Base directory of shader file - allows for local shader includes.
+        std::string workingDirectory;
 
         ShaderType type;
-        ShaderContext context; // Default (if not specified): CORE
+        ShaderProfile profile;
         int version;
         std::string source;
         std::unordered_set<ShaderInclude> dependencies;
-        unsigned numLines;
 
         bool success; // Indicates whether shader file was preprocessed without errors.
         std::vector<std::string> warnings;
         std::vector<std::string> errors;
-
-        std::filesystem::file_time_type lastEditTime;
     };
 
     class ShaderPreprocessor : public Singleton<ShaderPreprocessor> {
@@ -33,16 +31,21 @@ namespace Sandbox {
             REGISTER_SINGLETON(ShaderPreprocessor);
 
             // Preprocesses individual shader files (.vert, .frag, .geom, .comp, .tess, etc.) or joint shader files (.glsl).
-            void Process(const std::string& filepath);
+            // Returns mapping of shader type to shader source for each parsed type.
+            std::unordered_map<ShaderType, ShaderInfo> ProcessFile(const std::string& filepath);
 
         private:
+            struct ProcessingContext {
+                std::vector<ShaderInclude> includeStack;
+            };
+
             ShaderPreprocessor();
             ~ShaderPreprocessor() override;
 
-            // Processes shader file and caches any new dependencies.
-            void ReadFile(const std::string& filepath);
-
             [[nodiscard]] std::string GetLine(std::ifstream& in) const;
+
+            [[nodiscard]] bool ReadFile(ShaderInfo& info, ProcessingContext& context);
+            [[nodiscard]] std::unordered_map<ShaderType, ShaderInfo> ReadFile(const std::string& filepath);
 
             // Removes only newlines from the input string.
             [[nodiscard]] std::string RemoveNewlines(const std::string& in) const;
@@ -50,13 +53,12 @@ namespace Sandbox {
             // Removes all whitespace characters (\n, ' ', \r, \t, \f, \v) from the input string.
             [[nodiscard]] std::string RemoveWhitespace(const std::string& in) const;
 
-            [[nodiscard]] std::string GetFormattedMessage(const std::string& file, unsigned lineNumber, const std::string& message) const;
+            [[nodiscard]] std::string GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length = 0) const;
 
             [[nodiscard]] bool ValidateShaderExtension(const std::string& in) const;
             [[nodiscard]] bool ValidateShaderVersion(int version) const;
+            [[nodiscard]] bool ValidateShaderProfile(const std::string& in) const;
 			[[nodiscard]] bool ValidateShaderType(const std::string& in) const;
-
-            std::unordered_map<std::string, ShaderInfo> parsed_; // Cached information about parsed shader files.
     };
 
 }
