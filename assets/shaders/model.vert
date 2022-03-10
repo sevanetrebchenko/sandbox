@@ -1,5 +1,6 @@
 
-#version 450 core
+                         #                  version           460
+                         #                  version           420
 
 layout (location = 0) in vec3 vertexPosition;
 layout (location = 1) in vec3 vertexNormal;

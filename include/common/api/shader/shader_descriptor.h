@@ -29,6 +29,17 @@ namespace Sandbox {
     [[nodiscard]] std::string ToString(ShaderType type);
     [[nodiscard]] ShaderType ToShaderType(const std::string& in);
 
+    struct ShaderVersion {
+        ShaderVersion(int version, unsigned lineNumber);
+        ~ShaderVersion();
+
+        [[nodiscard]] bool operator==(const ShaderVersion& other) const;
+
+        int data;
+        unsigned lineNumber;
+    };
+
+
     struct ShaderInclude {
         ShaderInclude(const std::string& filepath, unsigned lineNumber);
         ~ShaderInclude();

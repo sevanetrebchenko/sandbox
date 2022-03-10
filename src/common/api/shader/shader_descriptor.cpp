@@ -72,6 +72,17 @@ namespace Sandbox {
 		}
 	}
 
+    ShaderVersion::ShaderVersion(int version, unsigned int lineNumber) : data(version),
+                                                                         lineNumber(lineNumber)
+                                                                         {
+    }
+
+    ShaderVersion::~ShaderVersion() = default;
+
+    bool ShaderVersion::operator==(const ShaderVersion& other) const {
+        return data == other.data;
+    }
+
     ShaderInclude::ShaderInclude(const std::string& filepath, unsigned lineNumber) : filepath(ConvertToNativeSeparators(filepath)),
                                                                                      lineNumber(lineNumber)
                                                                                      {

@@ -17,7 +17,7 @@ namespace Sandbox {
 
         ShaderType type;
         ShaderProfile profile;
-        int version;
+        ShaderVersion version;
         std::string source;
         std::unordered_set<ShaderInclude> dependencies;
 
@@ -35,6 +35,32 @@ namespace Sandbox {
             std::unordered_map<ShaderType, ShaderInfo> ProcessFile(const std::string& filepath);
 
         private:
+            // Custom string tokenizer that does not ignore whitespace characters.
+            struct Tokenizer {
+                struct Token {
+                    Token();
+                    explicit Token(std::string in);
+                    ~Token();
+
+                    [[nodiscard]] unsigned Size() const;
+
+                    std::string data; // Token with no whitespace.
+                    unsigned length; // Size of token without whitespace.
+                    unsigned before; // Number of whitespace characters before token (if any).
+                    unsigned after;  // Number of whitespace characters after token (if any).
+                };
+
+                explicit Tokenizer(std::string in);
+                ~Tokenizer();
+
+                [[nodiscard]] bool IsValid() const;
+                [[nodiscard]] Token Next();
+
+                std::string line;
+                unsigned size;
+                unsigned index;
+            };
+
             struct ProcessingContext {
                 std::vector<ShaderInclude> includeStack;
             };
@@ -46,12 +72,6 @@ namespace Sandbox {
 
             [[nodiscard]] bool ReadFile(ShaderInfo& info, ProcessingContext& context);
             [[nodiscard]] std::unordered_map<ShaderType, ShaderInfo> ReadFile(const std::string& filepath);
-
-            // Removes only newlines from the input string.
-            [[nodiscard]] std::string RemoveNewlines(const std::string& in) const;
-
-            // Removes all whitespace characters (\n, ' ', \r, \t, \f, \v) from the input string.
-            [[nodiscard]] std::string RemoveWhitespace(const std::string& in) const;
 
             [[nodiscard]] std::string GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length = 0) const;
 
