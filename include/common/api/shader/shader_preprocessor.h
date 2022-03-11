@@ -36,30 +36,32 @@ namespace Sandbox {
 
         private:
             // Custom string tokenizer that does not ignore whitespace characters.
-            struct Tokenizer {
-                struct Token {
-                    Token();
-                    explicit Token(std::string in);
-                    ~Token();
+            class Tokenizer {
+                public:
+                    struct Token {
+                        Token();
+                        explicit Token(std::string in);
+                        ~Token();
 
-                    [[nodiscard]] unsigned Size() const;
+                        [[nodiscard]] unsigned Size() const;
 
-                    std::string data; // Token with no whitespace.
-                    unsigned length; // Size of token without whitespace.
-                    unsigned before; // Number of whitespace characters before token (if any).
-                    unsigned after;  // Number of whitespace characters after token (if any).
-                };
+                        std::string data; // Token with no whitespace.
+                        unsigned length;  // Size of token without whitespace.
+                        unsigned before;  // Number of whitespace characters before token (if any).
+                        unsigned after;   // Number of whitespace characters after token (if any).
+                    };
 
-                Tokenizer();
-                ~Tokenizer();
+                    Tokenizer();
+                    ~Tokenizer();
 
-                void Set(std::string in);
-                [[nodiscard]] bool IsValid() const;
-                [[nodiscard]] Token Next();
+                    void Set(std::string in);
+                    [[nodiscard]] bool IsValid() const;
+                    [[nodiscard]] Token Next();
 
-                std::string line;
-                unsigned size;
-                unsigned index;
+                private:
+                    std::string line;
+                    unsigned size;
+                    unsigned index;
             };
 
             struct ProcessingContext {
