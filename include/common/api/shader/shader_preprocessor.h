@@ -86,7 +86,7 @@ namespace Sandbox {
             [[nodiscard]] bool ValidateShaderProfile(const std::string& in) const;
 			[[nodiscard]] bool ValidateShaderType(const std::string& in) const;
 
-            std::vector<std::string> includeDirectories_;
+            std::set<std::string> includeDirectories_;
     };
 
 }

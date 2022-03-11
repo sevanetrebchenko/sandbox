@@ -723,14 +723,7 @@ namespace Sandbox {
             includeDirectory = includeDirectory.substr(0, includeDirectory.size() - 1);
         }
 
-        // Check to make sure directory does not already exist.
-        for (const std::string& directory : includeDirectories_) {
-            if (directory == includeDirectory) {
-                return;
-            }
-        }
-
-        includeDirectories_.emplace_back(includeDirectory);
+        includeDirectories_.emplace(includeDirectory);
     }
 
 }
