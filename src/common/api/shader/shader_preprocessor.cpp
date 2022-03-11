@@ -19,9 +19,7 @@ namespace Sandbox {
                                                     {
     }
 
-    ShaderPreprocessor::Tokenizer::Token::Token(std::string in) : before(0),
-                                                                  after(0)
-                                                                  {
+    ShaderPreprocessor::Tokenizer::Token::Token(std::string in) : Token() {
         length = in.length();
 
         // Determine number of whitespace characters before start of token.
@@ -144,6 +142,7 @@ namespace Sandbox {
 
         if (extension == "glsl") {
             // Processing joint shader file.
+
         }
         else {
             // Processing individual shader file.
@@ -155,25 +154,55 @@ namespace Sandbox {
             assert(info.type != ShaderType::INVALID); // Verified above.
 
             ProcessingContext context { };
-            bool success = ReadFile(info, context);
+            ReadFile(info, context);
 
-            for (const std::string& warning : info.warnings) {
-                std::cout << warning << std::endl;
-            }
+            return { std::make_pair(info.type, std::move(info)) };
+        }
+    }
 
-            for (const std::string& error : info.errors) {
-                std::cout << error << std::endl;
-            }
+    void ShaderPreprocessor::AddIncludeDirectory(const std::string& in) {
+        std::string includeDirectory = ConvertToNativeSeparators(in);
 
-            std::cout << info.source << std::endl;
+        if (includeDirectory.empty()) {
+            return;
+        }
 
-            if (!success) {
-                exit(1);
-            }
-            else {
-                exit(0);
+        unsigned first = 0; // Index of first non-whitespace character.
+        unsigned last = 0;  // Index of last non-whitespace character.
+
+        // Find first non-whitespace character.
+        unsigned size = includeDirectory.size();
+
+        for (unsigned i = 0; i < size; ++i) {
+            if (!std::isspace(includeDirectory[i])) {
+                first = i;
+                break;
             }
         }
+
+        // First last non-whitespace character.
+        for (unsigned i = size - 1; i >= 0; --i) {
+            if (!std::isspace(includeDirectory[i])) {
+                last = i;
+                break;
+            }
+        }
+
+        assert(last >= first);
+        includeDirectory = includeDirectory.substr(first, (last - first) + 1);
+
+        if (!Exists(includeDirectory)) {
+            ImGuiLog::Instance().LogWarning("Directory '%s' provided to ShaderPreprocessor::AddIncludeDirectory does not exist.", includeDirectory.c_str());
+            return;
+        }
+
+        // Directory is guaranteed to not be empty (empty directory does not exist).
+        // Remove trailing '/' or '\\'.
+        if (includeDirectory[includeDirectory.size() - 1] == '/' || includeDirectory[includeDirectory.size() - 1] == '\\') {
+            includeDirectory = includeDirectory.substr(0, includeDirectory.size() - 1);
+        }
+
+        includeDirectories_.emplace(includeDirectory);
     }
 
     ShaderPreprocessor::ShaderPreprocessor() {
@@ -185,9 +214,8 @@ namespace Sandbox {
     bool ShaderPreprocessor::ReadFile(ShaderInfo& info, ProcessingContext& context) {
         std::ifstream reader;
         reader.open(info.filepath);
-        assert(reader.is_open());
 
-        // File is guaranteed to exist and be a valid file to include (no circular/duplicate include).
+        // File contents are guaranteed to exist.
 
         // Stream to hold the contents of the output file.
         std::stringstream file;
@@ -200,7 +228,7 @@ namespace Sandbox {
         unsigned offset = 0;
 
         while (!reader.eof()) {
-            line = GetLine(reader);
+            std::getline(file, line);
             if (line.empty()) {
                 goto unchanged;
             }
@@ -571,10 +599,54 @@ namespace Sandbox {
         return true;
     }
 
-    std::string ShaderPreprocessor::GetLine(std::ifstream& in) const {
-        std::string out;
-        std::getline(in, out);
-        return std::move(out);
+    std::unordered_map<ShaderType, ShaderInfo> ShaderPreprocessor::ReadFile(const std::string& filepath) {
+        return std::unordered_map<ShaderType, ShaderInfo>();
+    }
+
+    std::string ShaderPreprocessor::GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length) const {
+        std::stringstream builder;
+
+        // Formatted how typical compiler errors are formatted:
+
+        // In file included from [file1]:[include line number],
+        //                  from [file2]:[include line number],
+        //                  from [file3]:[include line number]:
+        // [file]:[line number]:[column offset]: [error message]
+        //  #### | [line on which error occurred]
+        //       |                ^~~~~~~~
+
+        std::size_t size = context.includeStack.size();
+
+        // Build up include stack in message.
+        if (!context.includeStack.empty()) {
+            builder << "In file included from " << context.includeStack[0].filepath << ':' << context.includeStack[0].lineNumber;
+
+            if (size > 1) {
+                builder << ',' << std::endl;
+
+                // Align any additional messages to the first line.
+                for (int i = 1; i < size - 1; ++i) {
+                    builder << "                 from " << context.includeStack[i].filepath << ':' << context.includeStack[i].lineNumber << ',' << std::endl;
+                }
+                builder << "                 from " << context.includeStack[size - 1].filepath << ':' << context.includeStack[size - 1].lineNumber;
+            }
+
+            builder << ':' << std::endl;
+        }
+
+        builder << file << ':' << lineNumber << ':' << offset << ": " << message << std::endl;
+        builder << ' ' << std::fixed << std::setw(4) << lineNumber << " | " << line << std::endl;
+        builder << ' ' << std::fixed << std::setw(4) << ' ' << " | " << std::setw(static_cast<int>(offset)) << ' ' << '^';
+
+        if (length > 0) {
+            for (unsigned i = 0; i < length - 1; ++i) {
+                builder << '~';
+            }
+        }
+
+        builder << std::endl;
+
+        return builder.str();
     }
 
     // Used for validating shader file extensions.
@@ -634,96 +706,5 @@ namespace Sandbox {
 
 		return false;
 	}
-
-    std::string ShaderPreprocessor::GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length) const {
-        std::stringstream builder;
-
-        // Formatted how typical compiler errors are formatted:
-
-        // In file included from [file1]:[include line number],
-        //                  from [file2]:[include line number],
-        //                  from [file3]:[include line number]:
-        // [file]:[line number]:[column offset]: [error message]
-        //  #### | [line on which error occurred]
-        //       |                ^~~~~~~~
-
-        std::size_t size = context.includeStack.size();
-
-        // Build up include stack in message.
-        if (!context.includeStack.empty()) {
-            builder << "In file included from " << context.includeStack[0].filepath << ':' << context.includeStack[0].lineNumber;
-
-            if (size > 1) {
-                builder << ',' << std::endl;
-
-                // Align any additional messages to the first line.
-                for (int i = 1; i < size - 1; ++i) {
-                    builder << "                 from " << context.includeStack[i].filepath << ':' << context.includeStack[i].lineNumber << ',' << std::endl;
-                }
-                builder << "                 from " << context.includeStack[size - 1].filepath << ':' << context.includeStack[size - 1].lineNumber;
-            }
-
-            builder << ':' << std::endl;
-        }
-
-        builder << file << ':' << lineNumber << ':' << offset << ": " << message << std::endl;
-        builder << ' ' << std::fixed << std::setw(4) << lineNumber << " | " << line << std::endl;
-        builder << ' ' << std::fixed << std::setw(4) << ' ' << " | " << std::setw(static_cast<int>(offset)) << ' ' << '^';
-
-        if (length > 0) {
-            for (unsigned i = 0; i < length - 1; ++i) {
-                builder << '~';
-            }
-        }
-
-        builder << std::endl;
-
-        return builder.str();
-    }
-
-    void ShaderPreprocessor::AddIncludeDirectory(const std::string& in) {
-        std::string includeDirectory = ConvertToNativeSeparators(in);
-
-        if (includeDirectory.empty()) {
-            return;
-        }
-
-        unsigned first = 0; // Index of first non-whitespace character.
-        unsigned last = 0;  // Index of last non-whitespace character.
-
-        // Find first non-whitespace character.
-        unsigned size = includeDirectory.size();
-
-        for (unsigned i = 0; i < size; ++i) {
-            if (!std::isspace(includeDirectory[i])) {
-                first = i;
-                break;
-            }
-        }
-
-        // First last non-whitespace character.
-        for (unsigned i = size - 1; i >= 0; --i) {
-            if (!std::isspace(includeDirectory[i])) {
-                last = i;
-                break;
-            }
-        }
-
-        assert(last >= first);
-        includeDirectory = includeDirectory.substr(first, (last - first) + 1);
-
-        if (!Exists(includeDirectory)) {
-            ImGuiLog::Instance().LogWarning("Directory '%s' provided to ShaderPreprocessor::AddIncludeDirectory does not exist.", includeDirectory.c_str());
-            return;
-        }
-
-        // Directory is guaranteed to not be empty (empty directory does not exist).
-        // Remove trailing '/' or '\\'.
-        if (includeDirectory[includeDirectory.size() - 1] == '/' || includeDirectory[includeDirectory.size() - 1] == '\\') {
-            includeDirectory = includeDirectory.substr(0, includeDirectory.size() - 1);
-        }
-
-        includeDirectories_.emplace(includeDirectory);
-    }
 
 }

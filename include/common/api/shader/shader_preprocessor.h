@@ -74,9 +74,8 @@ namespace Sandbox {
             ShaderPreprocessor();
             ~ShaderPreprocessor() override;
 
-            [[nodiscard]] std::string GetLine(std::ifstream& in) const;
-
-            [[nodiscard]] bool ReadFile(ShaderInfo& info, ProcessingContext& context);
+            // Reads file specified by data set in 'info'
+            bool ReadFile(ShaderInfo& info, ProcessingContext& context);
             [[nodiscard]] std::unordered_map<ShaderType, ShaderInfo> ReadFile(const std::string& filepath);
 
             [[nodiscard]] std::string GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length = 0) const;

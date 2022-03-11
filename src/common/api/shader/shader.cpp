@@ -24,23 +24,23 @@ namespace Sandbox {
                                                                                                               name_(name),
                                                                                                               ID_(INVALID)
                                                                                                               {
-//        for (const std::string& filepath : shaderComponentPaths) {
-//            shaderComponents_.emplace(filepath, ShaderComponent(filepath));
-//        }
-//
-//        // Validate extensions.
-//        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
-//            const std::string& componentPath = data.first;
-//            const ShaderComponent& component = data.second;
-//            const ShaderType& type = component.GetType();
-//
-//            if (type.ToOpenGLType() == GL_INVALID_VALUE) {
-//                ImGuiLog::Instance().LogError("Encountered unknown / unsupported shader of type '%s' in ShaderComponent '%s'.", type.ToString().c_str(), componentPath.c_str());
-//                throw std::runtime_error("Encountered unknown / unsupported shader of type. See out/log.txt for details.");
-//            }
-//        }
-//
-//        Recompile();
+        for (const std::string& filepath : shaderComponentPaths) {
+            shaderComponents_.emplace(filepath, ShaderComponent(filepath));
+        }
+
+        // Validate extensions.
+        for (const std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+            const std::string& componentPath = data.first;
+            const ShaderComponent& component = data.second;
+            const ShaderType& type = component.GetType();
+
+            if (type.ToOpenGLType() == GL_INVALID_VALUE) {
+                ImGuiLog::Instance().LogError("Encountered unknown / unsupported shader of type '%s' in ShaderComponent '%s'.", type.ToString().c_str(), componentPath.c_str());
+                throw std::runtime_error("Encountered unknown / unsupported shader of type. See out/log.txt for details.");
+            }
+        }
+
+        Recompile();
     }
 
     Shader::~Shader() {
