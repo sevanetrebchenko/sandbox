@@ -10,7 +10,6 @@ namespace Sandbox {
     ShaderInfo::ShaderInfo() : type(ShaderType::INVALID),
                                profile(ShaderProfile::INVALID),
                                version(-1, 0),
-                               numLines(0),
                                success(false)
                                {
     }
@@ -192,6 +191,7 @@ namespace Sandbox {
 
         // Stream to hold the contents of the output file.
         std::stringstream file;
+        std::stringstream builder; // For building error messages.
 
         Tokenizer tokenizer;
         Tokenizer::Token token;
@@ -252,7 +252,7 @@ namespace Sandbox {
             include: {
                 if (!tokenizer.IsValid()) {
                     // #include must have filepath token to include.
-                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "#include directive missing \"FILENAME\".", offset + token.length + 1));
+                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "#include directive missing \"FILENAME\" or FILENAME.", offset + token.length + 1));
                     info.success = false;
 
                     return false;
@@ -274,108 +274,131 @@ namespace Sandbox {
                     return false;
                 }
 
+                std::string filepath = token.data;
                 if (first && last) {
-                    token.data.erase(std::remove(token.data.begin(), token.data.end(), '\"'), token.data.end());
-                    token.length = token.data.size();
+                    filepath.erase(std::remove(filepath.begin(), filepath.end(), '\"'), filepath.end());
                 }
+
+                // TODO: this needs to be updated when caching / builds with asset directories are implemented.
+                filepath = ConvertToNativeSeparators(filepath);
 
                 // Check for extraneous characters after the #include filepath.
                 if (tokenizer.IsValid()) {
                     unsigned numExtraCharacters = 0;
                     while (tokenizer.IsValid()) {
-                        token = tokenizer.Next();
-                        numExtraCharacters += token.Size();
+                        numExtraCharacters += tokenizer.Next().Size();
                     }
 
-                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", offset, numExtraCharacters));
+                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", offset + token.Size(), numExtraCharacters));
                 }
 
-                // Ensure global include path is valid and exists.
-                // TODO: this needs to be updated when caching / builds with asset directories are implemented.
-                std::string filepath = ConvertToNativeSeparators(token.data);
-
                 if (!Exists(filepath)) {
+
                     if (GetAssetDirectory(filepath).empty()) {
                         // Asset has no directory - include local to another directory.
                         std::string name = GetAssetName(filepath);
                         std::string extension = GetAssetExtension(filepath);
 
-                        std::stringstream builder;
-                        builder << info.workingDirectory << '/' << name << '.' << extension;
-
-                        // Try local directory of the current shader being processed.
-                        filepath = ConvertToNativeSeparators(builder.str());
-
-                        if (!Exists(filepath)) {
-                            // Try any additional configured include directories.
-                            std::vector<std::string> validEntries;
-
-                            for (const std::string& includeDirectory : includeDirectories_) {
-                                builder.str(""); // Discards previous contents.
-                                builder << includeDirectory << '/' << name << '.' << extension;
-                                filepath = ConvertToNativeSeparators(builder.str());
-
-                                if (Exists(filepath)) {
-                                    validEntries.emplace_back(ConvertToNativeSeparators(filepath));
-                                }
+                        if (extension.empty()) {
+                            offset += name.size();
+                            if (filepath.find_last_of('.') != std::string::npos) {
+                                // Extension has trailing dot.
+                                offset += 1;
                             }
 
-                            if (validEntries.empty()) {
-                                // Could not find file to include.
-                                builder.str("");
-                                builder << "File '" << token.data << "' not found in any configured shader include directories (";
+                            info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Invalid file extension for included file.", offset));
+                            info.success = false;
 
-                                // Add shader local directory (if not already registered as an include directory).
-                                bool found = false;
-                                for (const std::string& directory : includeDirectories_) {
-                                    if (directory == info.workingDirectory) {
-                                        found = true;
-                                    }
-                                }
-
-                                if (!found) {
-                                    builder << '\'' << info.workingDirectory << '\'';
-                                }
-
-                                if (!includeDirectories_.empty()) {
-                                    builder << ", ";
-
-                                    unsigned numIncludeDirectories = includeDirectories_.size();
-                                    for (unsigned i = 0; i < numIncludeDirectories - 1; ++i) {
-                                        builder << '\'' << includeDirectories_[i] << "', ";
-                                    }
-                                    builder << '\'' << includeDirectories_[numIncludeDirectories - 1] << '\'';
-                                }
-
-                                builder << "). Did you forget to add a custom include directory with ShaderPreprocessor::AddIncludeDirectory?";
-
-                                info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
-                                info.success = false;
-
-                                return false;
-                            }
-
-                            unsigned numValidEntries = validEntries.size();
-
-                            if (numValidEntries > 1) {
-                                // Ambiguity between multiple valid filepath entries.
-                                builder.str("");
-                                builder << "Ambiguity between multiple valid file paths (";
-
-                                for (unsigned i = 0; i < numValidEntries - 1; ++i) {
-                                    builder << "'" << validEntries[i] << "', ";
-                                }
-                                builder << "'" << validEntries[numValidEntries - 1] << "') for file '" << token.data << "'.";
-
-                                info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
-                                info.success = false;
-
-                                return false;
-                            }
-
-                            // Only one valid entry, continue.
-                            filepath = std::string(validEntries[0]); // Make explicit copy.
+                            return false;
                         }
+
+                        // Construct list of paths to try to find the file.
+                        std::set<std::string> allIncludeDirectories;
+
+                        // Get path of file local to the current shader's working directory, given it exists.
+                        if (info.workingDirectory.empty()) {
+                            allIncludeDirectories.emplace(ConvertToNativeSeparators(info.workingDirectory));
+                        }
+
+                        // Get path of file relative to all globally configured shader include directories.
+                        for (const std::string& includeDirectory : includeDirectories_) {
+                            allIncludeDirectories.emplace(ConvertToNativeSeparators(includeDirectory));
+                        }
+
+                        // Generate list of valid file path(s).
+                        std::set<std::string> validIncludeDirectories;
+
+                        for (const std::string& directory : allIncludeDirectories) {
+                            builder.str("");
+                            builder << directory << '/' << name << '.' << extension;
+
+                            std::string path = ConvertToNativeSeparators(builder.str());
+
+                            if (Exists(path)) {
+                                validIncludeDirectories.emplace(path);
+                            }
+                        }
+
+                        if (validIncludeDirectories.empty()) {
+                            // Could not find file to include.
+                            if (allIncludeDirectories.empty()) {
+                                builder.str("");
+                                builder << "File '" << filepath << "' not found. ";
+                            }
+                            else {
+                                builder.str("");
+                                builder << "File '" << filepath << "' not found in any configured shader include directories (";
+
+                                auto start = allIncludeDirectories.begin();
+                                auto end = std::prev(allIncludeDirectories.end());
+                                while (start != end) {
+                                    builder << '\'' << *start << "', ";
+                                    ++start;
+                                }
+                                builder << '\'' << *start << "'). ";
+                            }
+
+                            builder << "Did you forget to add a custom include directory with ShaderPreprocessor::AddIncludeDirectory?";
+
+                            info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
+                            info.success = false;
+
+                            return false;
+                        }
+
+                        unsigned size = validIncludeDirectories.size();
+
+                        if (size > 1) {
+                            // Ambiguity between multiple valid filepath entries.
+                            builder.str("");
+                            builder << "Ambiguity between multiple valid file paths (";
+
+                            auto start = validIncludeDirectories.begin();
+                            auto end = std::prev(validIncludeDirectories.end());
+                            while (start != end) {
+                                builder << '\'' << *start << "', ";
+                                ++start;
+                            }
+                            builder << '\'' << *start << "') for file '" << filepath << "'. Shader files require unique names (for includes local to configured shader include directories) or must have their path explicitly specified.";
+
+                            info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
+                            info.success = false;
+
+                            return false;
+                        }
+
+                        // Filepath is guaranteed to be valid.
+                        filepath = *validIncludeDirectories.begin();
+                    }
+                    else {
+                        // File not found.
+                        builder.str("");
+                        builder << "File '" << filepath << "' not found. Did you forget to add a custom include directory with ShaderPreprocessor::AddIncludeDirectory?";
+
+                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
+                        info.success = false;
+
+                        return false;
                     }
                 }
 
@@ -385,7 +408,10 @@ namespace Sandbox {
                 // Circular dependencies are stored in the ProcessingContext and are currently being processed (incomplete).
                 for (const ShaderInclude& data : context.includeStack) {
                     if (data == include) {
-                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"Detected circular include of file '" + filepath + "' (original include found in file '" + data.filepath + "' on line " + std::to_string(data.lineNumber) + ")", offset, token.length));
+                        builder.str("");
+                        builder << "Detected circular include of file '" << filepath << "' (original include found in file '" << data.filepath << "' on line " << data.lineNumber << ").";
+
+                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,builder.str(), offset, token.length));
                         info.success = false;
 
                         return false;
@@ -394,10 +420,15 @@ namespace Sandbox {
 
                 // Check for duplicate includes.
                 // Duplicate includes are stored in the ShaderInfo and are completed include directives.
-                auto dependency = info.dependencies.find(include);
-                if (dependency != info.dependencies.end()) {
+                auto it = info.dependencies.find(include);
+                if (it != info.dependencies.end()) {
                     // File has already been included.
-                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "warning: duplicate include of file '" + filepath + "' encountered (original include found in file '" + dependency->filepath + "' on line " + std::to_string(dependency->lineNumber) + ")", offset, token.length));
+                    ShaderInclude dependency = *it;
+
+                    builder.str("");
+                    builder << "Duplicate include of file '" << filepath << "' encountered (original include found in file '" << dependency.filepath << "' on line " << dependency.lineNumber << ").";
+
+                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
                 }
                 else {
                     // Register new "in-flight" dependency.
@@ -408,16 +439,27 @@ namespace Sandbox {
                     includeInfo.workingDirectory = GetAssetDirectory(filepath);
                     includeInfo.type = ToShaderType(GetAssetExtension(filepath)); // Could be invalid.
 
-                    if (!ReadFile(includeInfo, context)) {
+                    bool success = ReadFile(includeInfo, context);
+
+                    for (const std::string& warning : includeInfo.warnings) {
+                        info.warnings.emplace_back(warning);
+                    }
+
+                    for (const std::string& error : includeInfo.errors) {
+                        info.errors.emplace_back(error);
+                    }
+
+                    if (!success) {
                         // Error messages get printed from where the error occurred.
                         return false;
                     }
 
+                    // Update 'info' struct with data from parsed file.
                     file << includeInfo.source;
-
-                    // Remove "in-flight" dependency and register as complete include.
-                    context.includeStack.pop_back();
                     info.dependencies.emplace(include);
+
+                    // Remove "in-flight" dependency.
+                    context.includeStack.pop_back();
                 }
 
                 ++lineNumber;
@@ -479,8 +521,7 @@ namespace Sandbox {
                         if (tokenizer.IsValid()) {
                             unsigned numExtraCharacters = 0;
                             while (tokenizer.IsValid()) {
-                                token = tokenizer.Next();
-                                numExtraCharacters += token.Size();
+                                numExtraCharacters += tokenizer.Next().Size();
                             }
 
                             info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", offset, numExtraCharacters));
@@ -674,6 +715,12 @@ namespace Sandbox {
         if (!Exists(includeDirectory)) {
             ImGuiLog::Instance().LogWarning("Directory '%s' provided to ShaderPreprocessor::AddIncludeDirectory does not exist.", includeDirectory.c_str());
             return;
+        }
+
+        // Directory is guaranteed to not be empty (empty directory does not exist).
+        // Remove trailing '/' or '\\'.
+        if (includeDirectory[includeDirectory.size() - 1] == '/' || includeDirectory[includeDirectory.size() - 1] == '\\') {
+            includeDirectory = includeDirectory.substr(0, includeDirectory.size() - 1);
         }
 
         // Check to make sure directory does not already exist.

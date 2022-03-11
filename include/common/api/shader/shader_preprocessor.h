@@ -19,7 +19,6 @@ namespace Sandbox {
         ShaderProfile profile;
         ShaderVersion version;
         std::string source;
-        unsigned numLines;
         std::unordered_set<ShaderInclude> dependencies;
 
         bool success; // Indicates whether shader file was preprocessed without errors.
