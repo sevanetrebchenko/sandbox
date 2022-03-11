@@ -41,15 +41,10 @@ namespace Sandbox {
         // If there exists a slash.
         if (slashPosition != std::string::npos) {
             path = path.substr(slashPosition + 1);
-
-            std::size_t dotPosition = path.find_first_of('.');
-
-            if (dotPosition != std::string::npos) {
-                return path.substr(0, dotPosition);
-            }
         }
 
-        return path;
+        std::size_t dotPosition = path.find_last_of('.');
+        return dotPosition != std::string::npos ? path.substr(0, dotPosition) : path;
     }
 
     std::string GetAssetExtension(const std::string& in) {
@@ -82,18 +77,7 @@ namespace Sandbox {
     }
 
     std::string GetAssetDirectory(const std::string& in) {
-        std::string file = ConvertToNativeSeparators(in);
-        std::string extension = GetAssetExtension(file);
-
-        if (extension.empty()) {
-            throw std::runtime_error("Path provided to GetAssetDirectory is not a file.");
-        }
-
-        if (!Exists(file)) {
-            throw std::runtime_error("File provided to GetAssetDirectory does not exist.");
-        }
-
-        return std::filesystem::path(file).parent_path().string();
+        return std::filesystem::path(ConvertToNativeSeparators(in)).parent_path().string();
     }
 
     std::vector<std::string> GetFiles(const std::string& in) {
@@ -118,6 +102,7 @@ namespace Sandbox {
     }
 
     bool Exists(const std::string& in) {
+        // Checks filepaths and directories.
         return std::filesystem::exists({ ConvertToNativeSeparators(in) });
     }
 

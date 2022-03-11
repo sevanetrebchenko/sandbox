@@ -34,6 +34,7 @@ namespace Sandbox {
         ~ShaderVersion();
 
         [[nodiscard]] bool operator==(const ShaderVersion& other) const;
+        [[nodiscard]] bool operator!=(const ShaderVersion& other) const;
 
         int data;
         unsigned lineNumber;
@@ -45,6 +46,7 @@ namespace Sandbox {
         ~ShaderInclude();
 
         [[nodiscard]] bool operator==(const ShaderInclude& other) const;
+        [[nodiscard]] bool operator!=(const ShaderInclude& other) const;
 
         std::string filepath;
         unsigned lineNumber;

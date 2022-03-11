@@ -83,6 +83,10 @@ namespace Sandbox {
         return data == other.data;
     }
 
+    bool ShaderVersion::operator!=(const ShaderVersion& other) const {
+        return !(operator==(other));
+    }
+
     ShaderInclude::ShaderInclude(const std::string& filepath, unsigned lineNumber) : filepath(ConvertToNativeSeparators(filepath)),
                                                                                      lineNumber(lineNumber)
                                                                                      {
@@ -92,6 +96,10 @@ namespace Sandbox {
 
     bool ShaderInclude::operator==(const ShaderInclude& other) const {
         return filepath == other.filepath;
+    }
+
+    bool ShaderInclude::operator!=(const ShaderInclude& other) const {
+        return !(operator==(other));
     }
 
 }

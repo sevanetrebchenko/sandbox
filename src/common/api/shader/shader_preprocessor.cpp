@@ -10,6 +10,7 @@ namespace Sandbox {
     ShaderInfo::ShaderInfo() : type(ShaderType::INVALID),
                                profile(ShaderProfile::INVALID),
                                version(-1, 0),
+                               numLines(0),
                                success(false)
                                {
     }
@@ -212,13 +213,12 @@ namespace Sandbox {
                 // Spaces are allowed between the '#' and "include' / 'pragma' directives, as long as they are on the same line.
                 if (!tokenizer.IsValid()) {
                     // '#' character on a single line is not allowed.
-                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"error: invalid preprocessor directive", offset + token.before));
+                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Invalid preprocessor directive.", offset + token.before));
                     info.success = false;
 
                     return false;
                 }
-
-                offset += token.Size();
+                offset += token.Size(); // Offset starts at the first character of the next token.
 
                 // Preprocessor directive.
                 token = tokenizer.Next();
@@ -250,109 +250,185 @@ namespace Sandbox {
             }
 
             include: {
-//                if (!tokenizer.IsValid()) {
-//                    // #include must have filepath token to include.
-//                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"error: #include directive missing \"FILENAME\"", offset));
-//                    info.success = false;
-//
-//                    return false;
-//                }
-//
-//                tokenizer >> token;
-//                offset += token.length();
-//                token = RemoveWhitespace(ConvertToNativeSeparators(token));
-//                unsigned length = token.length();
-//
-//                // Process include token for correct formatting.
-//                bool first = token[0] == '\"';
-//                bool last = token[length - 1] == '\"';
-//
-//                if ((first && !last) || (!first && last)) {
-//                    // Filepath needs to be either be surrounded by "" or have no decoration.
-//                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"error: filepath to include must must be in the format \"FILENAME\" or FILENAME", offset, length));
-//                    info.success = false;
-//
-//                    return false;
-//                }
-//
-//                if (first && last) {
-//                    token.erase(std::remove(token.begin(), token.end(), '\"'), token.end());
-//                    length = token.length();
-//                }
-//
-//                // Check for extraneous characters after the #include filepath.
-//                if (!tokenizer.eof()) {
-//                    unsigned numExtraCharacters = 0;
-//                    while (!tokenizer.eof()) {
-//                        tokenizer >> token;
-//                        numExtraCharacters += token.length();
-//                    }
-//
-//                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"warning: extra tokens at the end of #include directive", offset, numExtraCharacters));
-//                }
-//
-//                // Ensure global include path is valid and exists.
-//                // TODO: this needs to be updated when caching / builds with asset directories are implemented.
-//                if (GetAssetDirectory(token).empty()) {
-//                    // Allow for includes to be local to the shader directory.
-//                    token = ConvertToNativeSeparators(info.workingDirectory + GetNativeSeparator() + GetAssetName(token) + '.' + GetAssetExtension(token));
-//                }
-//
-//                if (!Exists(token)) {
-//                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"error: file '" + token + "' not found", offset, length));
-//                    info.success = false;
-//
-//                    return false;
-//                }
-//
-//                ShaderInclude includeData { token, lineNumber };
-//
-//                // Check for circular dependencies.
-//                // Circular dependencies are stored in the ProcessingContext and are currently being processed (incomplete).
-//                for (const ShaderInclude& data : context.includeStack) {
-//                    if (data == includeData) {
-//                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"error: detected circular include of file '" + token + "' (original include found in file '" + data.filepath + "' on line " + std::to_string(data.lineNumber) + ")", offset, length));
-//                        info.success = false;
-//
-//                        return false;
-//                    }
-//                }
-//
-//                // Check for duplicate includes.
-//                // Duplicate includes are stored in the ShaderInfo and are completed include directives.
-//                auto dependency = info.dependencies.find(includeData);
-//                if (dependency != info.dependencies.end()) {
-//                    // File has already been included.
-//                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "warning: duplicate include of file '" + token + "' encountered (original include found in file '" + dependency->filepath + "' on line " + std::to_string(dependency->lineNumber) + ")", offset, length));
-//
-//                    // Any repeats of already included files are ignored.
-//                    file << "// Comment auto-generated : file '" << token << "' included above." << std::endl;
-//                    file << "// " << line << std::endl;
-//                }
-//                else {
-//                    // Register new "in-flight" dependency.
-//                    context.includeStack.emplace_back(includeData);
-//
-//                    if (!ReadFile(info, context)) {
-//                        return false;
-//                    }
-//
-//                    // Remove "in-flight" dependency and register as complete include.
-//                    for (auto it = context.includeStack.begin(); it != context.includeStack.end(); ++it) {
-//                        if (*it == includeData) {
-//                            context.includeStack.erase(it);
-//                            break;
-//                        }
-//                    }
-//                    info.dependencies.emplace(includeData);
-//                }
+                if (!tokenizer.IsValid()) {
+                    // #include must have filepath token to include.
+                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "#include directive missing \"FILENAME\".", offset + token.length + 1));
+                    info.success = false;
+
+                    return false;
+                }
+                offset += token.Size();
+
+                token = tokenizer.Next();
+                assert(token.length > 0);
+
+                // Process include token for correct formatting.
+                bool first = token.data[0] == '\"';
+                bool last = token.data[token.length - 1] == '\"';
+
+                if ((first && !last) || (!first && last)) {
+                    // Filepath needs to be either be surrounded by "" or have no decoration.
+                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Include filepath must be in the format \"FILENAME\" or FILENAME.", offset, token.length));
+                    info.success = false;
+
+                    return false;
+                }
+
+                if (first && last) {
+                    token.data.erase(std::remove(token.data.begin(), token.data.end(), '\"'), token.data.end());
+                    token.length = token.data.size();
+                }
+
+                // Check for extraneous characters after the #include filepath.
+                if (tokenizer.IsValid()) {
+                    unsigned numExtraCharacters = 0;
+                    while (tokenizer.IsValid()) {
+                        token = tokenizer.Next();
+                        numExtraCharacters += token.Size();
+                    }
+
+                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", offset, numExtraCharacters));
+                }
+
+                // Ensure global include path is valid and exists.
+                // TODO: this needs to be updated when caching / builds with asset directories are implemented.
+                std::string filepath = ConvertToNativeSeparators(token.data);
+
+                if (!Exists(filepath)) {
+                    if (GetAssetDirectory(filepath).empty()) {
+                        // Asset has no directory - include local to another directory.
+                        std::string name = GetAssetName(filepath);
+                        std::string extension = GetAssetExtension(filepath);
+
+                        std::stringstream builder;
+                        builder << info.workingDirectory << '/' << name << '.' << extension;
+
+                        // Try local directory of the current shader being processed.
+                        filepath = ConvertToNativeSeparators(builder.str());
+
+                        if (!Exists(filepath)) {
+                            // Try any additional configured include directories.
+                            std::vector<std::string> validEntries;
+
+                            for (const std::string& includeDirectory : includeDirectories_) {
+                                builder.str(""); // Discards previous contents.
+                                builder << includeDirectory << '/' << name << '.' << extension;
+                                filepath = ConvertToNativeSeparators(builder.str());
+
+                                if (Exists(filepath)) {
+                                    validEntries.emplace_back(ConvertToNativeSeparators(filepath));
+                                }
+                            }
+
+                            if (validEntries.empty()) {
+                                // Could not find file to include.
+                                builder.str("");
+                                builder << "File '" << token.data << "' not found in any configured shader include directories (";
+
+                                // Add shader local directory (if not already registered as an include directory).
+                                bool found = false;
+                                for (const std::string& directory : includeDirectories_) {
+                                    if (directory == info.workingDirectory) {
+                                        found = true;
+                                    }
+                                }
+
+                                if (!found) {
+                                    builder << '\'' << info.workingDirectory << '\'';
+                                }
+
+                                if (!includeDirectories_.empty()) {
+                                    builder << ", ";
+
+                                    unsigned numIncludeDirectories = includeDirectories_.size();
+                                    for (unsigned i = 0; i < numIncludeDirectories - 1; ++i) {
+                                        builder << '\'' << includeDirectories_[i] << "', ";
+                                    }
+                                    builder << '\'' << includeDirectories_[numIncludeDirectories - 1] << '\'';
+                                }
+
+                                builder << "). Did you forget to add a custom include directory with ShaderPreprocessor::AddIncludeDirectory?";
+
+                                info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
+                                info.success = false;
+
+                                return false;
+                            }
+
+                            unsigned numValidEntries = validEntries.size();
+
+                            if (numValidEntries > 1) {
+                                // Ambiguity between multiple valid filepath entries.
+                                builder.str("");
+                                builder << "Ambiguity between multiple valid file paths (";
+
+                                for (unsigned i = 0; i < numValidEntries - 1; ++i) {
+                                    builder << "'" << validEntries[i] << "', ";
+                                }
+                                builder << "'" << validEntries[numValidEntries - 1] << "') for file '" << token.data << "'.";
+
+                                info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, builder.str(), offset, token.length));
+                                info.success = false;
+
+                                return false;
+                            }
+
+                            // Only one valid entry, continue.
+                            filepath = std::string(validEntries[0]); // Make explicit copy.
+                        }
+                    }
+                }
+
+                ShaderInclude include { filepath, lineNumber };
+
+                // Check for circular dependencies.
+                // Circular dependencies are stored in the ProcessingContext and are currently being processed (incomplete).
+                for (const ShaderInclude& data : context.includeStack) {
+                    if (data == include) {
+                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"Detected circular include of file '" + filepath + "' (original include found in file '" + data.filepath + "' on line " + std::to_string(data.lineNumber) + ")", offset, token.length));
+                        info.success = false;
+
+                        return false;
+                    }
+                }
+
+                // Check for duplicate includes.
+                // Duplicate includes are stored in the ShaderInfo and are completed include directives.
+                auto dependency = info.dependencies.find(include);
+                if (dependency != info.dependencies.end()) {
+                    // File has already been included.
+                    info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "warning: duplicate include of file '" + filepath + "' encountered (original include found in file '" + dependency->filepath + "' on line " + std::to_string(dependency->lineNumber) + ")", offset, token.length));
+                }
+                else {
+                    // Register new "in-flight" dependency.
+                    context.includeStack.emplace_back(include);
+
+                    ShaderInfo includeInfo { };
+                    includeInfo.filepath = filepath;
+                    includeInfo.workingDirectory = GetAssetDirectory(filepath);
+                    includeInfo.type = ToShaderType(GetAssetExtension(filepath)); // Could be invalid.
+
+                    if (!ReadFile(includeInfo, context)) {
+                        // Error messages get printed from where the error occurred.
+                        return false;
+                    }
+
+                    file << includeInfo.source;
+
+                    // Remove "in-flight" dependency and register as complete include.
+                    context.includeStack.pop_back();
+                    info.dependencies.emplace(include);
+                }
+
+                ++lineNumber;
+                continue;
             }
 
             version:
             {
                 if (!tokenizer.IsValid()) {
                     // # version must have shader version number.
-                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"error: #version directive missing version number", offset + token.before + token.length + 1, token.length));
+                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "#version directive missing version number.", offset + token.length + 1, 3));
                     info.success = false;
 
                     return false;
@@ -366,15 +442,15 @@ namespace Sandbox {
 
                 if (info.version.data != -1) {
                     // Shader already has versioning information.
-                    if (info.version.data != version.data) {
+                    if (version != info.version) {
                         // Encountered different shader version.
-                        info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "warning: shader version mismatch, using shader version (" + std::to_string(info.version.data) + ") found on line " + std::to_string(info.version.lineNumber), offset + token.before, token.length));
+                        info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Shader version mismatch, using shader version (" + std::to_string(info.version.data) + ") found on line " + std::to_string(info.version.lineNumber) + ".", offset, token.length));
                     }
                 }
                 else {
                     // Shader will be the version of the first found #version directive.
                     if (!ValidateShaderVersion(version.data)) {
-                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "error: invalid shader version (received '" + token.data + "', expecting 110, 120, 130, 140, 150, 330, 400, 410, 420, 430, 440, 450, or 460)", offset + token.before, token.length));
+                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Invalid shader version (received '" + token.data + "', expecting 110, 120, 130, 140, 150, 330, 400, 410, 420, 430, 440, 450, or 460).", offset, token.length));
                         info.success = false;
 
                         return false;
@@ -390,7 +466,7 @@ namespace Sandbox {
                         token = tokenizer.Next();
 
                         if (!ValidateShaderProfile(token.data)) {
-                            info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "error: invalid shader profile (received '" + token.data + "', expecting 'core' or 'compatibility')", offset + token.before, token.length));
+                            info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Invalid shader profile (received '" + token.data + "', expecting 'core' or 'compatibility').", offset, token.length));
                             info.success = false;
 
                             return false;
@@ -407,18 +483,18 @@ namespace Sandbox {
                                 numExtraCharacters += token.Size();
                             }
 
-                            info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber,"warning: extra tokens at the end of #version directive", offset + token.before, numExtraCharacters));
+                            info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", offset, numExtraCharacters));
+                            file << line.substr(0, offset) << std::endl; // Remove extra characters at the end of line.
                         }
-
-                        file << line << std::endl;
+                        else {
+                            file << line << std::endl;
+                        }
                     }
                     else {
-                        // Encountered EOL after shader version number.
-                        // Manual offset: should point to the character directly after the shader version number, regardless of how many additional whitespace characters there are at the end of the line.
-                        offset += token.before + token.length + 1;
-
                         // Shader profile not provided, default to ShaderProfile::CORE.
-                        info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "warning: encountered eol when expecting shader profile - defaulting to 'core'", offset));
+
+                        // Manual offset: should point to the character directly after the shader version number, regardless of how many additional whitespace characters there are at the end of the line.
+                        info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Encountered eol when expecting shader profile - defaulting to 'core'.", offset + token.length + 1));
                         info.profile = ShaderProfile::CORE;
 
                         // Ensure proper spacing when appending shader profile to source file.
@@ -429,10 +505,9 @@ namespace Sandbox {
                         }
                         file << ToString(info.profile) << std::endl;
                     }
-
-                    ++lineNumber;
                 }
 
+                ++lineNumber;
                 continue;
             }
 
@@ -563,6 +638,52 @@ namespace Sandbox {
         builder << std::endl;
 
         return builder.str();
+    }
+
+    void ShaderPreprocessor::AddIncludeDirectory(const std::string& in) {
+        std::string includeDirectory = ConvertToNativeSeparators(in);
+
+        if (includeDirectory.empty()) {
+            return;
+        }
+
+        unsigned first = 0; // Index of first non-whitespace character.
+        unsigned last = 0;  // Index of last non-whitespace character.
+
+        // Find first non-whitespace character.
+        unsigned size = includeDirectory.size();
+
+        for (unsigned i = 0; i < size; ++i) {
+            if (!std::isspace(includeDirectory[i])) {
+                first = i;
+                break;
+            }
+        }
+
+        // First last non-whitespace character.
+        for (unsigned i = size - 1; i >= 0; --i) {
+            if (!std::isspace(includeDirectory[i])) {
+                last = i;
+                break;
+            }
+        }
+
+        assert(last >= first);
+        includeDirectory = includeDirectory.substr(first, (last - first) + 1);
+
+        if (!Exists(includeDirectory)) {
+            ImGuiLog::Instance().LogWarning("Directory '%s' provided to ShaderPreprocessor::AddIncludeDirectory does not exist.", includeDirectory.c_str());
+            return;
+        }
+
+        // Check to make sure directory does not already exist.
+        for (const std::string& directory : includeDirectories_) {
+            if (directory == includeDirectory) {
+                return;
+            }
+        }
+
+        includeDirectories_.emplace_back(includeDirectory);
     }
 
 }

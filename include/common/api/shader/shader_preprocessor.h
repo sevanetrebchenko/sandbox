@@ -19,6 +19,7 @@ namespace Sandbox {
         ShaderProfile profile;
         ShaderVersion version;
         std::string source;
+        unsigned numLines;
         std::unordered_set<ShaderInclude> dependencies;
 
         bool success; // Indicates whether shader file was preprocessed without errors.
@@ -33,6 +34,9 @@ namespace Sandbox {
             // Preprocesses individual shader files (.vert, .frag, .geom, .comp, .tess, etc.) or joint shader files (.glsl).
             // Returns mapping of shader type to shader source for each parsed type.
             std::unordered_map<ShaderType, ShaderInfo> ProcessFile(const std::string& filepath);
+
+            // Adds a directory to look for shader includes in.
+            void AddIncludeDirectory(const std::string& includeDirectory);
 
         private:
             // Custom string tokenizer that does not ignore whitespace characters.
@@ -82,6 +86,8 @@ namespace Sandbox {
             [[nodiscard]] bool ValidateShaderVersion(int version) const;
             [[nodiscard]] bool ValidateShaderProfile(const std::string& in) const;
 			[[nodiscard]] bool ValidateShaderType(const std::string& in) const;
+
+            std::vector<std::string> includeDirectories_;
     };
 
 }

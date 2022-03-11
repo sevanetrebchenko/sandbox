@@ -11,7 +11,8 @@
 using namespace Sandbox;
 
 int main() {
-
+    ShaderPreprocessor::Instance().AddIncludeDirectory("assets/shaders");
+    ShaderPreprocessor::Instance().AddIncludeDirectory("out/out2");
     ShaderPreprocessor::Instance().ProcessFile("assets/shaders/model.vert");
 
     Application& application = Application::Instance();
