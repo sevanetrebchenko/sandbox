@@ -46,7 +46,7 @@ namespace Sandbox {
                         [[nodiscard]] unsigned Size() const;
 
                         std::string data; // Token with no whitespace.
-                        unsigned length;  // Size of token without whitespace.
+                        unsigned length;  // Size of data (cached).
                         unsigned before;  // Number of whitespace characters before token (if any).
                         unsigned after;   // Number of whitespace characters after token (if any).
                     };
