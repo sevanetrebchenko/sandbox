@@ -50,9 +50,10 @@ namespace Sandbox {
                     unsigned after;  // Number of whitespace characters after token (if any).
                 };
 
-                explicit Tokenizer(std::string in);
+                Tokenizer();
                 ~Tokenizer();
 
+                void Set(std::string in);
                 [[nodiscard]] bool IsValid() const;
                 [[nodiscard]] Token Next();
 

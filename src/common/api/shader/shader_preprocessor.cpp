@@ -55,13 +55,18 @@ namespace Sandbox {
 
     ShaderPreprocessor::Tokenizer::Token::~Token() = default;
 
-    ShaderPreprocessor::Tokenizer::Tokenizer(std::string in) : line(std::move(in)),
-                                                               size(line.size()),
-                                                               index(0)
-                                                               {
+    ShaderPreprocessor::Tokenizer::Tokenizer() : size(0),
+                                                 index(0)
+                                                 {
     }
 
     ShaderPreprocessor::Tokenizer::~Tokenizer() = default;
+
+    void ShaderPreprocessor::Tokenizer::Set(std::string in) {
+        line = std::move(in);
+        size = line.size();
+        index = 0;
+    }
 
     bool ShaderPreprocessor::Tokenizer::IsValid() const {
         if (index == size) {
@@ -187,21 +192,21 @@ namespace Sandbox {
         // Stream to hold the contents of the output file.
         std::stringstream file;
 
+        Tokenizer tokenizer;
         Tokenizer::Token token;
         std::string line;
         unsigned lineNumber = 1;
+        unsigned offset = 0;
 
         while (!reader.eof()) {
             line = GetLine(reader);
             if (line.empty()) {
-                file << std::endl;
-                ++lineNumber;
-                continue;
+                goto unchanged;
             }
 
-            Tokenizer tokenizer(line);
+            tokenizer.Set(line);
             token = tokenizer.Next();
-            unsigned offset = 0;
+            offset = 0;
 
             if (token.data == "#") {
                 // Spaces are allowed between the '#' and "include' / 'pragma' directives, as long as they are on the same line.
@@ -217,6 +222,7 @@ namespace Sandbox {
 
                 // Preprocessor directive.
                 token = tokenizer.Next();
+
                 if (token.data == "include") {
                     goto include;
                 }
@@ -227,10 +233,7 @@ namespace Sandbox {
                     goto type;
                 }
                 else {
-                    // Type of token is not processed, keep line unchanged.
-                    file << line << std::endl;
-                    ++lineNumber;
-                    continue;
+                    goto unchanged;
                 }
             }
             else if (token.data == "#include") {
@@ -243,10 +246,7 @@ namespace Sandbox {
                 goto type;
             }
             else {
-                // Type of token is not processed, keep line unchanged.
-                file << line << std::endl;
-                ++lineNumber;
-                continue;
+                goto unchanged;
             }
 
             include: {
@@ -370,7 +370,6 @@ namespace Sandbox {
                         // Encountered different shader version.
                         info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "warning: shader version mismatch, using shader version (" + std::to_string(info.version.data) + ") found on line " + std::to_string(info.version.lineNumber), offset + token.before, token.length));
                     }
-                    continue;
                 }
                 else {
                     // Shader will be the version of the first found #version directive.
@@ -432,8 +431,9 @@ namespace Sandbox {
                     }
 
                     ++lineNumber;
-                    continue;
                 }
+
+                continue;
             }
 
             type:
@@ -441,9 +441,12 @@ namespace Sandbox {
 
             }
 
-            out:
+            unchanged:
             {
-
+                // Type of token is not processed, keep line unchanged.
+                file << line << std::endl;
+                ++lineNumber;
+                continue;
             }
         }
 
