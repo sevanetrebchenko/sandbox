@@ -80,6 +80,10 @@ namespace Sandbox {
         return !(operator==(other));
     }
 
+    ShaderVersion::operator int() const {
+        return version;
+    }
+
     bool ShaderInclude::operator==(const ShaderInclude& other) const {
         return file == other.file;
     }

@@ -33,7 +33,11 @@ namespace Sandbox {
         [[nodiscard]] bool operator==(const ShaderVersion& other) const;
         [[nodiscard]] bool operator!=(const ShaderVersion& other) const;
 
+        operator int() const;
+
         int version;
+
+        std::string file;
         unsigned lineNumber;
     };
 

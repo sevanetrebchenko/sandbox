@@ -620,86 +620,102 @@ namespace Sandbox {
             }
 
             version: {
-//                if (!tokenizer.IsValid()) {
-//                    // # version must have shader version number.
-//                    info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "#version directive missing version number.", offset + token.length + 1));
-//                    info.success = false;
-//
-//                    return false;
-//                }
-//
-//                offset += token.Size();
-//
-//                token = tokenizer.Next();
-//                ShaderVersion version { std::stoi(token.data), lineNumber };
-//
-//                if (info.version.data != -1) {
-//                    // Shader already has versioning information.
-//                    if (version != info.version) {
-//                        // Encountered different shader version.
-//                        info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Shader version mismatch, using shader version (" + std::to_string(info.version.data) + ") found on line " + std::to_string(info.version.lineNumber) + ".", offset, token.length));
-//                    }
-//                }
-//                else {
-//                    // Shader will be the version of the first found #version directive.
-//                    if (!ValidateShaderVersion(version.data)) {
-//                        info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Invalid shader version (received '" + token.data + "', expecting 110, 120, 130, 140, 150, 330, 400, 410, 420, 430, 440, 450, or 460).", offset, token.length));
-//                        info.success = false;
-//
-//                        return false;
-//                    }
-//
-//                    info.version = version;
-//
-//                    // Determine which version context to use (optional).
-//                    if (tokenizer.IsValid()) {
-//                        offset += token.Size();
-//
-//                        // Explicitly provided shader profile.
-//                        token = tokenizer.Next();
-//
-//                        if (!ValidateShaderProfile(token.data)) {
-//                            info.errors.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Invalid shader profile (received '" + token.data + "', expecting 'core' or 'compatibility').", offset, token.length));
-//                            info.success = false;
-//
-//                            return false;
-//                        }
-//
-//                        info.profile = ToShaderProfile(token.data);
-//                        offset += token.Size();
-//
-//                        // Check for extraneous characters after the #version directive.
-//                        if (tokenizer.IsValid()) {
-//                            unsigned numExtraCharacters = 0;
-//                            while (tokenizer.IsValid()) {
-//                                numExtraCharacters += tokenizer.Next().Size();
-//                            }
-//
-//                            info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", offset, numExtraCharacters));
-//                            file << line.substr(0, offset) << std::endl; // Remove extra characters at the end of line.
-//                        }
-//                        else {
-//                            file << line << std::endl;
-//                        }
-//                    }
-//                    else {
-//                        // Shader profile not provided, default to ShaderProfile::CORE.
-//
-//                        // Manual offset: should point to the character directly after the shader version number, regardless of how many additional whitespace characters there are at the end of the line.
-//                        info.warnings.emplace_back(GetFormattedMessage(context, info.filepath, line, lineNumber, "Encountered eol when expecting shader profile - defaulting to 'core'.", offset + token.length + 1));
-//                        info.profile = ShaderProfile::CORE;
-//
-//                        // Ensure proper spacing when appending shader profile to source file.
-//                        file << line;
-//                        if (token.after == 0) {
-//                            // No spaces after shader number.
-//                            file << ' ';
-//                        }
-//                        file << ToString(info.profile) << std::endl;
-//                    }
-//                }
-//
-//                ++lineNumber;
+                if (tokenizer.eof()) {
+                    // #version must have shader version number.
+                    info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "#version directive missing version number.", offset + token.before + token.data.size() + 1));
+                    info.success = false;
+
+                    return false;
+                }
+
+                offset += token.size();
+                tokenizer >> token; // Version.
+
+                ShaderVersion version { .version = std::stoi(token.data), .file = file, .lineNumber = lineNumber };
+
+                if (info.version != -1) {
+                    // Shader already has versioning information.
+                    if (version != info.version) {
+                        // Encountered different shader version.
+                        builder.str("");
+                        builder << "Shader version mismatch, using shader version '" << info.version.version << "' found on line " << info.version.lineNumber << " of file '" << info.version.file << "'.";
+
+                        info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
+                    }
+                }
+                else {
+                    // Shader will be the version of the first found #version directive.
+                    if (!ValidateShaderVersion(version.version)) {
+                        builder.str("");
+                        builder << "Invalid shader version (received '" << token.data << "', expecting 110, 120, 130, 140, 150, 330, 400, 410, 420, 430, 440, 450, or 460).";
+
+                        info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
+                        info.success = false;
+
+                        return false;
+                    }
+
+                    info.version = version;
+
+                    // Determine which version context to use (optional).
+                    if (!tokenizer.eof()) {
+                        offset += token.size();
+                        tokenizer >> token; // Shader profile (explicitly specified).
+
+                        if (!ValidateShaderProfile(token.data)) {
+                            builder.str("");
+                            builder << "Invalid shader profile (received '" << token.data << "', expecting 'core' or 'compatibility').";
+
+                            info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
+                            info.success = false;
+
+                            return false;
+                        }
+
+                        info.profile = ToShaderProfile(token.data);
+                        offset += token.size();
+
+                        // Check for extraneous characters after the #version directive.
+                        if (!tokenizer.eof()) {
+                            unsigned extraCharactersOffset = offset;
+
+                            Token temp { };
+
+                            // Have error message point to the start of the first extraneous token.
+                            tokenizer >> temp;
+                            extraCharactersOffset += temp.before;
+
+                            // Skip any spaces before the start of the first extraneous token.
+                            unsigned numExtraCharacters = temp.data.size();
+                            while (!tokenizer.eof()) {
+                                tokenizer >> temp;
+                                numExtraCharacters += temp.size();
+                            }
+
+                            info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", extraCharactersOffset, numExtraCharacters));
+                            out << line.substr(0, offset) << std::endl; // Remove extra characters at the end of line.
+                        }
+                        else {
+                            out << line << std::endl;
+                        }
+                    }
+                    else {
+                        // Shader profile not provided, default to ShaderProfile::CORE.
+
+                        // Manual offset: should point to the character directly after the shader version number, regardless of how many additional whitespace characters there are at the end of the line.
+                        info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Encountered eol when expecting shader profile - defaulting to 'core'.", offset + token.size() + 1));
+                        info.profile = ShaderProfile::CORE;
+
+                        // Ensure proper spacing when appending shader profile to source file.
+                        out << line;
+                        if (!std::isspace(line[line.size() - 1])) {
+                            out << ' ';
+                        }
+                        out << ToString(info.profile) << std::endl;
+                    }
+                }
+
+                ++lineNumber;
                 continue;
             }
 
