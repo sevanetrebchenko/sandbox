@@ -369,6 +369,9 @@ namespace Sandbox {
                 else if (token.data == "version") {
                     goto version;
                 }
+                else if (token.data == "type") {
+                    goto type;
+                }
                 else {
                     goto unchanged;
                 }
@@ -378,6 +381,9 @@ namespace Sandbox {
             }
             else if (token.data == "#version") {
                 goto version;
+            }
+            else if (token.data == "#type") {
+                goto type;
             }
             else {
                 goto unchanged;
@@ -715,6 +721,19 @@ namespace Sandbox {
                     }
                 }
 
+                ++lineNumber;
+                continue;
+            }
+
+            type: {
+                // #type is not a valid preprocessor directive in "regular" shader files.
+                // .glsl files should have #type directives, but they get parsed out before the call to this function.
+                builder.str("");
+                builder << "#type preprocessor directive is not valid in '." << GetAssetExtension(file) << "' files. Line will be ignored."; // Extension is validated above.
+
+                info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
+
+                out << std::endl;
                 ++lineNumber;
                 continue;
             }
