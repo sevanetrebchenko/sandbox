@@ -738,8 +738,7 @@ namespace Sandbox {
                 continue;
             }
 
-            unchanged:
-            {
+            unchanged: {
                 // Type of token is not processed, keep line unchanged.
                 out << line << std::endl;
                 ++lineNumber;
