@@ -51,9 +51,7 @@ namespace Sandbox {
         UnloadSceneData();
 
         // Save log file.
-        const std::string file = ConvertToNativeSeparators(GetWorkingDirectory() + "/out/log.txt");
-        log.LogTrace("Saving ImGui log to: %s", file.c_str());
-        log.WriteToFile(file);
+        log.WriteToFile();
     }
 
     IScene* SceneManager::GetActiveScene() const {

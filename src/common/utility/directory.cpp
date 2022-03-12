@@ -106,6 +106,19 @@ namespace Sandbox {
         return std::filesystem::exists({ ConvertToNativeSeparators(in) });
     }
 
+    std::string ReadFile(const std::string& filepath) {
+
+        std::ifstream reader;
+        reader.open(filepath);
+        if (!reader.is_open()) {
+            throw std::runtime_error("Unable to open file provided to ReadFile for read.");
+        }
+
+        std::stringstream file;
+        file << reader.rdbuf();
+        return file.str();
+    }
+
     void CreateDirectory(const std::string& in) {
         std::filesystem::create_directories(ConvertToNativeSeparators(in));
     }

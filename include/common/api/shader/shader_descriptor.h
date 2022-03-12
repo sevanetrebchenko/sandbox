@@ -30,26 +30,22 @@ namespace Sandbox {
     [[nodiscard]] ShaderType ToShaderType(const std::string& in);
 
     struct ShaderVersion {
-        ShaderVersion(int version, unsigned lineNumber);
-        ~ShaderVersion();
-
         [[nodiscard]] bool operator==(const ShaderVersion& other) const;
         [[nodiscard]] bool operator!=(const ShaderVersion& other) const;
 
-        int data;
+        int version;
         unsigned lineNumber;
     };
 
 
     struct ShaderInclude {
-        ShaderInclude(const std::string& filepath, unsigned lineNumber);
-        ~ShaderInclude();
-
         [[nodiscard]] bool operator==(const ShaderInclude& other) const;
         [[nodiscard]] bool operator!=(const ShaderInclude& other) const;
 
-        std::string filepath;
+        std::string parentFile; // File containing the included file.
         unsigned lineNumber;
+
+        std::string file; // Filepath of included file.
     };
 
 }

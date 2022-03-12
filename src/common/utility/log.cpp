@@ -7,10 +7,19 @@ namespace Sandbox {
     ImGuiLog::ImGuiLog() : _processingBufferSize(64u),
                            _processingBuffer(new char[_processingBufferSize])
                            {
+        const std::string& outputFile  = ConvertToNativeSeparators(GetWorkingDirectory() + "/out/log.txt");
+        CreateFile(outputFile);
+
+        writer_.open(outputFile, std::ios::trunc);
+        if (!writer_.is_open()) {
+            throw std::runtime_error("Failed to open ImGuiLog output file for write.");
+        }
     }
 
     ImGuiLog::~ImGuiLog() {
         delete[] _processingBuffer;
+        WriteToFile();
+        writer_.close();
     }
 
     void ImGuiLog::OnImGui() {
@@ -79,6 +88,8 @@ namespace Sandbox {
         va_start(argsList, formatString);
         ProcessMessage(Severity::TRACE, formatString, argsList);
         va_end(argsList);
+
+        Flush();
     }
 
     void ImGuiLog::LogWarning(const char* formatString, ...) {
@@ -86,6 +97,8 @@ namespace Sandbox {
         va_start(argsList, formatString);
         ProcessMessage(Severity::WARNING, formatString, argsList);
         va_end(argsList);
+
+        Flush();
     }
 
     void ImGuiLog::LogError(const char *formatString, ...) {
@@ -93,6 +106,18 @@ namespace Sandbox {
         va_start(argsList, formatString);
         ProcessMessage(Severity::ERROR, formatString, argsList);
         va_end(argsList);
+
+        Flush();
+    }
+
+    void ImGuiLog::Flush() {
+        WriteToFile();
+    }
+
+    void ImGuiLog::WriteToFile() {
+        for (const Message& data : messages_) {
+            writer_ << data.message_ << std::endl;
+        }
     }
 
     void ImGuiLog::ProcessMessage(Severity severity, const char *formatString, va_list argsList) {
@@ -158,23 +183,6 @@ namespace Sandbox {
         ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor(1.0f, 0.2f, 0.0f)); // Red.
         ImGui::TextUnformatted(message.c_str());
         ImGui::PopStyleColor();
-    }
-
-    void ImGuiLog::WriteToFile(const std::string &outputFile) const {
-        CreateFile(outputFile);
-
-        std::ofstream fileStream;
-        fileStream.open(outputFile.c_str());
-
-        if (fileStream.is_open()) {
-            for (const Message& data : messages_) {
-                fileStream << data.message_ << std::endl;
-            }
-            fileStream.close();
-        }
-        else {
-            std::cerr << "Failed to open ImGui log file at location: " << outputFile << std::endl;
-        }
     }
 
     ImGuiLog::Message::Message(ImGuiLog::Severity severity, std::string message) : severity_(severity),

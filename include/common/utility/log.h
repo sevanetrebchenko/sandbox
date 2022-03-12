@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "common/utility/singleton.h"
+#include "common/utility/directory.h"
 
 namespace Sandbox {
 
@@ -18,7 +19,10 @@ namespace Sandbox {
             void LogWarning(const char* formatString, ...);
             void LogError(const char* formatString, ...);
 
-            void WriteToFile(const std::string& outputFile) const;
+            void Flush();
+
+            // By default, log saves to '/out/log.txt'.
+            void WriteToFile();
 
         private:
             enum Severity {
@@ -36,13 +40,15 @@ namespace Sandbox {
             };
 
             ImGuiLog();
-            ~ImGuiLog();
+            ~ImGuiLog() override;
 
             void ProcessMessage(Severity severity, const char* formatString, va_list argsList);
 
             void PrintTraceMessage(const std::string& message) const;
             void PrintWarningMessage(const std::string& message) const;
             void PrintErrorMessage(const std::string& message) const;
+
+            std::ofstream writer_;
 
             int _processingBufferSize;
             char* _processingBuffer;

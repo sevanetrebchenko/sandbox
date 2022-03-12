@@ -72,30 +72,16 @@ namespace Sandbox {
 		}
 	}
 
-    ShaderVersion::ShaderVersion(int version, unsigned int lineNumber) : data(version),
-                                                                         lineNumber(lineNumber)
-                                                                         {
-    }
-
-    ShaderVersion::~ShaderVersion() = default;
-
     bool ShaderVersion::operator==(const ShaderVersion& other) const {
-        return data == other.data;
+        return version == other.version;
     }
 
     bool ShaderVersion::operator!=(const ShaderVersion& other) const {
         return !(operator==(other));
     }
 
-    ShaderInclude::ShaderInclude(const std::string& filepath, unsigned lineNumber) : filepath(ConvertToNativeSeparators(filepath)),
-                                                                                     lineNumber(lineNumber)
-                                                                                     {
-    }
-
-    ShaderInclude::~ShaderInclude() = default;
-
     bool ShaderInclude::operator==(const ShaderInclude& other) const {
-        return filepath == other.filepath;
+        return file == other.file;
     }
 
     bool ShaderInclude::operator!=(const ShaderInclude& other) const {
@@ -107,7 +93,7 @@ namespace Sandbox {
 namespace std {
 
     std::size_t hash<Sandbox::ShaderInclude>::operator()(const Sandbox::ShaderInclude& data) const {
-        return std::hash<std::string>{ }(data.filepath);
+        return std::hash<std::string>{ }(data.file);
     }
 
 }

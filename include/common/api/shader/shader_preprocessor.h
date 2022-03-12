@@ -38,35 +38,6 @@ namespace Sandbox {
             void AddIncludeDirectory(const std::string& includeDirectory);
 
         private:
-            // Custom string tokenizer that does not ignore whitespace characters.
-            class Tokenizer {
-                public:
-                    struct Token {
-                        Token();
-                        explicit Token(std::string in);
-                        ~Token();
-
-                        [[nodiscard]] unsigned Size() const;
-
-                        std::string data; // Token with no whitespace.
-                        unsigned length;  // Size of data (cached).
-                        unsigned before;  // Number of whitespace characters before token (if any).
-                        unsigned after;   // Number of whitespace characters after token (if any).
-                    };
-
-                    Tokenizer();
-                    ~Tokenizer();
-
-                    void Set(std::string in);
-                    [[nodiscard]] bool IsValid() const;
-                    [[nodiscard]] Token Next();
-
-                private:
-                    std::string line;
-                    unsigned size;
-                    unsigned index;
-            };
-
             struct ProcessingContext {
                 std::vector<ShaderInclude> includeStack;
             };
@@ -74,9 +45,8 @@ namespace Sandbox {
             ShaderPreprocessor();
             ~ShaderPreprocessor() override;
 
-            // Reads file specified by data set in 'info'
-            bool ReadFile(ShaderInfo& info, ProcessingContext& context);
-            [[nodiscard]] std::unordered_map<ShaderType, ShaderInfo> ReadFile(const std::string& filepath);
+            // Parses source code in 'source' and stores information into 'info'.
+            bool ParseFile(const std::string& source, ShaderInfo& info, ProcessingContext& context);
 
             [[nodiscard]] std::string GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length = 0) const;
 

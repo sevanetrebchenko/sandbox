@@ -25,6 +25,9 @@ namespace Sandbox {
     // Could be file or directory.
     [[nodiscard]] bool Exists(const std::string& in);
 
+    // Returns the contents of the file located at 'filepath'.
+    [[nodiscard]] std::string ReadFile(const std::string& filepath);
+
     // Passing in a filepath will create all the directories leading up to the file location.
     void CreateDirectory(const std::string& in);
     void CreateFile(const std::string& in);
