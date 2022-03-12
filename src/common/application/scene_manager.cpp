@@ -46,12 +46,7 @@ namespace Sandbox {
     }
 
     void SceneManager::Shutdown() {
-        ImGuiLog& log = ImGuiLog::Instance();
-
         UnloadSceneData();
-
-        // Save log file.
-        log.WriteToFile();
     }
 
     IScene* SceneManager::GetActiveScene() const {

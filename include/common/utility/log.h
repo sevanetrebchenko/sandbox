@@ -19,11 +19,6 @@ namespace Sandbox {
             void LogWarning(const char* formatString, ...);
             void LogError(const char* formatString, ...);
 
-            void Flush();
-
-            // By default, log saves to '/out/log.txt'.
-            void WriteToFile();
-
         private:
             enum Severity {
                 TRACE,

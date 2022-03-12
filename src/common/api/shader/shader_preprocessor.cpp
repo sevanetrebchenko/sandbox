@@ -162,87 +162,148 @@ namespace Sandbox {
         std::string source = ReadFile(filepath);
 
         if (extension == "glsl") {
-//            // Processing joint shader file.
-//            std::stringstream parser;
-//            parser << source;
-//
-//            std::stringstream file; // Stream to hold the contents of the output file.
-//            std::stringstream builder; // For building error messages.
-//            Tokenizer tokenizer;
-//            Token token;
-//            std::string line;
-//            unsigned lineNumber = 1;
-//            unsigned offset = 0;
-//
-//            ShaderInfo info { };
-//            ProcessingContext context { };
-//
-//            while (!parser.eof()) {
-//                std::getline(parser, line);
-//                if (line.empty()) {
-//                    file << std::endl;
-//                    ++lineNumber;
-//                    continue;
-//                }
-//
-//                // First non-empty line (getline ignores lines with only whitespace characters).
-//                tokenizer.Set(line);
-//                token = tokenizer.Next();
-//                offset = 0;
-//
-//                if (token.data == "#") {
-//                    // Spaces are allowed between the '#' and 'type' directives, as long as they are on the same line.
-//                    if (!tokenizer.IsValid()) {
-//                        // '#' character on a single line is not allowed.
-//                        ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "Invalid preprocessor directive.", offset + token.before).c_str());
-//                        throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-//                    }
-//                    offset += token.Size(); // Offset starts at the first character of the next token.
-//
-//                    // Preprocessor directive.
-//                    token = tokenizer.Next();
-//
-//                    if (token.data == "type") {
-//                        goto type;
-//                    }
-//                    else {
-//                        goto error;
-//                    }
-//                }
-//                else if (token.data == "#type") {
-//                    goto type;
-//                }
-//                else {
-//                    goto error;
-//                }
-//
-//                type: {
-//                    if (!tokenizer.IsValid()) {
-//                        // #type must have a shader type.
-//                        ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "#type directive missing shader type.", offset + token.length + 1).c_str());
-//                        throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-//                    }
-//
-//                    offset += token.Size();
-//
-//                    // Shader type.
-//                    token = tokenizer.Next();
-//                    if (!ValidateShaderType(token.data)) {
-//                        ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "Invalid shader type (received '" + token.data + "', expecting 'vert' or 'vertex' for vertex shaders, 'frag' or 'fragment' for fragment shaders, 'geom' or 'geometry' for geometry shaders, 'tess' or 'tesselation' for tesselation shaders, 'comp' or 'compute' for compute shaders).", offset + token.length + 1, token.length).c_str());
-//                        throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-//                    }
-//
-//                    // Read in shader source up until the next #type directive or eof, whichever is encountered first.
-//
-//                    continue;
-//                }
-//
-//                error: {
-//                    // First token of shader source in a .glsl file must be the #type directive.
-//                    ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "First token in a .glsl shader file must be a #type preprocessor directive.", offset + token.before).c_str());
-//                    throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-//                }
-//            }
+            // Processing joint shader file.
+            std::stringstream parser;
+            parser << source;
+
+            std::stringstream file;    // Stream to hold the contents of each shader type.
+            std::stringstream builder; // For building error messages.
+            Tokenizer tokenizer;
+            Token token;
+            std::string line;
+            unsigned lineNumber = 1;
+            unsigned offset = 0;
+
+            ShaderInfo info;
+            ProcessingContext context { };
+
+            bool processingShader = false;
+
+            while (!parser.eof()) {
+                std::getline(parser, line);
+                if (line.empty()) {
+                    if (processingShader) {
+                        goto unchanged;
+                    }
+                    else {
+                        ++lineNumber;
+                        continue;
+                    }
+                }
+
+                // First non-empty line (getline ignores lines with only whitespace characters).
+                tokenizer.str(line);
+                tokenizer >> token;
+                offset = 0;
+
+                if (token.data == "#") {
+                    // Spaces are allowed between the '#' and 'type' directives, as long as they are on the same line.
+                    if (tokenizer.eof()) {
+                        // '#' character on a single line is not allowed.
+                        ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "Invalid preprocessor directive.", offset + token.before).c_str());
+                        throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
+                    }
+
+                    offset += token.size();
+                    tokenizer >> token; // Preprocessor directive.
+
+                    if (token.data == "type") {
+                        goto type;
+                    }
+                    else if (processingShader) {
+                        goto unchanged;
+                    }
+                    else {
+                        goto error;
+                    }
+                }
+                else if (token.data == "#type") {
+                    goto type;
+                }
+                else if (processingShader) {
+                    goto unchanged;
+                }
+                else {
+                    goto error;
+                }
+
+                type: {
+                    if (processingShader) {
+                        // Encountered next #type directive in .glsl shader source.
+                        // Parse the portion of the joint shader source file belonging to this shader type.
+                        ParseFile(file.str(), info, context);
+                        file.str(""); // Clear for next shader.
+                        out.emplace(info.type, std::move(info));
+                    }
+
+                    if (tokenizer.eof()) {
+                        // #type must name a shader type.
+                        ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "#type directive missing shader type.", offset + token.before + token.data.size() + 1).c_str());
+                        throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
+                    }
+
+                    offset += token.size();
+                    tokenizer >> token; // Shader type.
+
+                    if (!ValidateShaderType(token.data)) {
+                        builder.str("");
+                        builder << "Invalid shader type (received '" << token.data << "', expecting 'vert' or 'vertex' for vertex shaders, 'frag' or 'fragment' for fragment shaders, 'geom' or 'geometry' for geometry shaders, 'tess' or 'tesselation' for tesselation shaders, 'comp' or 'compute' for compute shaders).";
+
+                        ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, builder.str(), offset + token.before, token.data.size()).c_str());
+                        throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
+                    }
+
+                    // Found the starting point of a valid shader.
+                    info = ShaderInfo();
+                    info.filepath = filepath;
+                    info.workingDirectory = GetAssetDirectory(filepath);
+
+                    info.type = ToShaderType(token.data);
+                    assert(info.type != ShaderType::INVALID); // Verified above.
+
+                    processingShader = true;
+
+                    // Check for extraneous characters after the #type directive.
+                    if (!tokenizer.eof()) {
+                        unsigned extraCharactersOffset = offset + token.size();
+                        Token temp { };
+
+                        // Have error message point to the start of the first extraneous token.
+                        tokenizer >> temp;
+                        extraCharactersOffset += temp.before;
+
+                        // Skip any spaces before the start of the first extraneous token.
+                        unsigned numExtraCharacters = temp.data.size();
+                        while (!tokenizer.eof()) {
+                            tokenizer >> temp;
+                            numExtraCharacters += temp.size();
+                        }
+
+                        info.warnings.emplace_back(GetFormattedMessage(context, filepath, line, lineNumber, "Extraneous tokens at the end of #type directive will be ignored.", extraCharactersOffset, numExtraCharacters));
+                    }
+
+                    ++lineNumber;
+                    continue;
+                }
+
+                unchanged: {
+                    file << line << std::endl;
+                    ++lineNumber;
+                    continue;
+                }
+
+                error: {
+                    // In a .glsl shader file, first non-emtpy line needs to be a #type preprocessor directive.
+                    ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "First non-whitespace token in a .glsl shader file must be a #type preprocessor directive.", offset + token.before).c_str());
+                    throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
+                }
+            }
+
+            if (processingShader) {
+                // Parse the last shader in the file.
+                ParseFile(file.str(), info, context);
+                out.emplace(info.type, std::move(info));
+            }
         }
         else {
             // Processing individual shader file.
@@ -255,18 +316,6 @@ namespace Sandbox {
 
             ProcessingContext context { };
             ParseFile(source, info, context);
-
-            std::cout << "warnings" << std::endl;
-            for (const std::string& warning : info.warnings) {
-                std::cout << warning << std::endl;
-            }
-
-            std::cout << "errors" << std::endl;
-            for (const std::string& error : info.errors) {
-                std::cout << error << std::endl;
-            }
-
-            exit(1);
 
             out.emplace(info.type, std::move(info));
         }
@@ -747,6 +796,8 @@ namespace Sandbox {
         }
 
         info.source = out.str();
+        info.source.pop_back(); // Remove trailing newline.
+
         info.success = true;
         return true;
     }
@@ -850,6 +901,7 @@ namespace Sandbox {
 		static std::vector<std::string> validShaderTypes { "vert", "vertex",
 														   "frag", "fragment",
 														   "geom", "geometry",
+														   "tess", "tesselation",
 														   "comp", "compute" };
 		std::string type = ToLower(in);
 

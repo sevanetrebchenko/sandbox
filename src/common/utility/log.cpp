@@ -18,7 +18,6 @@ namespace Sandbox {
 
     ImGuiLog::~ImGuiLog() {
         delete[] _processingBuffer;
-        WriteToFile();
         writer_.close();
     }
 
@@ -88,8 +87,6 @@ namespace Sandbox {
         va_start(argsList, formatString);
         ProcessMessage(Severity::TRACE, formatString, argsList);
         va_end(argsList);
-
-        Flush();
     }
 
     void ImGuiLog::LogWarning(const char* formatString, ...) {
@@ -97,8 +94,6 @@ namespace Sandbox {
         va_start(argsList, formatString);
         ProcessMessage(Severity::WARNING, formatString, argsList);
         va_end(argsList);
-
-        Flush();
     }
 
     void ImGuiLog::LogError(const char *formatString, ...) {
@@ -106,18 +101,6 @@ namespace Sandbox {
         va_start(argsList, formatString);
         ProcessMessage(Severity::ERROR, formatString, argsList);
         va_end(argsList);
-
-        Flush();
-    }
-
-    void ImGuiLog::Flush() {
-        WriteToFile();
-    }
-
-    void ImGuiLog::WriteToFile() {
-        for (const Message& data : messages_) {
-            writer_ << data.message_ << std::endl;
-        }
     }
 
     void ImGuiLog::ProcessMessage(Severity severity, const char *formatString, va_list argsList) {
@@ -164,6 +147,9 @@ namespace Sandbox {
 
         messages_.emplace_back(severity, message);
         gui_.emplace_back(severity, message);
+
+        // flush().
+        writer_ << message << std::endl;
 
         // Clear buffer.
         memset(_processingBuffer, '\0', _processingBufferSize);

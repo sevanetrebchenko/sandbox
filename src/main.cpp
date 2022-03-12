@@ -13,7 +13,8 @@ using namespace Sandbox;
 int main() {
     ShaderPreprocessor::Instance().AddIncludeDirectory("assets/shaders");
     ShaderPreprocessor::Instance().AddIncludeDirectory("assets/models");
-    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/model.vert");
+    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/test.glsl");
+//    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/model.vert");
 
     Application& application = Application::Instance();
     application.Init(1920, 1080);

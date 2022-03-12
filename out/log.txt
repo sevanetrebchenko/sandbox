@@ -1,10 +1,28 @@
 [  TRACE  ]  Vendor: NVIDIA Corporation
-[  TRACE  ]  Vendor: NVIDIA Corporation
-[  TRACE  ]  Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
-[  TRACE  ]  Vendor: NVIDIA Corporation
-[  TRACE  ]  Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
-[  TRACE  ]  OpenGL Version: 4.6.0 NVIDIA 496.76
-[  TRACE  ]  Vendor: NVIDIA Corporation
 [  TRACE  ]  Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
 [  TRACE  ]  OpenGL Version: 4.6.0 NVIDIA 496.76
 [  TRACE  ]  Setting startup scene as: 'CS562: Project 2'
+[  TRACE  ]  Loading scene: 'CS562: Project 2'
+[  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
+[  TRACE  ]  Scene loaded in: 257 ms.
+[  TRACE  ]  Compiling Shader 'FSQ' from source.
+[  ERROR  ]  
+[  ERROR  ]  Shader 'FSQ' failed to link. See out/log.txt for details.
+[  TRACE  ]  Compiling Shader 'Local Lighting Pass' from source.
+[  ERROR  ]  
+[  ERROR  ]  Shader 'Local Lighting Pass' failed to link. See out/log.txt for details.
+[  TRACE  ]  Compiling Shader 'Depth' from source.
+[  ERROR  ]  
+[  ERROR  ]  Shader 'Depth' failed to link. See out/log.txt for details.
+[  TRACE  ]  Compiling Shader 'Global Lighting Pass' from source.
+[  ERROR  ]  
+[  ERROR  ]  Shader 'Global Lighting Pass' failed to link. See out/log.txt for details.
+[  TRACE  ]  Compiling Shader 'Shadow Pass' from source.
+[  ERROR  ]  
+[  ERROR  ]  Shader 'Shadow Pass' failed to link. See out/log.txt for details.
+[  TRACE  ]  Compiling Shader 'Geometry Pass' from source.
+[  ERROR  ]  
+[  ERROR  ]  Shader 'Geometry Pass' failed to link. See out/log.txt for details.
+[  TRACE  ]  Unloading scene: 'CS562: Project 2'
+[  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
+[  TRACE  ]  Scene unloaded in: 0 ms.
