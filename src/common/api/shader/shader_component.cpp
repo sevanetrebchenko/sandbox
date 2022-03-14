@@ -49,6 +49,8 @@ namespace Sandbox {
 //        }
 //
 //        return result;
+
+        return { };
     }
 
     int ShaderComponent::GetVersion() const {
@@ -261,11 +263,13 @@ namespace Sandbox {
     }
 
     bool ShaderComponent::ShaderInclude::operator==(const ShaderComponent::ShaderInclude& other) const {
+        return false;
     }
 
     ShaderComponent::ShaderInclude::~ShaderInclude() = default;
 
     std::size_t ShaderComponent::ShaderIncludeHash::operator()(const ShaderComponent::ShaderInclude& data) const noexcept {
+        return 1;
     }
 
     ShaderComponent::CompilationResult::CompilationResult() : success(false),

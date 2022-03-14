@@ -6,7 +6,6 @@ project(Sandbox
         LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
 
 # Prevent clearing of CMake variables (exists for backwards compatibility).
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)

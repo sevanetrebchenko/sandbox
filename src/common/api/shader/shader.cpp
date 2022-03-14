@@ -111,17 +111,17 @@ namespace Sandbox {
     }
 
     void Shader::CompileFromSource() {
-        ImGuiLog::Instance().LogTrace("Compiling Shader '%s' from source.", name_.c_str());
-
-        GLuint shaderProgram = glCreateProgram();
-        unsigned numShaderComponents = shaderComponents_.size();
-        GLuint shaders[numShaderComponents];
-        unsigned currentComponentIndex = 0;
-
-        //--------------------------------------------------------------------------------------------------------------
-        // SHADER COMPONENT COMPILING
-        //--------------------------------------------------------------------------------------------------------------
-        for (std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
+//        ImGuiLog::Instance().LogTrace("Compiling Shader '%s' from source.", name_.c_str());
+//
+//        GLuint shaderProgram = glCreateProgram();
+//        unsigned numShaderComponents = shaderComponents_.size();
+//        GLuint shaders[numShaderComponents];
+//        unsigned currentComponentIndex = 0;
+//
+//        //--------------------------------------------------------------------------------------------------------------
+//        // SHADER COMPONENT COMPILING
+//        //--------------------------------------------------------------------------------------------------------------
+//        for (std::pair<const std::string, ShaderComponent>& data : shaderComponents_) {
 //            const std::string& path = data.first;
 //            ShaderComponent& component = data.second;
 //            ShaderComponent::CompilationResult result = component.Compile();
@@ -144,53 +144,53 @@ namespace Sandbox {
 //                ImGuiLog::Instance().LogError("ShaderComponent '%s' of Shader '%s' compiled with %i warnings and %i errors.", name_.c_str(), path.c_str(), result.numWarnings, result.numErrors);
 //                throw std::runtime_error("Shader '" + name_ + "' failed to compile. See out/log.txt for details.");
 //            }
-        }
-
-        //--------------------------------------------------------------------------------------------------------------
-        // SHADER PROGRAM LINKING
-        //--------------------------------------------------------------------------------------------------------------
-        glLinkProgram(shaderProgram);
-
-        GLint isLinked = 0;
-        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &isLinked);
-        if (isLinked == GL_FALSE) {
-            // Shader failed to link - get error information from OpenGL.
-            GLint errorMessageLength = 0;
-            glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &errorMessageLength);
-
-            std::vector<GLchar> errorMessageBuffer;
-            errorMessageBuffer.resize(errorMessageLength + 1);
-            glGetProgramInfoLog(shaderProgram, errorMessageLength, nullptr, &errorMessageBuffer[0]);
-            std::string errorMessage(errorMessageBuffer.begin(), errorMessageBuffer.end());
-
-            // Program is unnecessary at this point.
-            glDeleteProgram(shaderProgram);
-
-            // Delete shader types.
-            for (int i = 0; i < numShaderComponents; ++i) {
-                glDeleteShader(shaders[i]);
-            }
-
-            ImGuiLog::Instance().LogError("%s", errorMessage.c_str());
-            throw std::runtime_error("Shader '" + name_ + "' failed to link. See out/log.txt for details.");
-        }
-
-        // Shader has already been initialized, do cleanup first.
-        if (ID_ != INVALID) {
-            glDeleteProgram(ID_);
-            uniformLocations_.clear();
-        }
-        ID_ = shaderProgram;
-
-        // Shader types are no longer necessary.
-        for (int i = 0; i < numShaderComponents; ++i) {
-            GLuint shaderComponentID = shaders[i];
-            glDetachShader(shaderProgram, shaderComponentID);
-            glDeleteShader(shaderComponentID);
-        }
-
-        // Shader has been updated, update binary cache.
-        CacheShaderBinary();
+//        }
+//
+//        //--------------------------------------------------------------------------------------------------------------
+//        // SHADER PROGRAM LINKING
+//        //--------------------------------------------------------------------------------------------------------------
+//        glLinkProgram(shaderProgram);
+//
+//        GLint isLinked = 0;
+//        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &isLinked);
+//        if (isLinked == GL_FALSE) {
+//            // Shader failed to link - get error information from OpenGL.
+//            GLint errorMessageLength = 0;
+//            glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &errorMessageLength);
+//
+//            std::vector<GLchar> errorMessageBuffer;
+//            errorMessageBuffer.resize(errorMessageLength + 1);
+//            glGetProgramInfoLog(shaderProgram, errorMessageLength, nullptr, &errorMessageBuffer[0]);
+//            std::string errorMessage(errorMessageBuffer.begin(), errorMessageBuffer.end());
+//
+//            // Program is unnecessary at this point.
+//            glDeleteProgram(shaderProgram);
+//
+//            // Delete shader types.
+//            for (int i = 0; i < numShaderComponents; ++i) {
+//                glDeleteShader(shaders[i]);
+//            }
+//
+//            ImGuiLog::Instance().LogError("%s", errorMessage.c_str());
+//            throw std::runtime_error("Shader '" + name_ + "' failed to link. See out/log.txt for details.");
+//        }
+//
+//        // Shader has already been initialized, do cleanup first.
+//        if (ID_ != INVALID) {
+//            glDeleteProgram(ID_);
+//            uniformLocations_.clear();
+//        }
+//        ID_ = shaderProgram;
+//
+//        // Shader types are no longer necessary.
+//        for (int i = 0; i < numShaderComponents; ++i) {
+//            GLuint shaderComponentID = shaders[i];
+//            glDetachShader(shaderProgram, shaderComponentID);
+//            glDeleteShader(shaderComponentID);
+//        }
+//
+//        // Shader has been updated, update binary cache.
+//        CacheShaderBinary();
     }
 
     void Shader::CompileFromBinary() {

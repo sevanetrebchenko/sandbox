@@ -31,6 +31,8 @@ namespace Sandbox {
 		}
 	}
 
+
+
 	std::string ToString(ShaderType type) {
 		switch (type) {
 			case ShaderType::VERTEX:
@@ -72,6 +74,33 @@ namespace Sandbox {
 		}
 	}
 
+
+
+    FileInfo::FileInfo() : lineNumber(0) {
+    }
+
+    FileInfo::FileInfo(std::string file, unsigned int lineNumber) : file(std::move(file)),
+                                                                    lineNumber(lineNumber)
+                                                                    {
+    }
+
+
+
+    ShaderVersion::ShaderVersion() : location(),
+                                     version(-1)
+                                     {
+    }
+
+    ShaderVersion::ShaderVersion(FileInfo location, int version) : location(std::move(location)),
+                                                                   version(version)
+                                                                   {
+    }
+
+    ShaderVersion::ShaderVersion(std::string file, unsigned int lineNumber, int version) : location(std::move(file), lineNumber),
+                                                                                           version(version)
+                                                                                           {
+    }
+
     bool ShaderVersion::operator==(const ShaderVersion& other) const {
         return version == other.version;
     }
@@ -82,6 +111,21 @@ namespace Sandbox {
 
     ShaderVersion::operator int() const {
         return version;
+    }
+
+
+
+
+    ShaderInclude::ShaderInclude() = default;
+
+    ShaderInclude::ShaderInclude(FileInfo parent, std::string file) : parent(std::move(parent)),
+                                                                      file(std::move(file))
+                                                                      {
+    }
+
+    ShaderInclude::ShaderInclude(std::string parentFile, unsigned int lineNumber, std::string file) : parent(std::move(parentFile), lineNumber),
+                                                                                                      file(std::move(file))
+                                                                                                      {
     }
 
     bool ShaderInclude::operator==(const ShaderInclude& other) const {

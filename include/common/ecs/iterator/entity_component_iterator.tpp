@@ -13,7 +13,7 @@ namespace Sandbox {
 
     template <typename ...T>
     bool EntityComponentIterator<T...>::ValidateEntityComponentIDs(const ComponentList& componentList) const {
-        return (componentList.template HasComponent<T>() && ...);
+        return (componentList.HasComponent<T>() && ...);
     }
 
     template<typename... T>
@@ -24,7 +24,7 @@ namespace Sandbox {
             const ComponentList& componentList = entityState.second;
 
             if (ValidateEntityComponentIDs(componentList)) {
-                validEntityList_.template emplace(entityID);
+                validEntityList_.emplace(entityID);
             }
         }
 

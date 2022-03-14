@@ -12,11 +12,11 @@ namespace Sandbox {
         T* component;
 
         if (HasComponentManager<T>()) {
-            component = GetComponentManager<T>()->template AddComponent(entityID, args...);
+            component = GetComponentManager<T>()->AddComponent(entityID, args...);
         }
         else {
             // ComponentManager for requested type does not exist, and must be created first.
-            component = AddComponentManager<T>()->template AddComponent(entityID, args...);
+            component = AddComponentManager<T>()->AddComponent(entityID, args...);
         }
 
         refreshSystems_ = true;
@@ -131,7 +131,7 @@ namespace Sandbox {
         else {
             // Type has not been registered, register new component manager.
             componentManager = new ComponentManager<T>();
-            componentManagers_.template emplace(componentTypeID, componentManager);
+            componentManagers_.emplace(componentTypeID, componentManager);
         }
 
         assert(componentManager);
@@ -191,7 +191,7 @@ namespace Sandbox {
             // Get the current (updated) state of the ECS system.
             std::vector<std::pair<int, ComponentList>> state;
             for (int entityID : entityManager_.GetEntityList()) {
-                state.template emplace_back(entityID, GetComponents(entityID));
+                state.emplace_back(entityID, GetComponents(entityID));
             }
 
             iter->Init(state);
@@ -210,7 +210,7 @@ namespace Sandbox {
         if (iterator == componentIDs_.end()) {
             // Register new component ID.
             componentID = componentIDs_.size();
-            componentIDs_.template emplace(type, componentID);
+            componentIDs_.emplace(type, componentID);
         }
         else {
             componentID = iterator->second;
