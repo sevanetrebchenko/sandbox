@@ -34,9 +34,6 @@ namespace Sandbox {
             // Returns mapping of shader type to shader source for each parsed type.
             std::unordered_map<ShaderType, ShaderInfo> ProcessFile(const std::string& filepath);
 
-            // Preprocesses inline shader source. Follows all rules that supported shader types (.vert, .frag, .geom, .tess, .comp, .glsl) have.
-            std::unordered_map<ShaderType, ShaderInfo> ProcessSource(const std::string& source);
-
             // Adds a directory to look for shader includes in.
             void AddIncludeDirectory(const std::string& includeDirectory);
 
@@ -51,8 +48,8 @@ namespace Sandbox {
             // Parses source code in 'source' and stores information into 'info'. Function should be called on individual shader types (.vert, .frag, .geom, .tess, .comp).
             bool ParseFile(const std::string& source, ShaderInfo& info, ProcessingContext& context);
 
-            // Parses source code in 'source' and returns a mapping of all detected shader types.
-            [[nodiscard]] std::unordered_map<ShaderType, ShaderInfo> ParseFile(const std::string& data, bool inlined);
+            // Parses source code in file 'filepath' and returns a mapping of all detected shader types.
+            [[nodiscard]] std::unordered_map<ShaderType, ShaderInfo> ParseFile(const std::string& filepath);
 
             [[nodiscard]] std::string GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length = 0) const;
 

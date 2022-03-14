@@ -157,7 +157,7 @@ namespace Sandbox {
 
         if (extension == "glsl") {
             // Processing joint shader file.
-            return ParseFile(filepath, false);
+            return ParseFile(filepath);
         }
         else {
             // Processing individual shader file.
@@ -172,10 +172,6 @@ namespace Sandbox {
 
             return { std::make_pair(info.type, std::move(info)) };
         }
-    }
-
-    std::unordered_map<ShaderType, ShaderInfo> ShaderPreprocessor::ProcessSource(const std::string& source) {
-        return ParseFile(source, true);
     }
 
     void ShaderPreprocessor::AddIncludeDirectory(const std::string& in) {
@@ -657,22 +653,11 @@ namespace Sandbox {
         return true;
     }
 
-    std::unordered_map<ShaderType, ShaderInfo> ShaderPreprocessor::ParseFile(const std::string& data, bool inlined) {
+    std::unordered_map<ShaderType, ShaderInfo> ShaderPreprocessor::ParseFile(const std::string& filepath) {
         std::unordered_map<ShaderType, ShaderInfo> out;
 
         std::stringstream parser;
-        std::string filepath;
-
-        if (inlined) {
-            // 'data' holds shader source.
-            filepath = "[inlined shader source]";
-            parser << data;
-        }
-        else {
-            // 'data' holds shader filepath.
-            filepath = ConvertToNativeSeparators(data);
-            parser << ReadFile(filepath);
-        }
+        parser << ReadFile(filepath);
 
         std::stringstream file;    // Stream to hold the contents of each shader type.
         std::stringstream builder; // For building error messages.
