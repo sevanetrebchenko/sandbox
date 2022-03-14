@@ -1,7 +1,5 @@
 
 #include "common/api/shader/shader_preprocessor.h"
-
-#include <utility>
 #include "common/utility/log.h"
 #include "common/utility/directory.h"
 
