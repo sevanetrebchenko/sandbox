@@ -7,7 +7,7 @@
 
 namespace Sandbox {
 
-    class Input : public Singleton<Input> {
+    class Input : public ISingleton<Input> {
         public:
             REGISTER_SINGLETON(Input);
 

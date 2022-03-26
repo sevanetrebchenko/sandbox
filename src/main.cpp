@@ -14,25 +14,7 @@ int main() {
     ShaderPreprocessor::Instance().AddIncludeDirectory("assets/shaders");
     ShaderPreprocessor::Instance().AddIncludeDirectory("assets/models");
 
-    ShaderPreprocessor::Instance().ProcessSource("\n"
-                                                 "#type adfasdfsaf\n"
-                                                 "\n"
-                                                 "          #               version      330    core      ddd d dd\n"
-                                                 "\n"
-                                                 "\n"
-                                                 "\n"
-                                                 "layout (location = 0) in vec3 vertexPosition;\n"
-                                                 "layout (location = 1) in vec3 vertexNormal;\n"
-                                                 "\n"
-                                                 "uniform mat4 cameraTransform;\n"
-                                                 "uniform mat4 modelTransform;\n"
-                                                 "\n"
-                                                 "void main() {\n"
-                                                 "    gl_Position = cameraTransform * modelTransform * vec4(vertexPosition, 1.0f);\n"
-                                                 "}");
-
-
-    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/test.glsl");
+    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/model.vert");
 //    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/model.vert");
 
 

@@ -1,8 +1,7 @@
 
 #type adfasdfsaf
 
-          #               version      330    core      ddd d dd
-
+          #               version      356
 
 
 layout (location = 0) in vec3 vertexPosition;

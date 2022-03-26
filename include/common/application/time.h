@@ -7,7 +7,7 @@
 
 namespace Sandbox {
 
-    class Time : public Singleton<Time> {
+    class Time : public ISingleton<Time> {
         public:
             REGISTER_SINGLETON(Time);
 

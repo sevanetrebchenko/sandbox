@@ -2,15 +2,15 @@
 namespace Sandbox {
 
     template <typename Base>
-    Base& Singleton<Base>::Instance() {
+    Base& ISingleton<Base>::Instance() {
         static Base instance; // Scott Meyers singleton.
         return instance;
     }
 
     template <typename Base>
-    Singleton<Base>::Singleton() = default;
+    ISingleton<Base>::ISingleton() = default;
 
     template <typename Base>
-    Singleton<Base>::~Singleton() = default;
+    ISingleton<Base>::~ISingleton() = default;
 
 }

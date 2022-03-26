@@ -107,7 +107,6 @@ namespace Sandbox {
     }
 
     std::string ReadFile(const std::string& filepath) {
-
         std::ifstream reader;
         reader.open(filepath);
         if (!reader.is_open()) {

@@ -55,6 +55,7 @@ set(CORE_SOURCE_FILES
         "common/api/shader/shader_uniform.cpp"
         "common/api/shader/shader_preprocessor.cpp"
         "common/api/shader/shader_descriptor.cpp"
+        "common/api/shader/shader_compiler.cpp"
         "common/texture/texture.cpp"
         "common/geometry/transform.cpp"
         "common/api/window.cpp"

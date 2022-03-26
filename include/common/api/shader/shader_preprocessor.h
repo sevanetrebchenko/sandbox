@@ -26,7 +26,8 @@ namespace Sandbox {
         std::vector<std::string> errors;
     };
 
-    class ShaderPreprocessor : public Singleton<ShaderPreprocessor> {
+    // Preprocessing inlined shader source files is not supported, as shaders should be reloadable entities.
+    class ShaderPreprocessor : public ISingleton<ShaderPreprocessor> {
         public:
             REGISTER_SINGLETON(ShaderPreprocessor);
 

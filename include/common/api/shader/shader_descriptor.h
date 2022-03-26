@@ -20,6 +20,7 @@ namespace Sandbox {
         VERTEX,
         FRAGMENT,
         GEOMETRY,
+        // TODO: support tesselation control / evaluation shader types.
         TESSELATION,
         COMPUTE,
 

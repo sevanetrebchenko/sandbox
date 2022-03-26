@@ -7,7 +7,7 @@
 
 namespace Sandbox {
 
-    class Window : public Singleton<Window> {
+    class Window : public ISingleton<Window> {
         public:
             REGISTER_SINGLETON(Window);
 

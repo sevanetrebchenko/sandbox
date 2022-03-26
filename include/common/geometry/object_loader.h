@@ -8,7 +8,7 @@
 
 namespace Sandbox {
 
-    class OBJLoader : public Singleton<OBJLoader> {
+    class OBJLoader : public ISingleton<OBJLoader> {
         public:
             REGISTER_SINGLETON(OBJLoader);
 

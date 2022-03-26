@@ -8,7 +8,7 @@
 
 namespace Sandbox {
 
-    class ImGuiLog : public Singleton<ImGuiLog> {
+    class ImGuiLog : public ISingleton<ImGuiLog> {
         public:
             REGISTER_SINGLETON(ImGuiLog);
 

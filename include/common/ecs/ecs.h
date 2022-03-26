@@ -13,7 +13,7 @@
 namespace Sandbox {
 
     // Public interface for everything to do with managing entities and their components.
-    class ECS : public Singleton<ECS> {
+    class ECS : public ISingleton<ECS> {
         public:
             REGISTER_SINGLETON(ECS);
 

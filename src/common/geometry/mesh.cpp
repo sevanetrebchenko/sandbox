@@ -235,7 +235,7 @@ namespace Sandbox {
             vertices.emplace_back(vertex.vertex_);
         }
 
-        return std::move(vertices);
+        return vertices;
     }
 
     std::vector<unsigned> Mesh::GetIndices() const {
@@ -250,7 +250,7 @@ namespace Sandbox {
             uv.emplace_back(vertex.uv_);
         }
 
-        return std::move(uv);
+        return uv;
     }
 
     std::vector<glm::vec3> Mesh::GetNormals() const {
@@ -261,7 +261,7 @@ namespace Sandbox {
             normals.emplace_back(vertex.normal_);
         }
 
-        return std::move(normals);
+        return normals;
     }
 
 }

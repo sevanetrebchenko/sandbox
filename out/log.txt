@@ -1,4 +1,4 @@
-[  ERROR  ]  [inlined shader source]:2:7: Invalid shader type (received 'adfasdfsaf', expecting 'vert' or 'vertex' for vertex shaders, 'frag' or 'fragment' for fragment shaders, 'geom' or 'geometry' for geometry shaders, 'tess' or 'tesselation' for tesselation shaders, 'comp' or 'compute' for compute shaders).
-    2 | #type adfasdfsaf
-      |       ^~~~~~~~~~
+[  ERROR  ]  assets\shaders\model.vert:4:40: Invalid shader version (received '356', expecting 110, 120, 130, 140, 150, 330, 400, 410, 420, 430, 440, 450, or 460).
+    4 |           #               version      356
+      |                                        ^~~
 

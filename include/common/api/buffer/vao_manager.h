@@ -7,7 +7,7 @@
 
 namespace Sandbox {
 
-    class VAOManager : public Singleton<VAOManager> {
+    class VAOManager : public ISingleton<VAOManager> {
         public:
             REGISTER_SINGLETON(VAOManager);
 

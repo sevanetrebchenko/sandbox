@@ -4,21 +4,21 @@
 namespace Sandbox {
 
     template <typename Base>
-    class Singleton {
+    class ISingleton {
         public:
             static Base& Instance();
 
             // Singleton should not be copied/duplicated.
-            Singleton(Singleton const &other) = delete;
-            Singleton(Singleton &&other) = delete;
-            void operator=(Singleton const &other) = delete;
+            ISingleton(ISingleton const &other) = delete;
+            ISingleton(ISingleton &&other) = delete;
+            void operator=(ISingleton const &other) = delete;
 
         protected:
-            Singleton();
-            virtual ~Singleton();
+            ISingleton();
+            virtual ~ISingleton();
     };
 
-#define REGISTER_SINGLETON(TYPE) friend class ::Sandbox::Singleton<TYPE>;
+#define REGISTER_SINGLETON(TYPE) friend class ::Sandbox::ISingleton<TYPE>;
 
 }
 

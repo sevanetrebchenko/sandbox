@@ -8,7 +8,7 @@
 
 namespace Sandbox {
 
-    class Application : public Singleton<Application> {
+    class Application : public ISingleton<Application> {
         public:
             REGISTER_SINGLETON(Application);
 

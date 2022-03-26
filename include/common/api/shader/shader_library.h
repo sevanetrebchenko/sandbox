@@ -7,7 +7,7 @@
 
 namespace Sandbox {
 
-    class ShaderLibrary : public Singleton<ShaderLibrary> {
+    class ShaderLibrary : public ISingleton<ShaderLibrary> {
         public:
             REGISTER_SINGLETON(ShaderLibrary);
 
@@ -15,6 +15,7 @@ namespace Sandbox {
             Shader* CreateShader(const std::string& name, const std::initializer_list<std::string>& filepaths);
 
             void DestroyShader(const std::string& name);
+
             Shader* GetShader(const std::string& name) const;
 
             void RecompileModified();
