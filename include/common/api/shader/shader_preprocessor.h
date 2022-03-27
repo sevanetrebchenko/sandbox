@@ -7,24 +7,7 @@
 
 namespace Sandbox {
 
-    // Information about a shader source file of one type.
-    // Should only be used with concrete shader source types (.vert, .frag, .geom, .tess, .comp).
-    struct ShaderInfo {
-        ShaderInfo();
 
-        std::string filepath;
-        std::string workingDirectory;
-
-        ShaderType type;
-        ShaderProfile profile;
-        ShaderVersion version;
-        std::string source;
-        std::unordered_set<ShaderInclude> dependencies;
-
-        bool success; // Indicates whether shader file was preprocessed without errors.
-        std::vector<std::string> warnings;
-        std::vector<std::string> errors;
-    };
 
     // Preprocessing inlined shader source files is not supported, as shaders should be reloadable entities.
     class ShaderPreprocessor : public ISingleton<ShaderPreprocessor> {

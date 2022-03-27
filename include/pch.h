@@ -1,8 +1,6 @@
 
 // Precompiled header
-
-#ifndef SANDBOX_PCH_H
-#define SANDBOX_PCH_H
+#pragma once
 
 // Standard includes
 #include <unordered_map>
@@ -37,20 +35,13 @@
 #include <glm/gtx/transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-
 #include <glad/glad.h>
-
 #include <GLFW/glfw3.h>
-
 #include <stb_image.h>
 #include <stb_image_write.h>
-
 #include <tiny_obj_loader.h>
-
 #include <imgui.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
-
 #include <shaderc/shaderc.hpp>
-
-#endif //SANDBOX_PCH_H
+#include <spirv_glsl.hpp>

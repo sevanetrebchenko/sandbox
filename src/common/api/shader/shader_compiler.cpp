@@ -4,7 +4,7 @@
 
 namespace Sandbox {
 
-    std::vector<unsigned> ShaderCompiler::CompileToSPIRV(const ShaderInfo& info) {
+    std::vector<std::uint32_t> ShaderCompiler::CompileToSPIRV(const ShaderInfo& info) {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
@@ -57,5 +57,13 @@ namespace Sandbox {
             case ShaderType::INVALID:
                 throw std::runtime_error("Invalid ShaderType provided to ShaderCompiler::ToSPIRVShaderType.");
         }
+    }
+
+    void ShaderCompiler::Reflect(const std::vector<std::uint32_t>& binary) {
+        spirv_cross::CompilerGLSL compiler(binary);
+        spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+        spirv_cross::CompilerGLSL::Options options;
+        options.version
     }
 }

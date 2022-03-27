@@ -11,8 +11,7 @@ namespace Sandbox {
         public:
             REGISTER_SINGLETON(ShaderCompiler);
 
-            // Note: function assumes 32-bit integer.
-            [[nodiscard]] std::vector<unsigned> CompileToSPIRV(const ShaderInfo& shader);
+            [[nodiscard]] std::vector<std::uint32_t> CompileToSPIRV(ShaderInfo& info);
 
         private:
             [[nodiscard]] shaderc_profile ToSPIRVShaderProfile(ShaderProfile profile) const;

@@ -71,46 +71,33 @@ target_include_directories(Sandbox PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_precompile_headers(Sandbox PRIVATE "${PROJECT_SOURCE_DIR}/include/pch.h")
 
 # DEPENDENCIES
-# Link OpenGL
 set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED) # Ensure OpenGL exists on the system.
 message(STATUS "Linking OpenGL to ascii project.")
 target_link_libraries(Sandbox OpenGL::GL)
 
-# Link Glad.
 # Glad gives access to both OpenGL extensions and the modern version of the core OpenGL API.
 message(STATUS "Linking Glad to Sandbox project.")
 target_link_libraries(Sandbox glad)
 
-# Link GLFW
 # GLFW does not depend on OpenGL - OpenGL/Vulkan dependencies get loaded in at runtime.
 message(STATUS "Linking GLFW to Sandbox project.")
 target_link_libraries(Sandbox glfw)
 
-# GLM.
 message(STATUS "Linking GLM to Sandbox project.")
 target_link_libraries(Sandbox glm)
 
-# STB.
 message(STATUS "Linking STB to Sandbox project.")
 target_link_libraries(Sandbox stb)
 
-# TinyObjLoader.
 message(STATUS "Linking TinyObjLoader to Sandbox project.")
 target_link_libraries(Sandbox tinyobjloader)
 
-# ImGui.
 message(STATUS "Linking ImGui to Sandbox project.")
 target_link_libraries(Sandbox imgui)
 
-# Shaderc.
 message(STATUS "Linking Shaderc to Sandbox project.")
 target_link_libraries(Sandbox shaderc)
 
-## SPIRV-Cross.
-#message(STATUS "Linking SPIRV-Cross to Sandbox project.")
-#target_link_libraries(Sandbox SPIRV-Cross)
-
-
-
-
+message(STATUS "Linking SPIRV-Cross to Sandbox project.")
+target_link_libraries(Sandbox spirv-cross-glsl) # TODO: support for more backends.
