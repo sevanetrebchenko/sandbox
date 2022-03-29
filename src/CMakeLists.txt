@@ -102,7 +102,7 @@ message(STATUS "Linking ImGui to Sandbox project.")
 target_link_libraries(Sandbox imgui)
 
 message(STATUS "Linking Shaderc to Sandbox project.")
-target_link_libraries(Sandbox shaderc)
+# target_link_libraries(Sandbox shaderc)
 
 message(STATUS "Linking SPIRV-Cross to Sandbox project.")
-target_link_libraries(Sandbox spirv-cross-glsl) # TODO: support for more backends.
+# target_link_libraries(Sandbox spirv-cross-glsl) # TODO: support for more backends.

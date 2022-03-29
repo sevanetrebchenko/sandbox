@@ -34,8 +34,8 @@ set(SHADERC_SKIP_EXAMPLES ON)
 set(SHADERC_SKIP_COPYRIGHT_CHECK ON)
 set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
 set(SKIP_SPIRV_TOOLS_INSTALL ON)
-include(shaderc_setup)
-add_subdirectory(shaderc)
+# include(shaderc_setup)
+# add_subdirectory(shaderc)
 message(STATUS "--------------------")
 
 message(STATUS "Building SPIRV-Cross.")
@@ -61,5 +61,5 @@ set(SPIRV_CROSS_SKIP_INSTALL ON)              # Skips installation targets.
 set(SPIRV_CROSS_WERROR OFF)                   # Fail build on warnings.
 set(SPIRV_CROSS_MISC_WARNINGS OFF)            # Misc warnings useful for Travis runs.
 set(SPIRV_CROSS_FORCE_PIC OFF)                # Force position-independent code for all targets.
-add_subdirectory(spirv-cross)
+# add_subdirectory(spirv-cross)
 message(STATUS "--------------------")

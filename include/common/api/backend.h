@@ -11,6 +11,10 @@ namespace Sandbox {
         namespace Core {
             void SetViewport(unsigned x, unsigned y, unsigned width, unsigned height);
 
+            // Returns (x, y) window coordinates of the viewport, followed by viewport (width, height).
+            // TODO: abstract?
+            [[nodiscard]] glm::vec4 GetViewport();
+
             void EnableFlag(GLuint flag);
             void DisableFlag(GLuint flag);
 

@@ -28,8 +28,8 @@ namespace Sandbox {
             };
 
             [[nodiscard]] bool CompileToSPIRV(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, ProcessingContext& context) const;
-            [[nodiscard]] shaderc_profile ToSPIRVShaderProfile(ShaderProfile profile) const;
-            [[nodiscard]] shaderc_shader_kind ToSPIRVShaderType(ShaderType type) const;
+//            [[nodiscard]] shaderc_profile ToSPIRVShaderProfile(ShaderProfile profile) const;
+//            [[nodiscard]] shaderc_shader_kind ToSPIRVShaderType(ShaderType type) const;
 
             [[nodiscard]] bool GenerateReflectionData(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, ProcessingContext& context) const;
     };

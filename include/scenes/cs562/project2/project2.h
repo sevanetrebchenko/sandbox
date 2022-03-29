@@ -38,8 +38,11 @@ namespace Sandbox {
             void ConfigureModels();
             void ConfigureLights();
             void ConstructFBO();
+            void ConstructShadowMap();
 
             void GeometryPass();
+
+            void ShadowPass();
 
             // Lighting pass for global lights.
             void GlobalLightingPass();
@@ -47,11 +50,8 @@ namespace Sandbox {
             // Lighting pass for local lights.
             void LocalLightingPass();
 
-            void ShadowPass();
-
-            void RenderDepthBuffer();
-
             FrameBufferObject fbo_;
+            FrameBufferObject shadowMap_;
             FPSCamera camera_;
 
             MaterialLibrary materialLibrary_;

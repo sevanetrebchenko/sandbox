@@ -34,6 +34,12 @@ namespace Sandbox {
             void SetViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
                 glViewport(x, y, width, height);
             }
+
+            glm::vec4 GetViewport() {
+                glm::vec4 data;
+                glGetFloatv(GL_VIEWPORT, &data[0]);
+                return data;
+            }
         }
 
         namespace Rendering {

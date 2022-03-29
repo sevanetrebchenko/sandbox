@@ -5,11 +5,12 @@
 [  TRACE  ]  Compiling Shader 'Geometry Pass' from source.
 [  TRACE  ]  Compiling Shader 'Global Lighting Pass' from source.
 [  TRACE  ]  Compiling Shader 'Local Lighting Pass' from source.
+[  TRACE  ]  Compiling Shader 'Shadow Pass' from source.
 [  TRACE  ]  Compiling Shader 'Depth' from source.
 [  TRACE  ]  Compiling Shader 'FSQ' from source.
 [  TRACE  ]  Loading scene: 'CS562: Project 2'
 [  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 293 ms.
+[  TRACE  ]  Scene loaded in: 314 ms.
 [  TRACE  ]  Unloading scene: 'CS562: Project 2'
 [  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_2\ui_layout.ini
-[  TRACE  ]  Scene unloaded in: 7 ms.
+[  TRACE  ]  Scene unloaded in: 0 ms.

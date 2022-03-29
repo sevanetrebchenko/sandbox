@@ -52,6 +52,7 @@ namespace Sandbox {
             [[nodiscard]] float GetFarPlaneDistance() const;
 
             [[nodiscard]] float GetAspectRatio() const;
+            [[nodiscard]] float GetFOV() const; // Degrees.
 
         protected:
             void RecalculateMatrices();
