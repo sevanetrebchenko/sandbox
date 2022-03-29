@@ -414,13 +414,16 @@ namespace Sandbox {
         // Construct shadow map transformation matrices.
         static bool useOrthographicProjection = true;
         glm::mat4 projection;
-        glm::mat4 view = glm::lookAt(-directionalLight_.direction_ * 5.0f, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+        glm::mat4 view;
 
         if (useOrthographicProjection) {
-            projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, camera_.GetNearPlaneDistance(), camera_.GetFarPlaneDistance());
+            float distance = 10.0f;
+            projection = glm::ortho(-distance, distance, -distance, distance, camera_.GetNearPlaneDistance(), 5.0f);
+            view = glm::lookAt(-directionalLight_.direction_, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
         }
         else {
-            projection = glm::perspective(glm::radians(camera_.GetFOV()), camera_.GetAspectRatio(), camera_.GetNearPlaneDistance(), camera_.GetFarPlaneDistance());
+            projection = camera_.GetPerspectiveTransform();
+            view = glm::lookAt(-directionalLight_.direction_ * 5.0f, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
         }
 
         Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Pass");
@@ -449,7 +452,8 @@ namespace Sandbox {
 
         // Uniforms.
         depthShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
-        depthShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
+        depthShader->SetUniform("cameraFarPlane", 10.0f);
+        depthShader->SetUniform("linearize", !useOrthographicProjection);
         Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth"), "inputTexture", 0);
 
         // Render to depth texture using FSQ.

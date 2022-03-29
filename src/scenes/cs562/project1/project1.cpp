@@ -512,6 +512,7 @@ namespace Sandbox {
         // Uniforms.
         depthShader->SetUniform("cameraNearPlane", 0.1f);
         depthShader->SetUniform("cameraFarPlane", 25.0f);
+        depthShader->SetUniform("linearize", true);
         Backend::Rendering::BindTextureWithSampler(depthShader, fbo_.GetNamedRenderTarget("depthBuffer"), "inputTexture", 0);
 
         // Render to depth texture using FSQ.

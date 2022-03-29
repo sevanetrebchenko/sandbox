@@ -4,6 +4,8 @@
 in vec2 textureCoordinates;
 
 uniform sampler2D inputTexture; // Explicit binding.
+
+uniform bool linearize;
 uniform float cameraNearPlane;
 uniform float cameraFarPlane;
 
@@ -15,5 +17,11 @@ float LinearizeDepth(float depth) {
 
 void main() {
     float depthValue = texture(inputTexture, textureCoordinates).r; // Depth texture has only one channel.
-    fragColor = vec4(vec3(LinearizeDepth(depthValue)), 1.0f);
+
+    if (linearize) {
+        fragColor = vec4(vec3(LinearizeDepth(depthValue)), 1.0f);
+    }
+    else {
+        fragColor = vec4(vec3(depthValue), 1.0);
+    }
 }
