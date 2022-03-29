@@ -7,18 +7,11 @@
 #include <scenes/cs562/project2/project2.h>
 
 #include "common/api/shader/shader_preprocessor.h"
+#include "common/api/shader/shader_uniform_lut.h"
 
 using namespace Sandbox;
 
 int main() {
-    ShaderPreprocessor::Instance().AddIncludeDirectory("assets/shaders");
-    ShaderPreprocessor::Instance().AddIncludeDirectory("assets/models");
-
-    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/model.vert");
-//    ShaderPreprocessor::Instance().ProcessFile("assets/shaders/model.vert");
-
-
-
     Application& application = Application::Instance();
     application.Init(1920, 1080);
 

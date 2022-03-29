@@ -26,12 +26,6 @@ namespace Sandbox {
 
             void Recompile() override;
             void CompileFromSource();
-            void CompileToSPIRV();
-            void CompileFromBinary();
-            void CacheShaderBinary();
-
-            // Returns the filepath of the cached shader binary.
-            [[nodiscard]] std::string GetCachedBinaryPath() const;
 
             template<typename DataType>
             void SetUniformData(GLuint uniformLocation, DataType value);

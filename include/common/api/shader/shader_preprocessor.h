@@ -7,16 +7,28 @@
 
 namespace Sandbox {
 
-
-
     // Preprocessing inlined shader source files is not supported, as shaders should be reloadable entities.
     class ShaderPreprocessor : public ISingleton<ShaderPreprocessor> {
         public:
             REGISTER_SINGLETON(ShaderPreprocessor);
 
-            // Preprocesses individual shader files (.vert, .frag, .geom, .comp, .tess, etc.) or joint shader files (.glsl).
-            // Returns mapping of shader type to shader source for each parsed type.
-            std::unordered_map<ShaderType, ShaderInfo> ProcessFile(const std::string& filepath);
+            // Information about a shader source file of one type.
+            // Should only be used with concrete shader source types (.vert, .frag, .geom, .tess, .comp).
+            struct ShaderInfo {
+                ShaderInfo();
+
+                std::string filepath;
+                std::string workingDirectory;
+
+                ShaderType type;
+                ShaderProfile profile;
+                ShaderVersion version;
+                std::string source;
+                std::unordered_set<ShaderInclude> dependencies;
+            };
+
+            // Preprocesses individual shader files (.vert, .frag, .geom, .comp, .tess, etc.).
+            [[nodiscard]] ShaderInfo ProcessFile(const std::string& filepath);
 
             // Adds a directory to look for shader includes in.
             void AddIncludeDirectory(const std::string& includeDirectory);
@@ -24,16 +36,14 @@ namespace Sandbox {
         private:
             struct ProcessingContext {
                 std::vector<ShaderInclude> includeStack;
+                std::vector<std::string> errors;
+                std::vector<std::string> warnings;
             };
 
             ShaderPreprocessor();
             ~ShaderPreprocessor() override;
 
-            // Parses source code in file 'filepath' and returns a mapping of all detected shader types.
-            [[nodiscard]] std::unordered_map<ShaderType, ShaderInfo> ParseFile(const std::string& filepath);
-
-            // Parses source code in 'source' and stores information into 'info'. Function should be called on individual
-            // shader types (.vert, .frag, .geom, .tess, .comp).
+            // Parses source code in 'source' and stores information into 'info'.
             bool ParseFile(const std::string& source, ShaderInfo& info, ProcessingContext& context);
 
             [[nodiscard]] std::string GetFormattedMessage(const ProcessingContext& context, const std::string& file, const std::string& line, unsigned lineNumber, const std::string& message, unsigned offset, unsigned length = 0) const;

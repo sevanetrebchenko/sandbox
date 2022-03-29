@@ -11,11 +11,8 @@ namespace Sandbox {
         public:
             REGISTER_SINGLETON(ShaderLibrary);
 
-            Shader* CreateShader(const std::string& name, const std::string& filepath);
-            Shader* CreateShader(const std::string& name, const std::initializer_list<std::string>& filepaths);
-
+            Shader* CreateShader(const std::string& name, std::initializer_list<std::string> sourceFiles);
             void DestroyShader(const std::string& name);
-
             Shader* GetShader(const std::string& name) const;
 
             void RecompileModified();

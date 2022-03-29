@@ -130,16 +130,13 @@ namespace Sandbox {
     }
 
 
-
-    ShaderInfo::ShaderInfo() : type(ShaderType::INVALID),
-                               profile(ShaderProfile::INVALID),
-                               success(false)
-                               {
+    ShaderPreprocessor::ShaderInfo::ShaderInfo() : type(ShaderType::INVALID),
+                                                   profile(ShaderProfile::INVALID)
+                                                   {
     }
 
 
-
-    std::unordered_map<ShaderType, ShaderInfo> ShaderPreprocessor::ProcessFile(const std::string& in) {
+    ShaderPreprocessor::ShaderInfo ShaderPreprocessor::ProcessFile(const std::string& in) {
         std::string filepath = ConvertToNativeSeparators(in);
         std::string extension = ToLower(GetAssetExtension(filepath));
 
@@ -153,44 +150,38 @@ namespace Sandbox {
             throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
         }
 
-        std::unordered_map<ShaderType, ShaderInfo> out;
+        // Initialize shader info.
+        ShaderInfo info { };
+        info.filepath = filepath;
+        info.workingDirectory = GetAssetDirectory(filepath);
+        info.type = ToShaderType(extension);
 
-        if (extension == "glsl") {
-            // Processing joint shader file.
-            out = ParseFile(filepath);
-        }
-        else {
-            // Processing individual shader file.
-            ShaderInfo info { };
-            info.filepath = filepath;
-            info.workingDirectory = GetAssetDirectory(filepath);
-            info.type = ToShaderType(extension);
-            assert(info.type != ShaderType::INVALID); // Verified above.
+        ProcessingContext context { };
+        ParseFile(ReadFile(filepath), info, context);
 
-            ProcessingContext context { };
-            ParseFile(ReadFile(filepath), info, context);
-
-            out.emplace(info.type, std::move(info));
-        }
-
-        for (const auto& [type, info] : out) {
-            if (!info.success) {
-                // Failed to compile.
-                for (const std::string& error : info.errors) {
-                    ImGuiLog::Instance().LogError("%s", error.c_str());
-                }
-
-                throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
+        std::stringstream builder;
+        if (!context.errors.empty()) {
+            builder << "Compilation of shader file '" << filepath << "' exited with " << context.errors.size() << " error(s):" << std::endl;
+            for (const std::string& message : context.errors) {
+                builder << message;
             }
+            builder << std::endl;
+
+            ImGuiLog::Instance().LogError("%s", builder.str().c_str());
+            throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
         }
 
-        for (const auto& [type, info] : out) {
-            for (const std::string& warning : info.warnings) {
-                ImGuiLog::Instance().LogWarning("%s", warning.c_str());
+        if (!context.warnings.empty()) {
+            builder << "Compilation of shader file '" << filepath << "' exited with " << context.warnings.size() << " warning(s):" << std::endl;
+            for (const std::string& message : context.warnings) {
+                builder << message;
             }
+            builder << std::endl;
+
+            ImGuiLog::Instance().LogWarning("%s", builder.str().c_str());
         }
 
-        return out;
+        return info;
     }
 
     void ShaderPreprocessor::AddIncludeDirectory(const std::string& in) {
@@ -244,153 +235,6 @@ namespace Sandbox {
     ShaderPreprocessor::~ShaderPreprocessor() {
     }
 
-    std::unordered_map<ShaderType, ShaderInfo> ShaderPreprocessor::ParseFile(const std::string& filepath) {
-        std::unordered_map<ShaderType, ShaderInfo> out;
-
-        std::stringstream parser;
-        parser << ReadFile(filepath);
-
-        std::stringstream file;    // Stream to hold the contents of each shader type.
-        std::stringstream builder; // For building error messages.
-        Tokenizer tokenizer;
-        Token token;
-        std::string line;
-        unsigned lineNumber = 1;
-        unsigned offset = 0;
-
-        ShaderInfo info;
-        ProcessingContext context { };
-
-        bool processingShader = false;
-
-        while (!parser.eof()) {
-            std::getline(parser, line);
-            if (line.empty()) {
-                if (processingShader) {
-                    goto unchanged;
-                }
-                else {
-                    ++lineNumber;
-                    continue;
-                }
-            }
-
-            // First non-empty line (getline ignores lines with only whitespace characters).
-            tokenizer.str(line);
-            tokenizer >> token;
-            offset = 0;
-
-            if (token.data == "#") {
-                // Spaces are allowed between the '#' and 'type' directives, as long as they are on the same line.
-                if (tokenizer.eof()) {
-                    // '#' character on a single line is not allowed.
-                    ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "Invalid preprocessor directive.", offset + token.before).c_str());
-                    throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-                }
-
-                offset += token.size();
-                tokenizer >> token; // Preprocessor directive.
-
-                if (token.data == "type") {
-                    goto type;
-                }
-                else if (processingShader) {
-                    goto unchanged;
-                }
-                else {
-                    goto error;
-                }
-            }
-            else if (token.data == "#type") {
-                goto type;
-            }
-            else if (processingShader) {
-                goto unchanged;
-            }
-            else {
-                goto error;
-            }
-
-            type: {
-                if (processingShader) {
-                    // Encountered next #type directive in .glsl shader source.
-                    // Parse the portion of the joint shader source file belonging to this shader type.
-                    ParseFile(file.str(), info, context);
-                    file.str(""); // Clear for next shader.
-                    out.emplace(info.type, std::move(info));
-                }
-
-                if (tokenizer.eof()) {
-                    // #type must name a shader type.
-                    ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "#type directive missing shader type.", offset + token.before + token.data.size() + 1).c_str());
-                    throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-                }
-
-                offset += token.size();
-                tokenizer >> token; // Shader type.
-
-                if (!ValidateShaderType(token.data)) {
-                    builder.str("");
-                    builder << "Invalid shader type (received '" << token.data << "', expecting 'vert' or 'vertex' for vertex shaders, 'frag' or 'fragment' for fragment shaders, 'geom' or 'geometry' for geometry shaders, 'tess' or 'tesselation' for tesselation shaders, 'comp' or 'compute' for compute shaders).";
-
-                    ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, builder.str(), offset + token.before, token.data.size()).c_str());
-                    throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-                }
-
-                // Found the starting point of a valid shader.
-                info = ShaderInfo();
-                info.filepath = filepath;
-                info.workingDirectory = GetAssetDirectory(filepath);
-                info.type = ToShaderType(token.data);
-                assert(info.type != ShaderType::INVALID); // Verified above.
-
-                processingShader = true;
-
-                // Check for extraneous characters after the #type directive.
-                if (!tokenizer.eof()) {
-                    unsigned extraCharactersOffset = offset + token.size();
-                    Token temp { };
-
-                    // Have error message point to the start of the first extraneous token.
-                    tokenizer >> temp;
-                    extraCharactersOffset += temp.before;
-
-                    // Skip any spaces before the start of the first extraneous token.
-                    unsigned numExtraCharacters = temp.data.size();
-                    while (!tokenizer.eof()) {
-                        tokenizer >> temp;
-                        numExtraCharacters += temp.size();
-                    }
-
-                    info.warnings.emplace_back(GetFormattedMessage(context, filepath, line, lineNumber, "Extraneous tokens at the end of #type directive will be ignored.", extraCharactersOffset, numExtraCharacters));
-                }
-
-                ++lineNumber;
-                continue;
-            }
-
-            unchanged: {
-                file << line << std::endl;
-                ++lineNumber;
-                continue;
-            }
-
-            error: {
-                // In a .glsl shader file, first non-emtpy line needs to be a #type preprocessor directive.
-                ImGuiLog::Instance().LogError("%s", GetFormattedMessage(context, filepath, line, lineNumber, "First non-whitespace token in a .glsl shader file must be a #type preprocessor directive.", offset + token.before).c_str());
-                throw std::runtime_error("ShaderPreprocessor::ProcessFile call failed - see out/log.txt for more details.");
-            }
-        }
-
-        if (processingShader) {
-            // Parsing for the last shader in the file.
-            ParseFile(file.str(), info, context);
-            out.emplace(info.type, std::move(info));
-        }
-
-        return out;
-    }
-
     bool ShaderPreprocessor::ParseFile(const std::string& source, ShaderInfo& info, ProcessingContext& context) {
         std::string file = context.includeStack.empty() ? info.filepath : context.includeStack.back().file;
 
@@ -420,9 +264,7 @@ namespace Sandbox {
                 // Spaces are allowed between the '#' and 'include' / 'pragma' directives, as long as they are on the same line.
                 if (tokenizer.eof()) {
                     // '#' character on a single line is not allowed.
-                    info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Invalid preprocessor directive.", offset + token.before));
-                    info.success = false;
-
+                    context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Invalid preprocessor directive.", offset + token.before));
                     return false;
                 }
 
@@ -458,9 +300,7 @@ namespace Sandbox {
             include: {
                 if (tokenizer.eof()) {
                     // #include must have filepath token to include.
-                    info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "#include directive missing \"FILENAME\" or FILENAME.", offset + token.before + token.data.size() + 1));
-                    info.success = false;
-
+                    context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "#include directive missing \"FILENAME\" or FILENAME.", offset + token.before + token.data.size() + 1));
                     return false;
                 }
 
@@ -475,9 +315,7 @@ namespace Sandbox {
 
                 if ((first && !last) || (!first && last)) {
                     // Filepath needs to be either be surrounded by "" or have no decoration.
-                    info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Include filepath must be in the format \"FILENAME\" or FILENAME.", offset, token.data.size()));
-                    info.success = false;
-
+                    context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Include filepath must be in the format \"FILENAME\" or FILENAME.", offset, token.data.size()));
                     return false;
                 }
 
@@ -508,7 +346,7 @@ namespace Sandbox {
                         numExtraCharacters += temp.size();
                     }
 
-                    info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Extraneous tokens at the end of #version directive will be ignored.", extraCharactersOffset, numExtraCharacters));
+                    context.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Extraneous tokens at the end of #version directive will be ignored.", extraCharactersOffset, numExtraCharacters));
                 }
 
                 if (!Exists(filepath)) {
@@ -525,9 +363,7 @@ namespace Sandbox {
                                 offset += 1;
                             }
 
-                            info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Invalid file extension for included file.", offset));
-                            info.success = false;
-
+                            context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Invalid file extension for included file.", offset));
                             return false;
                         }
 
@@ -578,9 +414,7 @@ namespace Sandbox {
 
                             builder << "Did you forget to add a custom include directory with ShaderPreprocessor::AddIncludeDirectory?";
 
-                            info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
-                            info.success = false;
-
+                            context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
                             return false;
                         }
 
@@ -599,9 +433,7 @@ namespace Sandbox {
                             }
                             builder << '\'' << *start << "') for file '" << filepath << "'. Shader files require unique names (for includes local to configured shader include directories) or must have their path explicitly specified.";
 
-                            info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
-                            info.success = false;
-
+                            context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
                             return false;
                         }
 
@@ -613,9 +445,7 @@ namespace Sandbox {
                         builder.str("");
                         builder << "File '" << filepath << "' not found. Did you forget to add a custom include directory with ShaderPreprocessor::AddIncludeDirectory?";
 
-                        info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
-                        info.success = false;
-
+                        context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
                         return false;
                     }
                 }
@@ -628,9 +458,7 @@ namespace Sandbox {
                     builder.str("");
                     builder << "Detected circular include of file '" << filepath << "' (cannot include base shader file for processing).";
 
-                    info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber,builder.str(), offset, token.data.size()));
-                    info.success = false;
-
+                    context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber,builder.str(), offset, token.data.size()));
                     return false;
                 }
 
@@ -640,9 +468,7 @@ namespace Sandbox {
                     builder.str("");
                     builder << "Detected circular include of file '" << filepath << "' (self inclusion).";
 
-                    info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber,builder.str(), offset, token.data.size()));
-                    info.success = false;
-
+                    context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber,builder.str(), offset, token.data.size()));
                     return false;
                 }
 
@@ -652,9 +478,7 @@ namespace Sandbox {
                         builder.str("");
                         builder << "Detected circular include of file '" << filepath << "' (original include found in file '" << data.parent.file << "' on line " << data.parent.lineNumber << ").";
 
-                        info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber,builder.str(), offset, token.data.size()));
-                        info.success = false;
-
+                        context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber,builder.str(), offset, token.data.size()));
                         return false;
                     }
                 }
@@ -669,7 +493,7 @@ namespace Sandbox {
                     builder.str("");
                     builder << "Duplicate include of file '" << filepath << "' encountered (original include found in file '" << dependency.parent.file << "' on line " << dependency.parent.lineNumber << ").";
 
-                    info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
+                    context.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset, token.data.size()));
                 }
                 else {
                     // Register new "in-flight" dependency.
@@ -694,9 +518,7 @@ namespace Sandbox {
             version: {
                 if (tokenizer.eof()) {
                     // #version must have shader version number.
-                    info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "#version directive missing version number.", offset + token.before + token.data.size() + 1));
-                    info.success = false;
-
+                    context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "#version directive missing version number.", offset + token.before + token.data.size() + 1));
                     return false;
                 }
 
@@ -712,7 +534,7 @@ namespace Sandbox {
                         builder.str("");
                         builder << "Shader version mismatch, using shader version '" << info.version.version << "' found on line " << info.version.location.lineNumber << " of file '" << info.version.location.file << "'.";
 
-                        info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
+                        context.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
                     }
                 }
                 else {
@@ -721,9 +543,7 @@ namespace Sandbox {
                         builder.str("");
                         builder << "Invalid shader version (received '" << token.data << "', expecting 110, 120, 130, 140, 150, 330, 400, 410, 420, 430, 440, 450, or 460).";
 
-                        info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
-                        info.success = false;
-
+                        context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
                         return false;
                     }
 
@@ -738,9 +558,7 @@ namespace Sandbox {
                             builder.str("");
                             builder << "Invalid shader profile (received '" << token.data << "', expecting 'core' or 'compatibility').";
 
-                            info.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
-                            info.success = false;
-
+                            context.errors.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
                             return false;
                         }
 
@@ -764,7 +582,7 @@ namespace Sandbox {
                                 numExtraCharacters += temp.size();
                             }
 
-                            info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", extraCharactersOffset, numExtraCharacters));
+                            context.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Extra tokens at the end of #version directive will be ignored.", extraCharactersOffset, numExtraCharacters));
                             out << line.substr(0, offset) << std::endl; // Remove extra characters at the end of line.
                         }
                         else {
@@ -775,7 +593,7 @@ namespace Sandbox {
                         // Shader profile not provided, default to ShaderProfile::CORE.
 
                         // Manual offset: should point to the character directly after the shader version number, regardless of how many additional whitespace characters there are at the end of the line.
-                        info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Encountered eol when expecting shader profile - defaulting to 'core'.", offset + token.size() + 1));
+                        context.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, "Encountered eol when expecting shader profile - defaulting to 'core'.", offset + token.size() + 1));
                         info.profile = ShaderProfile::CORE;
 
                         // Ensure proper spacing when appending shader profile to source file.
@@ -797,7 +615,7 @@ namespace Sandbox {
                 builder.str("");
                 builder << "#type preprocessor directive is not valid in '." << GetAssetExtension(file) << "' files. Line will be ignored."; // Extension is validated above.
 
-                info.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
+                context.warnings.emplace_back(GetFormattedMessage(context, file, line, lineNumber, builder.str(), offset + token.before, token.data.size()));
 
                 out << std::endl;
                 ++lineNumber;
@@ -814,8 +632,6 @@ namespace Sandbox {
 
         info.source = out.str();
         info.source.pop_back(); // Remove trailing newline.
-
-        info.success = true;
         return true;
     }
 
@@ -874,7 +690,7 @@ namespace Sandbox {
 
     // Used for validating shader file extensions.
     [[nodiscard]] bool ShaderPreprocessor::ValidateShaderExtension(const std::string& in) const {
-    	static std::vector<std::string> validShaderExtensions { "vert", "frag", "geom", "tess", "comp", "glsl" };
+    	static std::vector<std::string> validShaderExtensions { "vert", "frag", "geom", "tess", "comp" };
     	std::string extension = ToLower(in);
 
     	for (const std::string& valid : validShaderExtensions) {

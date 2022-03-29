@@ -27,11 +27,6 @@ namespace Sandbox {
             // Resize custom frame buffers + render attachments, configure cameras, etc.
             virtual void OnWindowResize(int width, int height);
 
-            // 'Lock' changes to scene name / data directory.
-            // Any attempts to change scene name / data directory AFTER the scene constructor are ignored.
-            // Scene name + data configuration should be done in the scene constructor.
-            void Lock();
-
             // Provide a public-facing name for the scene.
             // If not specified, data directory gets created from scene name.
             void SetName(const std::string& name);
@@ -43,6 +38,13 @@ namespace Sandbox {
             [[nodiscard]] const std::string& GetShaderCacheDirectory() const;
 
         protected:
+            friend class SceneManager;
+
+            // 'Lock' changes to scene name / data directory.
+            // Any attempts to change scene name / data directory AFTER the scene constructor are ignored.
+            // Scene name + data configuration should be done in the scene constructor.
+            void Lock();
+
             std::string name_; // User-facing scene name.
 
             // Derived files / data directories.

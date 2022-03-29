@@ -4,6 +4,18 @@ set(CORE_SOURCE_FILES
         "${PROJECT_SOURCE_DIR}/src/main.cpp"
         "${PROJECT_SOURCE_DIR}/src/pch.cpp"
 
+        # API
+        # Shader
+        "common/api/shader/shader.cpp"
+        "common/api/shader/shader_types.cpp"
+        "common/api/shader/shader_component.cpp"
+        "common/api/shader/shader_library.cpp"
+        "common/api/shader/shader_uniform.cpp"
+        "common/api/shader/shader_preprocessor.cpp"
+        "common/api/shader/shader_descriptor.cpp"
+        "common/api/shader/shader_compiler.cpp"
+        "common/api/shader/shader_uniform_lut.cpp"
+
         # Scenes
         "scenes/deferred_rendering/deferred_rendering.cpp"
         "scenes/cs562/project1/project1.cpp"
@@ -48,14 +60,7 @@ set(CORE_SOURCE_FILES
         "common/geometry/model_manager.cpp"
         "common/geometry/object_loader.cpp"
         "common/application/scene.cpp"
-        "common/api/shader/shader.cpp"
-        "common/api/shader/shader_types.cpp"
-        "common/api/shader/shader_component.cpp"
-        "common/api/shader/shader_library.cpp"
-        "common/api/shader/shader_uniform.cpp"
-        "common/api/shader/shader_preprocessor.cpp"
-        "common/api/shader/shader_descriptor.cpp"
-        "common/api/shader/shader_compiler.cpp"
+
         "common/texture/texture.cpp"
         "common/geometry/transform.cpp"
         "common/api/window.cpp"

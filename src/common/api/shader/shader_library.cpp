@@ -1,6 +1,7 @@
 
 #include "common/api/shader/shader_library.h"
 #include "common/utility/log.h"
+#include "common/api/shader/shader_preprocessor.h"
 
 namespace Sandbox {
 
@@ -13,14 +14,13 @@ namespace Sandbox {
         }
     }
 
-    Shader* ShaderLibrary::CreateShader(const std::string& name, const std::initializer_list<std::string>& shaderComponentPaths) {
-        auto iterator = shaders_.find(name);
-
-        if (iterator != shaders_.end()) {
-            throw std::runtime_error("From ShaderLibrary::CreateShader: Instance of shader with the name '" + name + "' already exists.");
+    Shader* ShaderLibrary::CreateShader(const std::string& name, std::initializer_list<std::string> sourceFiles) {
+        if (shaders_.find(name) != shaders_.end()) {
+            ImGuiLog::Instance().LogError("Instance of shader with name '%s' already exists in the ShaderLibrary.");
+            throw std::runtime_error("ShaderLibrary::CreateShader call failed - see out/log.txt for more details.");
         }
 
-        Shader* shader = new Shader(name, shaderComponentPaths);
+        Shader* shader = new Shader(name, sourceFiles);
         shaders_.emplace(name, shader);
 
         return shader;

@@ -4,29 +4,48 @@
 
 namespace Sandbox {
 
-    std::vector<std::uint32_t> ShaderCompiler::CompileToSPIRV(const ShaderInfo& info) {
-        shaderc::Compiler compiler;
+    ShaderCompiler::ShaderInfo::ShaderInfo() {
+    }
+
+    ShaderCompiler::ShaderInfo ShaderCompiler::ProcessFile(const ShaderPreprocessor::ShaderInfo& file) {
+        ShaderInfo info { };
+        ProcessingContext context { };
+
+        bool status = CompileToSPIRV(file, info, context);
+        if (!status) {
+            throw std::runtime_error("ShaderCompiler::ProcessFile call failed - see out/log.txt for more details.");
+        }
+
+        return info;
+    }
+
+    bool ShaderCompiler::CompileToSPIRV(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, ProcessingContext& context) const {
+        std::stringstream builder;
+
         shaderc::CompileOptions options;
-
-        // TODO: Detect target environment from shader version (unsupported).
-
         // No difference between OpenGL 4.5 and 4.6 (from documentation).
-        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
+        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5); // TODO: Detect target environment from shader version (currently unsupported?).
         options.SetSourceLanguage(shaderc_source_language_glsl);
-        options.SetForcedVersionProfile(info.version.version, ToSPIRVShaderProfile(info.profile));
+        options.SetForcedVersionProfile(file.version.version, ToSPIRVShaderProfile(file.profile));
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
-        shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(info.source, ToSPIRVShaderType(info.type), info.filepath.c_str(), "main", options);
+        shaderc::Compiler compiler;
+        shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(file.source, ToSPIRVShaderType(file.type), file.filepath.c_str(), "main", options);
+
         if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-            ImGuiLog::Instance().LogError("Compilation of shader file '%s' exited with %i error(s). Provided error message: %s", info.filepath.c_str(), module.GetNumErrors(), module.GetErrorMessage().c_str());
-            throw std::runtime_error("ShaderCompiler::CompileToSPIRV call failed - see out/log.txt for more details.");
+            builder << "Compilation of shader file '" << file.filepath << "' exited with " << module.GetNumErrors() << " error(s). Provided error message: " << module.GetErrorMessage() << std::endl;
+            context.errors.emplace_back(builder.str());
+            return false;
         }
 
         if (module.GetNumWarnings() > 0) {
-            ImGuiLog::Instance().LogWarning("Compilation of shader file '%s' exited with %i warning(s).", info.filepath.c_str(), module.GetNumWarnings());
+            builder << "Compilation of shader file '" << file.filepath << "' exited with " << module.GetNumWarnings() << " warning(s)." << std::endl;
+            context.warnings.emplace_back(builder.str());
         }
 
-        return { module.cbegin(), module.cend() };
+        info.binary = { module.cbegin(), module.cend() };
+
+        return true;
     }
 
     shaderc_profile ShaderCompiler::ToSPIRVShaderProfile(ShaderProfile profile) const {
@@ -59,11 +78,5 @@ namespace Sandbox {
         }
     }
 
-    void ShaderCompiler::Reflect(const std::vector<std::uint32_t>& binary) {
-        spirv_cross::CompilerGLSL compiler(binary);
-        spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
-        spirv_cross::CompilerGLSL::Options options;
-        options.version
-    }
 }

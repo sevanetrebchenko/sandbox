@@ -177,7 +177,7 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
         shaderLibrary.CreateShader("Global Lighting Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting.frag" });
         shaderLibrary.CreateShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
-        shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
+//        shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
         shaderLibrary.CreateShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
     }
@@ -248,7 +248,7 @@ namespace Sandbox {
         });
 
         ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
-            transform.SetPosition(glm::vec3(10.0f, 10.0f, 5.0f));
+            transform.SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
             transform.SetScale(glm::vec3(20.f));
         });
         ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f), 4.0f);

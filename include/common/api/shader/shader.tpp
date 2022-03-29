@@ -23,7 +23,7 @@ namespace Sandbox {
         }
     }
 
-    template<typename DataType>
+    template <typename DataType>
     void Shader::SetUniformData(GLuint uniformLocation, DataType value) {
         // BOOL, INT
         if constexpr (std::is_same_v<DataType, int> || std::is_same_v<DataType, bool>) {

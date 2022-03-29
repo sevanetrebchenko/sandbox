@@ -12,8 +12,10 @@ namespace Sandbox {
             explicit ShaderComponent(const std::string& filepath);
             ~ShaderComponent() = default;
 
+            [[nodiscard]] GLuint Compile() const;
+
         private:
-//            std::unordered_set<ShaderInclude, ShaderIncludeHash> dependencies_;
+            std::string filepath_;
     };
 
 }
