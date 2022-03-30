@@ -11,6 +11,7 @@ uniform mat4 normalTransform;
 
 out vec4 worldPosition;
 out vec4 worldNormal;
+out vec3 shadowPosition;
 
 void main() {
     // Transform to screen coordinates (NDC).

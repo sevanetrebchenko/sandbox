@@ -43,6 +43,7 @@ namespace Sandbox {
             void GeometryPass();
 
             void ShadowPass();
+            [[nodiscard]] glm::mat4 CalculateShadowMatrix(bool orthographic);
 
             // Lighting pass for global lights.
             void GlobalLightingPass();
