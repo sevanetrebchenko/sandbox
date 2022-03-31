@@ -18,6 +18,8 @@ namespace Sandbox {
             template <typename DataType>
             void SetUniform(const std::string& uniformName, DataType value);
 
+            [[nodiscard]] GLuint GetID() const;
+
         private:
             friend class ShaderLibrary;
             // Shader needs to know component paths (even if binary is cached) to support shader hot loading.

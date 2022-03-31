@@ -12,7 +12,7 @@ namespace Sandbox {
     SceneCS562Project2::SceneCS562Project2() : fbo_(2560, 1440),
                                                shadowMap_(4096, 4096),
                                                camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
-                                               blurKernelRadius_(5)
+                                               blurKernelRadius_(50)
                                                {
     }
 
@@ -57,6 +57,7 @@ namespace Sandbox {
 //        Backend::Core::EnableFlag(GL_CULL_FACE);
 //        Backend::Core::CullFace(GL_FRONT);
         ShadowPass();
+        BlurPass();
 //        Backend::Core::DisableFlag(GL_CULL_FACE);
 
         // Restore viewport.
@@ -167,6 +168,16 @@ namespace Sandbox {
                 ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
 
                 ImGui::Text("Shadow Map:");
+                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Separator();
+            }
+
+            {
+                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur");
+                float maxWidth = ImGui::GetWindowContentRegionWidth();
+                ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
+
+                ImGui::Text("Blurred Shadow Map:");
                 ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
                 ImGui::Separator();
             }
@@ -359,6 +370,12 @@ namespace Sandbox {
         outputTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
         outputTexture->Unbind();
         shadowMap_.AttachRenderTarget(outputTexture);
+
+        Texture* blurTexture = new Texture("blur");
+        blurTexture->Bind();
+        blurTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        blurTexture->Unbind();
+        shadowMap_.AttachRenderTarget(blurTexture);
 
         Texture* shadowTexture = new Texture("depth");
         shadowTexture->Bind();
@@ -612,6 +629,39 @@ namespace Sandbox {
             blurKernel_.SetSubData(elements[i].GetBufferOffset(), 16, static_cast<const void*>(&kernel[i]));
         }
         blurKernel_.Unbind();
+    }
+
+    void SceneCS562Project2::BlurPass() {
+        Shader* blurShader = ShaderLibrary::Instance().GetShader("Blur");
+
+        blurShader->Bind();
+        GLuint ID = blurShader->GetID();
+
+        shadowMap_.BindForReadWrite();
+
+        // Set uniforms.
+        // 'source' image.
+        GLint source = glGetUniformLocation(ID, "source");
+        glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("output")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+        glUniform1i(source, 0);
+
+        // 'destination' image.
+        GLint destination = glGetUniformLocation(ID, "destination");
+        glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("blur")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+        glUniform1i(destination, 1);
+
+        // 'blurKernel' already set.
+
+        GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
+        glUniform1i(blurKernelRadius, blurKernelRadius_);
+
+        // Dispatch shader horizontally.
+        glDispatchCompute(shadowMap_.GetWidth() / 128, shadowMap_.GetHeight(), 1);
+
+        shadowMap_.Unbind();
+
+//        // Dispatch shader vertically.
+//        glDispatchCompute(shadowMap_.GetWidth(), shadowMap_.GetHeight() / 128, 1);
     }
 
 }

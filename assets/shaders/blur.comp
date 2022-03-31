@@ -14,11 +14,32 @@ layout (std140, binding = 3) uniform BlurKernel {
     float weights[MAX_BLUR_KERNEL_SIZE];
 } blurKernel;
 
-uniform int blurKernelRadius;
+uniform int blurKernelRadius; // w
 
 // Data that is shared with other threads in the dispatch group.
 shared float v[128 + MAX_BLUR_KERNEL_SIZE];
 
 void main() {
+    ivec2 imagePosition = ivec2(gl_GlobalInvocationID.xy);
+    uint threadIndex = gl_LocalInvocationID.x; // 128 x 1, only x matters.
 
+    v[threadIndex] = imageLoad(source, imagePosition + ivec2(-blurKernelRadius, 0)).r; // Reading depth information, all channels store the same.
+
+    // First 2 w threads load an extra pixel out past the 128 thread boundary.
+    if (threadIndex < 2 * blurKernelRadius) {
+        v[threadIndex + 128] = imageLoad(source, imagePosition + ivec2(128 - blurKernelRadius, 0)).r;
+    }
+
+    // Force memory synchronization.
+    barrier();
+
+    // Compute blur.
+    float sum = 0.0f;
+    for (int i = 0; i <= 2 * blurKernelRadius; ++i) {
+        sum += blurKernel.weights[i] * v[threadIndex + i];
+    }
+
+    // Store 'sum' in the output image.
+    // vec4 b = vec4(sum, sum * sum, sum * sum * sum, sum * sum * sum * sum);
+    imageStore(destination, imagePosition, vec4(sum, sum, sum, 1.0f));
 }

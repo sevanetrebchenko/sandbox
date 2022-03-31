@@ -133,4 +133,8 @@ namespace Sandbox {
         }
     }
 
+    GLuint Shader::GetID() const {
+        return ID_;
+    }
+
 }

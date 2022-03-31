@@ -48,6 +48,7 @@ namespace Sandbox {
 
             // Function called on project startup or whenever blur kernel radius changes.
             void InitializeBlurKernel();
+            void BlurPass();
 
             // Lighting pass for global lights.
             void GlobalLightingPass();
