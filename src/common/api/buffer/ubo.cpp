@@ -124,7 +124,7 @@ namespace Sandbox {
             currentOffset += totalElementSize;
         }
 
-        _stride = currentOffset;
+        _stride = currentOffset + (16 - currentOffset % 16);
     }
 
     const std::vector<UniformBufferElement> &UniformBlockLayout::GetBufferElements() const {

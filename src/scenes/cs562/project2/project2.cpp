@@ -11,8 +11,9 @@ namespace Sandbox {
 
     SceneCS562Project2::SceneCS562Project2() : fbo_(2560, 1440),
                                                shadowMap_(4096, 4096),
-                                               camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight())
-    {
+                                               camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
+                                               blurKernelRadius_(5)
+                                               {
     }
 
     SceneCS562Project2::~SceneCS562Project2() {
@@ -28,6 +29,7 @@ namespace Sandbox {
         ConfigureModels();
         ConstructFBO();
         ConstructShadowMap();
+        InitializeBlurKernel();
 
         camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
@@ -202,6 +204,7 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
         shaderLibrary.CreateShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
+        shaderLibrary.CreateShader("Blur", { "assets/shaders/blur.comp" });
     }
 
     void SceneCS562Project2::InitializeMaterials() {
@@ -465,7 +468,6 @@ namespace Sandbox {
         // Set camera uniforms.
         globalLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
         globalLightingShader->SetUniform("shadowTransform", CalculateShadowMatrix());
-        globalLightingShader->SetUniform("shadowBias", 0.001f);
 
         // Set global lighting uniforms.
         globalLightingShader->SetUniform("lightDirection", directionalLight_.direction_);
@@ -543,6 +545,73 @@ namespace Sandbox {
         }
 
         return projection * view;
+    }
+
+    void SceneCS562Project2::InitializeBlurKernel() {
+        static bool layoutInitialized = false;
+
+        // Initialize uniform block layout.
+        const unsigned maxBlurKernelRadius = 50;
+        unsigned maximumSize = 2 * maxBlurKernelRadius + 1; // 2 w + 1.
+
+        if (!layoutInitialized) {
+            std::vector<UniformBufferElement> layoutElements;
+            layoutElements.reserve(maximumSize);
+
+            for (unsigned i = 0; i < maximumSize; ++i) {
+                layoutElements.emplace_back(UniformBufferElement { ShaderDataType::FLOAT, "weights[" + std::to_string(i) + "]" } );
+            }
+
+            UniformBlockLayout layout { };
+            layout.SetBufferElements(0, 1, layoutElements);
+
+            UniformBlock block { 3, layout };
+            blurKernel_.SetUniformBlock(block);
+
+            layoutInitialized = true;
+        }
+
+        // Provide default values to uniform block data.
+        float value = 0.0f;
+
+        const std::vector<UniformBufferElement>& elements = blurKernel_.GetUniformBlock().GetUniformBlockLayout().GetBufferElements();
+        for (int i = 0; i < maximumSize; ++i) {
+            blurKernel_.SetSubData(elements[i].GetBufferOffset(), 16, static_cast<const void*>(&value));
+        }
+
+        unsigned size = 2 * blurKernelRadius_ + 1; // 2 w + 1.
+
+        // Initialize uniform block data.
+        std::vector<float> kernel;
+        kernel.resize(size, 0.0f);
+
+        float s = static_cast<float>(blurKernelRadius_) / 2.0f;
+        int offset = 0;
+
+        for (int i = -static_cast<int>(blurKernelRadius_); i <= static_cast<int>(blurKernelRadius_); ++i) {
+            float p = (static_cast<float>(i) / s) * (static_cast<float>(i) / s);
+            kernel[offset++] = glm::exp(-0.5f * p);
+        }
+
+        // Normalize data to sum to 1.
+        // Since set of data is guaranteed to be positive, normalization means dividing each element by the sum.
+        float sum = 0.0f;
+        for (int i = 0; i < size; ++i) {
+            sum += kernel[i];
+        }
+
+        assert(sum > 0.0f);
+
+        for (int i = 0; i < size; ++i) {
+            kernel[i] /= sum;
+        }
+
+        // Set data.
+        blurKernel_.Bind();
+        for (int i = 0; i < size; ++i) {
+            blurKernel_.SetSubData(elements[i].GetBufferOffset(), 16, static_cast<const void*>(&kernel[i]));
+        }
+        blurKernel_.Unbind();
     }
 
 }

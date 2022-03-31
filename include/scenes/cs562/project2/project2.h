@@ -7,6 +7,7 @@
 #include "common/material/material_library.h"
 #include "common/api/shader/shader_library.h"
 #include "common/camera/fps_camera.h"
+#include "common/api/buffer/ubo.h"
 
 #include "scenes/cs562/project1/light.h"
 
@@ -45,6 +46,9 @@ namespace Sandbox {
             void ShadowPass();
             [[nodiscard]] glm::mat4 CalculateShadowMatrix();
 
+            // Function called on project startup or whenever blur kernel radius changes.
+            void InitializeBlurKernel();
+
             // Lighting pass for global lights.
             void GlobalLightingPass();
 
@@ -52,12 +56,13 @@ namespace Sandbox {
             void LocalLightingPass();
 
             FrameBufferObject fbo_;
-            FrameBufferObject shadowMap_;
             FPSCamera camera_;
-
             MaterialLibrary materialLibrary_;
-
             DirectionalLight directionalLight_;
+
+            FrameBufferObject shadowMap_;
+            UniformBufferObject blurKernel_;
+            unsigned blurKernelRadius_;
     };
 
 }

@@ -20,7 +20,6 @@ uniform vec3 lightDirection;
 uniform vec3 lightColor;
 uniform float lightBrightness;
 uniform mat4 shadowTransform;
-uniform float shadowBias;
 
 // Shader outputs.
 layout (location = 0) out vec4 fragColor;
@@ -51,7 +50,10 @@ bool IsShadowed(vec4 worldPosition, vec4 worldNormal) {
 
             // Adjust shadow bias offset based on the angle between the surface normal and light direction.
             // Steeper angles with a hardcoded shadow bias value may still show shadow acne.
-            float shadowBias = max(0.005f * (1.0f - dot(worldNormal.xyz, lightDirection)), shadowBias);
+            float shadowBiasMin = 0.001f;
+            float shadowBiasMax = 0.005f;
+
+            float shadowBias = max(shadowBiasMax * (1.0f - dot(worldNormal.xyz, lightDirection)), shadowBiasMin);
             isShadowed = fragmentDepth > shadowMapDepth + shadowBias;
         }
     }

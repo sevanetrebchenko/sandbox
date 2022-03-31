@@ -1,0 +1,24 @@
+
+#version 450 core
+
+// Size of the maximum allowed blur kernel, in pixels.
+#define MAX_BLUR_KERNEL_RADIUS 50
+#define MAX_BLUR_KERNEL_SIZE   2 * MAX_BLUR_KERNEL_RADIUS + 1
+
+layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in; // Declares (128 x 1 x 1) thread group size.
+
+layout (rgba32f) uniform readonly  image2D source;
+layout (rgba32f) uniform writeonly image2D destination;
+
+layout (std140, binding = 3) uniform BlurKernel {
+    float weights[MAX_BLUR_KERNEL_SIZE];
+} blurKernel;
+
+uniform int blurKernelRadius;
+
+// Data that is shared with other threads in the dispatch group.
+shared float v[128 + MAX_BLUR_KERNEL_SIZE];
+
+void main() {
+
+}
