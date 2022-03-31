@@ -32,16 +32,16 @@ bool InRange(float value, float low, float high) {
 bool IsShadowed(vec4 worldPosition, vec4 worldNormal) {
     bool isShadowed = false;
 
-    // 'shadowCoordinate' is in range [-1.0f, 1.0f] (NDC space).
+    // 'shadowCoordinate' is in range [-1.0, 1.0] (NDC space).
     vec4 shadowCoordinate = shadowTransform * worldPosition; // Where worldPosition = modelTransform * vec4(vertexPosition, 1.0f)
 
-    // Since 'shadowMap' is a texture, 'shadowCoordinate' needs to be converted to texture coordinates [0.0f, 1.0f].
+    // Since 'shadowMap' is a texture, 'shadowCoordinate' needs to be converted to texture coordinates [0.0, 1.0].
     shadowCoordinate = (shadowCoordinate + 1.0f) / 2.0f;
 
     // Check 1: don't project things behind the position of the light.
     if (shadowCoordinate.w > 0.0f) {
         // Since this value was not computed on the vertex shader, GLSL has not performed the perspective divide to transform
-        // the shadow coordinate (range: [0.0f, w]) to NDC (range: [0.0f, 1.0f]). This needs to be done manually.
+        // the shadow coordinate (range: [0.0, shadowCoordinate.w]) to NDC (range: [0.0, 1.0]). This needs to be done manually.
         vec3 shadowIndex = shadowCoordinate.xyz /= shadowCoordinate.w;
         float fragmentDepth = shadowIndex.z;
 
