@@ -10,7 +10,7 @@
 namespace Sandbox {
 
     SceneCS562Project2::SceneCS562Project2() : fbo_(2560, 1440),
-                                               shadowMap_(4096, 4096),
+                                               shadowMap_(1024, 1024),
                                                camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
                                                blurKernelRadius_(50)
                                                {
@@ -215,7 +215,8 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
         shaderLibrary.CreateShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
-        shaderLibrary.CreateShader("Blur", { "assets/shaders/blur.comp" });
+        shaderLibrary.CreateShader("Blur Horizontal", { "assets/shaders/blur_horizontal.comp" });
+        shaderLibrary.CreateShader("Blur Vertical", { "assets/shaders/blur_vertical.comp" });
     }
 
     void SceneCS562Project2::InitializeMaterials() {
@@ -359,8 +360,8 @@ namespace Sandbox {
     }
 
     void SceneCS562Project2::ConstructShadowMap() {
-        int contentWidth = 4096;
-        int contentHeight = 4096;
+        int contentWidth = 1024;
+        int contentHeight = 1024;
 
         shadowMap_.BindForReadWrite();
 
@@ -371,11 +372,18 @@ namespace Sandbox {
         outputTexture->Unbind();
         shadowMap_.AttachRenderTarget(outputTexture);
 
+        // Textures for compute shader blurring.
         Texture* blurTexture = new Texture("blur");
         blurTexture->Bind();
         blurTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
         blurTexture->Unbind();
         shadowMap_.AttachRenderTarget(blurTexture);
+
+        Texture* auxiliaryTexture = new Texture("auxiliary");
+        auxiliaryTexture->Bind();
+        auxiliaryTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        auxiliaryTexture->Unbind();
+        shadowMap_.AttachRenderTarget(auxiliaryTexture);
 
         Texture* shadowTexture = new Texture("depth");
         shadowTexture->Bind();
@@ -432,9 +440,11 @@ namespace Sandbox {
     }
 
     void SceneCS562Project2::ShadowPass() {
-        shadowMap_.DrawBuffers(0, 1);
+        shadowMap_.DrawBuffers();
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
+
+        shadowMap_.DrawBuffers(0, 1);
 
         Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Pass");
         shadowShader->Bind();
@@ -632,36 +642,63 @@ namespace Sandbox {
     }
 
     void SceneCS562Project2::BlurPass() {
-        Shader* blurShader = ShaderLibrary::Instance().GetShader("Blur");
-
-        blurShader->Bind();
-        GLuint ID = blurShader->GetID();
-
         shadowMap_.BindForReadWrite();
 
-        // Set uniforms.
-        // 'source' image.
-        GLint source = glGetUniformLocation(ID, "source");
-        glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("output")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-        glUniform1i(source, 0);
+        // Horizontal blur pass.
+        {
+            Shader* blurShader = ShaderLibrary::Instance().GetShader("Blur Horizontal");
 
-        // 'destination' image.
-        GLint destination = glGetUniformLocation(ID, "destination");
-        glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("blur")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-        glUniform1i(destination, 1);
+            blurShader->Bind();
+            GLuint ID = blurShader->GetID();
 
-        // 'blurKernel' already set.
+            // Set uniforms.
+            // 'src' image.
+            GLint src = glGetUniformLocation(ID, "src");
+            glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("output")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            glUniform1i(src, 0);
 
-        GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
-        glUniform1i(blurKernelRadius, blurKernelRadius_);
+            // 'dst' image.
+            GLint dst = glGetUniformLocation(ID, "dst");
+            glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("auxiliary")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glUniform1i(dst, 1);
 
-        // Dispatch shader horizontally.
-        glDispatchCompute(shadowMap_.GetWidth() / 128, shadowMap_.GetHeight(), 1);
+            // 'blurKernel' already set.
+
+            GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
+            glUniform1i(blurKernelRadius, blurKernelRadius_);
+
+            // Dispatch shader horizontally.
+            glDispatchCompute(shadowMap_.GetWidth() / 128, shadowMap_.GetHeight(), 1);
+        }
+
+        // Vertical blur pass.
+        {
+            Shader* blurShader = ShaderLibrary::Instance().GetShader("Blur Vertical");
+
+            blurShader->Bind();
+            GLuint ID = blurShader->GetID();
+
+            // Set uniforms.
+            // 'src' image.
+            GLint src = glGetUniformLocation(ID, "src");
+            glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("auxiliary")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            glUniform1i(src, 0);
+
+            // 'dst' image.
+            GLint dst = glGetUniformLocation(ID, "dst");
+            glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("blur")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glUniform1i(dst, 1);
+
+            // 'blurKernel' already set.
+
+            GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
+            glUniform1i(blurKernelRadius, blurKernelRadius_);
+
+            // Dispatch shader horizontally.
+            glDispatchCompute(shadowMap_.GetWidth(), shadowMap_.GetHeight() / 128, 1);
+        }
 
         shadowMap_.Unbind();
-
-//        // Dispatch shader vertically.
-//        glDispatchCompute(shadowMap_.GetWidth(), shadowMap_.GetHeight() / 128, 1);
     }
 
 }
