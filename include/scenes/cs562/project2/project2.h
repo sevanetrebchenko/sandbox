@@ -43,18 +43,22 @@ namespace Sandbox {
 
             void GeometryPass();
 
-            void ShadowPass();
             [[nodiscard]] glm::mat4 CalculateShadowMatrix();
 
             // Function called on project startup or whenever blur kernel radius changes.
             void InitializeBlurKernel();
-            void BlurPass();
 
             // Lighting pass for global lights.
             void GlobalLightingPass();
 
             // Lighting pass for local lights.
             void LocalLightingPass();
+
+            void RenderToDepthBuffer();
+            void GenerateShadowMap();
+            void RenderShadowMap();
+            void BlurShadowMap();
+            void RenderBlurredShadowMap();
 
             FrameBufferObject fbo_;
             FPSCamera camera_;
@@ -63,7 +67,7 @@ namespace Sandbox {
 
             FrameBufferObject shadowMap_;
             UniformBufferObject blurKernel_;
-            unsigned blurKernelRadius_;
+            int blurKernelRadius_;
     };
 
 }

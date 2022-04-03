@@ -1,27 +1,16 @@
 
 #version 450 core
 
-in vec2 textureCoordinates;
+in vec2 uv;
 
 uniform sampler2D inputTexture; // Explicit binding.
-
-uniform bool linearize;
 uniform float cameraNearPlane;
 uniform float cameraFarPlane;
 
-layout(location = 0) out vec4 fragColor;
-
-float LinearizeDepth(float depth) {
-    return (2.0 * cameraNearPlane) / (cameraFarPlane + cameraNearPlane - depth * (cameraFarPlane - cameraNearPlane));
-}
+out vec4 fragColor;
 
 void main() {
-    float depthValue = texture(inputTexture, textureCoordinates).r; // Depth texture has only one channel.
-
-    if (linearize) {
-        fragColor = vec4(vec3(LinearizeDepth(depthValue)), 1.0f);
-    }
-    else {
-        fragColor = vec4(vec3(depthValue), 1.0);
-    }
+    // Convert from depth buffer range to [0.0, 1.0].
+    float depth = (texture(inputTexture, uv).r - cameraNearPlane) / (cameraFarPlane - cameraNearPlane);
+    fragColor = vec4(vec3(texture(inputTexture, uv).r), 1.0f);
 }

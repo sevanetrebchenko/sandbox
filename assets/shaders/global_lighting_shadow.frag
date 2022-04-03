@@ -28,37 +28,91 @@ bool InRange(float value, float low, float high) {
     return value >= low && value <= high;
 }
 
-bool IsShadowed(vec4 worldPosition, vec4 worldNormal) {
-    bool isShadowed = false;
+// -b +- sqrt(b ^ 2 - 4ac) / 2a
+bool QuadraticFormula(float a, float b, float c, out float s1, out float s2) {
+    float discriminant = (b * b) - 4.0f * a * c;
+    if (discriminant < 0.0f) {
+        // No real roots.
+        return false;
+    }
 
-    // 'shadowCoordinate' is in range [-1.0, 1.0] (NDC space).
-    vec4 shadowCoordinate = shadowTransform * worldPosition; // Where worldPosition = modelTransform * vec4(vertexPosition, 1.0f)
+    float r1 = (-b - sqrt(discriminant)) / (2.0f * a);
+    float r2 = (-b + sqrt(discriminant)) / (2.0f * a);
 
-    // Since 'shadowMap' is a texture, 'shadowCoordinate' needs to be converted to texture coordinates [0.0, 1.0].
-    shadowCoordinate = (shadowCoordinate + 1.0f) / 2.0f;
+    s1 =  min(r1, r2);
+    s2 = max(r1, r2);
+    return true;
+}
 
-    // Check 1: don't project things behind the position of the light.
-    if (shadowCoordinate.w > 0.0f) {
-        // Since this value was not computed on the vertex shader, GLSL has not performed the perspective divide to transform
-        // the shadow coordinate (range: [0.0, shadowCoordinate.w]) to NDC (range: [0.0, 1.0]). This needs to be done manually.
-        vec3 shadowIndex = shadowCoordinate.xyz /= shadowCoordinate.w;
-        float fragmentDepth = shadowIndex.z;
+vec3 CholeskyDecomposition(float m11, float m12, float m13, float m22, float m23, float m33, float z1, float z2, float z3) {
+    float a = sqrt(m11);
+    float b = m12 / a;
+    float c = m13 / a;
+    float d = sqrt(m22 - (b * b));
+    float e = (m23 - b * c) / d;
+    float f = sqrt(m33 - (c * c) - (e * e));
 
-        // Checks 2 - 5: don't project things outside the view frustum of the light.
-        if (InRange(shadowIndex.x, 0.0f, 1.0f) && InRange(shadowIndex.y, 0.0f, 1.0f)) {
-            float shadowMapDepth = texture(shadowMap, shadowIndex.xy).r; // Reading from depth map, can be r, g, or b.
+    float c1 = z1 / a;
+    float c2 = (z2 - b * c1) / d;
+    float c3 = (z3 - c * c1 - e * c2) / f;
 
-            // Adjust shadow bias offset based on the angle between the surface normal and light direction.
-            // Steeper angles with a hardcoded shadow bias value may still show shadow acne.
-            float shadowBiasMin = 0.001f;
-            float shadowBiasMax = 0.005f;
+    float z = c3 / f;
+    float y = (c2 - e * z) / d;
+    float x = (c1 - b * y - c * z) / a;
 
-            float shadowBias = max(shadowBiasMax * (1.0f - dot(worldNormal.xyz, lightDirection)), shadowBiasMin);
-            isShadowed = fragmentDepth > shadowMapDepth + shadowBias;
+    return vec3(x, y, z);
+}
+
+// Returns the amount of shadowing present on point 'p'.
+float G(vec4 p) {
+    vec4 scNDC = shadowTransform * p; // Range: [-1.0, 1.0] (NDC space).
+    scNDC = (scNDC + 1.0f) / 2.0f; // Range: [0.0f, 1.0f] (UV space).
+
+    // Check 1: don't project fragments behind the position of the light.
+    if (scNDC.w > 0.0f) {
+        scNDC /= scNDC.w;
+
+        // Checks 2 - 5: don't process fragments outside the view frustum of the light.
+        // uv = scNDC.xy
+        if (InRange(scNDC.x, 0.0f, 1.0f) && InRange(scNDC.y, 0.0f, 1.0f)) {
+            float zf = scNDC.z;
+
+            vec4 b = texture(shadowMap, scNDC.xy);
+
+            float a = 0.001f;
+            vec4 bp = (1.0f - a) * b + a * vec4(0.5f);
+
+            vec3 c = CholeskyDecomposition(1.0f, bp[0], bp[1], bp[1], bp[2], bp[3], 1.0f, zf, zf * zf);
+
+            // c[2] * z ^ 2 + c[1] * z + c[0] = 0 has solutions z2, z3 where z2 <= z3.
+            float z2;
+            float z3;
+            if (!QuadraticFormula(c[2], c[1], c[0], z2, z3)) {
+                // No roots.
+                return 0.0f;
+            }
+
+            float bias = 0.005f;
+
+            if (zf + bias <= z2) {
+                return 0.0f;
+            }
+            else if (zf + bias <= z3) {
+                float n = (zf * z3) - bp[0] * (zf + z3) + bp[1];
+                float d = (z3 - z2) * (zf - z2);
+
+                return n / d;
+            }
+            else {
+                float n = (z2 * z3) - bp[0] * (z2 + z3) + bp[1];
+                float d = (zf - z2) * (zf - z3);
+
+                return 1.0f - n / d;
+            }
         }
     }
 
-    return isShadowed;
+    return 0.0f;
 }
 
 void main(void) {
@@ -92,14 +146,6 @@ void main(void) {
         specularComponent = lightColor * specularCoefficient * pow(specularMultiplier, specularExponent);
     }
 
-    vec3 color;
-
-    if (IsShadowed(worldPosition, N)) {
-        color = ambientComponent;
-    }
-    else {
-        color = (ambientComponent + diffuseComponent + specularComponent);
-    }
-
+    vec3 color = ambientComponent + (1.0f - G(worldPosition)) * (diffuseComponent + specularComponent);
     fragColor = vec4(color * lightBrightness, 1.0f);
 }

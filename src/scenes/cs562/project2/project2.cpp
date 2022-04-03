@@ -10,9 +10,9 @@
 namespace Sandbox {
 
     SceneCS562Project2::SceneCS562Project2() : fbo_(2560, 1440),
-                                               shadowMap_(1024, 1024),
+                                               shadowMap_(2048, 2048),
                                                camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
-                                               blurKernelRadius_(50)
+                                               blurKernelRadius_(25)
                                                {
     }
 
@@ -37,6 +37,10 @@ namespace Sandbox {
     void SceneCS562Project2::OnUpdate() {
         IScene::OnUpdate();
         camera_.Update();
+
+        // Rotate center model.
+        ComponentWrapper<Transform> transform = ECS::Instance().GetComponent<Transform>("Bunny");
+        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
     }
 
     void SceneCS562Project2::OnPreRender() {
@@ -46,19 +50,29 @@ namespace Sandbox {
     void SceneCS562Project2::OnRender() {
         IScene::OnRender();
 
+        Backend::Core::EnableFlag(GL_DEPTH_TEST);
+
         // Render shadow map.
         glm::vec4 viewport = Backend::Core::GetViewport();
 
         Backend::Core::SetViewport(0, 0, shadowMap_.GetWidth(), shadowMap_.GetHeight());
         shadowMap_.BindForReadWrite();
 
-        // Enable front face culling to avoid peter panning.
-        // Note: only works with fully solid objects.
-//        Backend::Core::EnableFlag(GL_CULL_FACE);
-//        Backend::Core::CullFace(GL_FRONT);
-        ShadowPass();
-        BlurPass();
-//        Backend::Core::DisableFlag(GL_CULL_FACE);
+        // Clear all buffers.
+        shadowMap_.DrawBuffers();
+        Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        RenderToDepthBuffer();
+
+        Backend::Core::DisableFlag(GL_DEPTH_TEST);
+
+        GenerateShadowMap();
+        RenderShadowMap();
+        BlurShadowMap();
+        RenderBlurredShadowMap();
+
+        Backend::Core::EnableFlag(GL_DEPTH_TEST);
 
         // Restore viewport.
         shadowMap_.Unbind();
@@ -163,7 +177,7 @@ namespace Sandbox {
             }
 
             {
-                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("output");
+                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("depth output");
                 float maxWidth = ImGui::GetWindowContentRegionWidth();
                 ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
 
@@ -173,13 +187,17 @@ namespace Sandbox {
             }
 
             {
-                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur");
+                ImGui::Text("Blur Kernel Radius: ");
+                if (ImGui::SliderInt("##kernelRadius", &blurKernelRadius_, 0, 50)) {
+                    InitializeBlurKernel();
+                }
+
+                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur output");
                 float maxWidth = ImGui::GetWindowContentRegionWidth();
                 ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
 
                 ImGui::Text("Blurred Shadow Map:");
                 ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
             }
         }
         ImGui::End();
@@ -212,8 +230,9 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
         shaderLibrary.CreateShader("Global Lighting Shadow Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting_shadow.frag" });
         shaderLibrary.CreateShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
-        shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
-        shaderLibrary.CreateShader("Depth", { "assets/shaders/depth.vert", "assets/shaders/depth.frag" });
+        shaderLibrary.CreateShader("Depth Pass", { "assets/shaders/shadow.vert" });
+        shaderLibrary.CreateShader("Shadow Map Pass", { "assets/shaders/shadow_map.vert", "assets/shaders/shadow_map.frag" });
+        shaderLibrary.CreateShader("Shadow Out Pass", { "assets/shaders/shadow_map.vert", "assets/shaders/shadow_out.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
         shaderLibrary.CreateShader("Blur Horizontal", { "assets/shaders/blur_horizontal.comp" });
         shaderLibrary.CreateShader("Blur Vertical", { "assets/shaders/blur_vertical.comp" });
@@ -268,7 +287,7 @@ namespace Sandbox {
 
         ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
             transform.SetPosition(glm::vec3(0.0f, -4.0f, 0.0f));
-            transform.SetScale(glm::vec3(25.0f));
+            transform.SetScale(glm::vec3(20.0f));
             transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
         });
     }
@@ -360,38 +379,51 @@ namespace Sandbox {
     }
 
     void SceneCS562Project2::ConstructShadowMap() {
-        int contentWidth = 1024;
-        int contentHeight = 1024;
+        int contentWidth = 2048;
+        int contentHeight = 2048;
 
         shadowMap_.BindForReadWrite();
 
-        // Output texture.
-        Texture* outputTexture = new Texture("output");
+        // Texture for visually debugging the shadow map pass.
+        Texture* outputTexture = new Texture("depth output");
         outputTexture->Bind();
         outputTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
         outputTexture->Unbind();
         shadowMap_.AttachRenderTarget(outputTexture);
 
-        // Textures for compute shader blurring.
-        Texture* blurTexture = new Texture("blur");
+        Texture* depthTexture = new Texture("depth");
+        depthTexture->Bind();
+        depthTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        depthTexture->Unbind();
+        shadowMap_.AttachRenderTarget(depthTexture);
+
+        // Texture for visually debugging the shadow map blurring pass.
+        Texture* blurTexture = new Texture("blur output");
         blurTexture->Bind();
         blurTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
         blurTexture->Unbind();
         shadowMap_.AttachRenderTarget(blurTexture);
 
-        Texture* auxiliaryTexture = new Texture("auxiliary");
-        auxiliaryTexture->Bind();
-        auxiliaryTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
-        auxiliaryTexture->Unbind();
-        shadowMap_.AttachRenderTarget(auxiliaryTexture);
+        // Textures for compute shader blurring.
+        Texture* blurHorizontalTexture = new Texture("blur horizontal");
+        blurHorizontalTexture->Bind();
+        blurHorizontalTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        blurHorizontalTexture->Unbind();
+        shadowMap_.AttachRenderTarget(blurHorizontalTexture);
 
-        Texture* shadowTexture = new Texture("depth");
-        shadowTexture->Bind();
-        shadowTexture->ReserveData(Texture::AttachmentType::DEPTH, contentWidth, contentHeight);
-        shadowTexture->Unbind();
-        shadowMap_.AttachRenderTarget(shadowTexture);
+        Texture* blurVerticalTexture = new Texture("blur vertical");
+        blurVerticalTexture->Bind();
+        blurVerticalTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        blurVerticalTexture->Unbind();
+        shadowMap_.AttachRenderTarget(blurVerticalTexture);
 
-        // Depth buffer (RBO).
+        Texture* depthBuffer = new Texture("depth buffer");
+        depthBuffer->Bind();
+        depthBuffer->ReserveData(Texture::AttachmentType::DEPTH, contentWidth, contentHeight);
+        depthBuffer->Unbind();
+        shadowMap_.AttachRenderTarget(depthBuffer);
+
+//        // Depth buffer (RBO).
 //        RenderBufferObject* depthBuffer = new RenderBufferObject();
 //        depthBuffer->Bind();
 //        depthBuffer->ReserveData(contentWidth, contentHeight);
@@ -439,49 +471,6 @@ namespace Sandbox {
         geometryShader->Unbind();
     }
 
-    void SceneCS562Project2::ShadowPass() {
-        shadowMap_.DrawBuffers();
-        Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
-
-        shadowMap_.DrawBuffers(0, 1);
-
-        Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Pass");
-        shadowShader->Bind();
-
-        shadowShader->SetUniform("shadowTransform", CalculateShadowMatrix());
-
-        // Render all geometry.
-        ECS::Instance().IterateOver<Transform, Mesh>([shadowShader](Transform& transform, Mesh& mesh) {
-            shadowShader->SetUniform("modelTransform", transform.GetMatrix());
-
-            mesh.Bind();
-            mesh.Render();
-            mesh.Unbind();
-        });
-
-        shadowShader->Unbind();
-
-        // Render to depth texture using FSQ.
-        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
-        Backend::Core::DisableFlag(GL_DEPTH_TEST);
-
-        Shader* depthShader = ShaderLibrary::Instance().GetShader("Depth");
-        depthShader->Bind();
-
-        // Uniforms.
-        depthShader->SetUniform("cameraNearPlane", 0.01f);
-        depthShader->SetUniform("cameraFarPlane", 25.0f);
-        depthShader->SetUniform("linearize", false); // TODO
-        Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth"), "inputTexture", 0);
-
-        // Render to depth texture using FSQ.
-        Backend::Rendering::DrawFSQ();
-
-        Backend::Core::EnableFlag(GL_DEPTH_TEST);
-        depthShader->Unbind();
-    }
-
     void SceneCS562Project2::GlobalLightingPass() {
         // Render to 'output' texture.
         fbo_.DrawBuffers(5, 1);
@@ -509,7 +498,14 @@ namespace Sandbox {
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
 
         // Bind shadow map.
-        Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("depth"), "shadowMap",5);
+        shadowMap_.BindForRead();
+        if (blurKernelRadius_ > 0) {
+            // Vertical blurring pass happens after horizontal blurring pass.
+            Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "shadowMap", 5);
+        }
+        else {
+            Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("depth"), "shadowMap", 5);
+        }
 
         // Render to output texture using FSQ.
         Backend::Rendering::DrawFSQ();
@@ -555,21 +551,10 @@ namespace Sandbox {
     }
 
     glm::mat4 SceneCS562Project2::CalculateShadowMatrix() {
-        static bool orthographic = true;
-
         // Construct shadow map transformation matrices.
-        glm::mat4 projection;
-        glm::mat4 view;
-
-        if (orthographic) {
-            float distance = 10.0f;
-            projection = glm::ortho(-distance, distance, -distance, distance, 0.1f, 25.0f);
-            view = glm::lookAt(-directionalLight_.direction_, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-        }
-        else {
-            projection = camera_.GetPerspectiveTransform();
-            view = glm::lookAt(-directionalLight_.direction_ * 5.0f, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-        }
+        float distance = 15.0f;
+        glm::mat4 projection = glm::ortho(-distance, distance, -distance, distance, camera_.GetNearPlaneDistance(), camera_.GetFarPlaneDistance());
+        glm::mat4 view = glm::lookAt(-directionalLight_.direction_, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
         return projection * view;
     }
@@ -610,7 +595,12 @@ namespace Sandbox {
 
         // Initialize uniform block data.
         std::vector<float> kernel;
-        kernel.resize(size, 0.0f);
+        if (blurKernelRadius_ == 0) {
+            kernel.resize(size, 1.0f);
+        }
+        else {
+            kernel.resize(size, 0.0f);
+        }
 
         float s = static_cast<float>(blurKernelRadius_) / 2.0f;
         int offset = 0;
@@ -627,10 +617,10 @@ namespace Sandbox {
             sum += kernel[i];
         }
 
-        assert(sum > 0.0f);
-
-        for (int i = 0; i < size; ++i) {
-            kernel[i] /= sum;
+        if (sum > 0.0f) {
+            for (int i = 0; i < size; ++i) {
+                kernel[i] /= sum;
+            }
         }
 
         // Set data.
@@ -641,8 +631,66 @@ namespace Sandbox {
         blurKernel_.Unbind();
     }
 
-    void SceneCS562Project2::BlurPass() {
-        shadowMap_.BindForReadWrite();
+    void SceneCS562Project2::RenderToDepthBuffer() {
+        // Shadow pass shader only has vertex pass.
+        // This step is used to fill the depth buffer.
+        glDrawBuffer(GL_NONE);
+
+        Shader* shadowShader = ShaderLibrary::Instance().GetShader("Depth Pass");
+        shadowShader->Bind();
+
+        shadowShader->SetUniform("shadowTransform", CalculateShadowMatrix());
+
+        // Render all geometry.
+//        Backend::Core::EnableFlag(GL_CULL_FACE);
+//        Backend::Core::CullFace(GL_FRONT);
+
+        ECS::Instance().IterateOver<Transform, Mesh>([shadowShader](Transform& transform, Mesh& mesh) {
+            shadowShader->SetUniform("modelTransform", transform.GetMatrix());
+
+            mesh.Bind();
+            mesh.Render();
+            mesh.Unbind();
+        });
+
+//        Backend::Core::DisableFlag(GL_CULL_FACE);
+
+        shadowShader->Unbind();
+    }
+
+    void SceneCS562Project2::GenerateShadowMap() {
+        // Render four channel depth buffer.
+        shadowMap_.DrawBuffers(1, 1);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+
+        Shader* depthShader = ShaderLibrary::Instance().GetShader("Shadow Map Pass");
+        depthShader->Bind();
+        Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth buffer"), "depthTexture", 0);
+
+        Backend::Rendering::DrawFSQ();
+
+        depthShader->Unbind();
+    }
+
+    void SceneCS562Project2::RenderShadowMap() {
+        // Render single channel shadow map out for debug viewing.
+        shadowMap_.DrawBuffers(0, 1);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+
+        Shader* depthShader = ShaderLibrary::Instance().GetShader("Shadow Out Pass");
+        depthShader->Bind();
+        depthShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
+        depthShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
+        Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth buffer"), "depthTexture", 0);
+
+        Backend::Rendering::DrawFSQ();
+
+        depthShader->Unbind();
+    }
+
+    void SceneCS562Project2::BlurShadowMap() {
+        shadowMap_.DrawBuffers(3, 2);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
 
         // Horizontal blur pass.
         {
@@ -653,22 +701,24 @@ namespace Sandbox {
 
             // Set uniforms.
             // 'src' image.
-            GLint src = glGetUniformLocation(ID, "src");
-            glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("output")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("depth")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint src = glGetUniformLocation(ID, "src");
             glUniform1i(src, 0);
 
             // 'dst' image.
-            GLint dst = glGetUniformLocation(ID, "dst");
-            glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("auxiliary")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("blur horizontal")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            static GLint dst = glGetUniformLocation(ID, "dst");
             glUniform1i(dst, 1);
 
             // 'blurKernel' already set.
 
-            GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
-            glUniform1i(blurKernelRadius, blurKernelRadius_);
+            static GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
+            glUniform1i(blurKernelRadius, static_cast<int>(blurKernelRadius_));
 
             // Dispatch shader horizontally.
             glDispatchCompute(shadowMap_.GetWidth() / 128, shadowMap_.GetHeight(), 1);
+
+            blurShader->Unbind();
         }
 
         // Vertical blur pass.
@@ -680,25 +730,46 @@ namespace Sandbox {
 
             // Set uniforms.
             // 'src' image.
-            GLint src = glGetUniformLocation(ID, "src");
-            glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("auxiliary")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            glBindImageTexture(0, shadowMap_.GetNamedRenderTarget("blur horizontal")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint src = glGetUniformLocation(ID, "src");
             glUniform1i(src, 0);
 
             // 'dst' image.
-            GLint dst = glGetUniformLocation(ID, "dst");
-            glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("blur")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glBindImageTexture(1, shadowMap_.GetNamedRenderTarget("blur vertical")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            static GLint dst = glGetUniformLocation(ID, "dst");
             glUniform1i(dst, 1);
 
             // 'blurKernel' already set.
 
-            GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
-            glUniform1i(blurKernelRadius, blurKernelRadius_);
+            static GLint blurKernelRadius = glGetUniformLocation(ID, "blurKernelRadius");
+            glUniform1i(blurKernelRadius, static_cast<int>(blurKernelRadius_));
 
             // Dispatch shader horizontally.
             glDispatchCompute(shadowMap_.GetWidth(), shadowMap_.GetHeight() / 128, 1);
+
+            blurShader->Unbind();
+        }
+    }
+
+    void SceneCS562Project2::RenderBlurredShadowMap() {
+        shadowMap_.DrawBuffers(2, 1);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+
+        Shader* depthShader = ShaderLibrary::Instance().GetShader("Shadow Out Pass");
+        depthShader->Bind();
+        depthShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
+        depthShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
+
+        if (blurKernelRadius_ > 0) {
+            Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "depthTexture", 0);
+        }
+        else {
+            Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth"), "depthTexture", 0);
         }
 
-        shadowMap_.Unbind();
+        Backend::Rendering::DrawFSQ();
+
+        depthShader->Unbind();
     }
 
 }

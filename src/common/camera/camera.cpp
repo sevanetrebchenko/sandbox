@@ -14,7 +14,7 @@ namespace Sandbox {
                                               fov_(75.0),
                                               aspectRatio_((float) width / (float) height),
                                               nearPlaneDistance_(0.01f),
-                                              farPlaneDistance_(1000.0f),
+                                              farPlaneDistance_(20.0f),
                                               isDirty_(true) {
     }
 
