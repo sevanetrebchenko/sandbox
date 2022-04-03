@@ -18,7 +18,7 @@ float remap(float depth) {
 
 void main() {
     // Normalize depth to range [0.0, 1.0].
-    float depth = remap(texture(depthTexture, uv).r, cameraNearPlane, cameraFarPlane, 0.0f, 1.0f);
+//    float depth = remap(texture(depthTexture, uv).r, cameraNearPlane, cameraFarPlane, 0.0f, 1.0f);
 //    float depth = remap(texture(depthTexture, uv).r);
-    fragColor = vec4(vec3(depth), 1.0f);
+    fragColor = vec4(vec3(texture(depthTexture, uv).r), 1.0f);
 }

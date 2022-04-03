@@ -2,7 +2,7 @@
 #version 450 core
 
 // Inputs from the vertex shader.
-in vec2 textureCoordinates; // TODO: maybe use glFragCoord?
+in vec2 uv; // TODO: maybe use glFragCoord?
 
 // Texture samplers for various geometry buffers.
 uniform sampler2D position;
@@ -116,12 +116,12 @@ float G(vec4 p) {
 }
 
 void main(void) {
-    vec4 worldPosition = vec4(texture(position, textureCoordinates).rgb, 1.0f);
-    vec4 worldNormal = vec4(texture(normal, textureCoordinates).rgb, 0.0f);
-    vec3 ambientCoefficient = texture(ambient, textureCoordinates).rgb;
-    vec3 diffuseCoefficient = texture(diffuse, textureCoordinates).rgb;
-    vec3 specularCoefficient = texture(specular, textureCoordinates).rgb;
-    float specularExponent = texture(specular, textureCoordinates).a;
+    vec4 worldPosition = vec4(texture(position, uv).rgb, 1.0f);
+    vec4 worldNormal = vec4(texture(normal, uv).rgb, 0.0f);
+    vec3 ambientCoefficient = texture(ambient, uv).rgb;
+    vec3 diffuseCoefficient = texture(diffuse, uv).rgb;
+    vec3 specularCoefficient = texture(specular, uv).rgb;
+    float specularExponent = texture(specular, uv).a;
 
     vec4 N = normalize(worldNormal);
     vec4 viewVector = vec4(cameraPosition, 1.0f) - worldPosition;

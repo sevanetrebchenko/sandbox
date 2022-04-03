@@ -54,11 +54,8 @@ namespace Sandbox {
             // Lighting pass for local lights.
             void LocalLightingPass();
 
-            void RenderToDepthBuffer();
             void GenerateShadowMap();
-            void RenderShadowMap();
             void BlurShadowMap();
-            void RenderBlurredShadowMap();
 
             FrameBufferObject fbo_;
             FPSCamera camera_;
