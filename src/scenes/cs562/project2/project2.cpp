@@ -58,11 +58,6 @@ namespace Sandbox {
         Backend::Core::SetViewport(0, 0, shadowMap_.GetWidth(), shadowMap_.GetHeight());
         shadowMap_.BindForReadWrite();
 
-        // Clear all buffers.
-        shadowMap_.DrawBuffers();
-        Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         GenerateShadowMap();
         BlurShadowMap();
 
@@ -624,11 +619,13 @@ namespace Sandbox {
     }
 
     void SceneCS562Project2::GenerateShadowMap() {
-        {
-            // Render four channel depth buffer.
-            shadowMap_.DrawBuffers(1, 1);
-            Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+        shadowMap_.DrawBuffers(0, 2);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        {
+            shadowMap_.DrawBuffers(1, 1);
+
+            // Render four channel depth buffer.
             Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Map Pass");
             shadowShader->Bind();
             shadowShader->SetUniform("shadowTransform", CalculateShadowMatrix());
@@ -647,10 +644,9 @@ namespace Sandbox {
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
         {
-            // Render single channel shadow map out for debug viewing.
             shadowMap_.DrawBuffers(0, 1);
-            Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
 
+            // Render single channel shadow map out for debug viewing.
             Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Out Pass");
             shadowShader->Bind();
             shadowShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
@@ -666,7 +662,7 @@ namespace Sandbox {
     }
 
     void SceneCS562Project2::BlurShadowMap() {
-        shadowMap_.DrawBuffers(3, 2);
+        shadowMap_.DrawBuffers(2, 3);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
 
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
@@ -729,24 +725,25 @@ namespace Sandbox {
             blurShader->Unbind();
         }
 
-        shadowMap_.DrawBuffers(2, 1);
-        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+        {
+            shadowMap_.DrawBuffers(2, 1);
 
-        Shader* depthShader = ShaderLibrary::Instance().GetShader("Shadow Out Pass");
-        depthShader->Bind();
-        depthShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
-        depthShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
+            Shader* depthShader = ShaderLibrary::Instance().GetShader("Shadow Out Pass");
+            depthShader->Bind();
+            depthShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
+            depthShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
 
-        if (blurKernelRadius_ > 0) {
-            Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "depthTexture", 0);
+            if (blurKernelRadius_ > 0) {
+                Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "depthTexture", 0);
+            }
+            else {
+                Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth"), "depthTexture", 0);
+            }
+
+            Backend::Rendering::DrawFSQ();
+
+            depthShader->Unbind();
         }
-        else {
-            Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth"), "depthTexture", 0);
-        }
-
-        Backend::Rendering::DrawFSQ();
-
-        depthShader->Unbind();
 
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
     }
