@@ -39,8 +39,8 @@ namespace Sandbox {
         camera_.Update();
 
         // Rotate center model.
-        ComponentWrapper<Transform> transform = ECS::Instance().GetComponent<Transform>("Bunny");
-        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
+//        ComponentWrapper<Transform> transform = ECS::Instance().GetComponent<Transform>("Bunny");
+//        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
     }
 
     void SceneCS562Project2::OnPreRender() {
@@ -218,7 +218,8 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
         shaderLibrary.CreateShader("Global Lighting Shadow Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting_shadow.frag" });
         shaderLibrary.CreateShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
-        shaderLibrary.CreateShader("Shadow Map Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
+        shaderLibrary.CreateShader("Depth Buffer Pass", { "assets/shaders/shadow.vert" });
+        shaderLibrary.CreateShader("Four Channel Shadow Map Pass", { "assets/shaders/fsq.vert", "assets/shaders/shadow.frag" });
         shaderLibrary.CreateShader("Shadow Out Pass", { "assets/shaders/fsq.vert", "assets/shaders/shadow_out.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
         shaderLibrary.CreateShader("Blur Horizontal", { "assets/shaders/blur_horizontal.comp" });
@@ -273,7 +274,7 @@ namespace Sandbox {
         });
 
         ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
-            transform.SetPosition(glm::vec3(0.0f, -4.0f, 0.0f));
+            transform.SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
             transform.SetScale(glm::vec3(20.0f));
             transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
         });
@@ -539,9 +540,18 @@ namespace Sandbox {
 
     glm::mat4 SceneCS562Project2::CalculateShadowMatrix() {
         // Construct shadow map transformation matrices.
-        float distance = 15.0f;
+        float distance = 30.0f;
         glm::mat4 projection = glm::ortho(-distance, distance, -distance, distance, camera_.GetNearPlaneDistance(), camera_.GetFarPlaneDistance());
-        glm::mat4 view = glm::lookAt(-directionalLight_.direction_, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+
+        static glm::vec3 lightPosition = glm::vec3(-2.0f, 4.0f, -2.0f);
+        static glm::mat4 rotation = glm::rotate(glm::radians(0.5f * Time::Instance().dt), glm::vec3(0.0f, 1.0f, 0.0f));
+
+        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
+        glm::vec3 targetPosition = glm::vec3(0.0f);
+
+        directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);
+
+        glm::mat4 view = glm::lookAt(lightPosition * 3.0f, targetPosition, glm::vec3(0.0f, 1.0f, 0.0f));
 
         return projection * view;
     }
@@ -618,15 +628,19 @@ namespace Sandbox {
         blurKernel_.Unbind();
     }
 
+    // Draws all scene geometry from the perspective of the directional light.
+    // Generates 3 textures: depth buffer, output shadow map for visual debugging, and four-channel shadow map for MSM algorithm.
     void SceneCS562Project2::GenerateShadowMap() {
         shadowMap_.DrawBuffers(0, 2);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         {
-            shadowMap_.DrawBuffers(1, 1);
+            // Render all scene geometry to generate depth buffer.
+            // This stage happens without vertex shader, as this is only to generate the scene depth information.
+            glDrawBuffer(GL_NONE);
 
             // Render four channel depth buffer.
-            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Map Pass");
+            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Depth Buffer Pass");
             shadowShader->Bind();
             shadowShader->SetUniform("shadowTransform", CalculateShadowMatrix());
 
@@ -641,9 +655,27 @@ namespace Sandbox {
             shadowShader->Unbind();
         }
 
+        // No more modifications to scene depth.
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
         {
+            // Render four-channel shadow map for MSM algorithm.
+            shadowMap_.DrawBuffers(1, 1);
+
+            // Render single channel shadow map out for debug viewing.
+            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Four Channel Shadow Map Pass");
+            shadowShader->Bind();
+            shadowShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
+            shadowShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
+            Backend::Rendering::BindTextureWithSampler(shadowShader, shadowMap_.GetNamedRenderTarget("depth buffer"), "depthTexture", 0);
+
+            Backend::Rendering::DrawFSQ();
+
+            shadowShader->Unbind();
+        }
+
+        {
+            // Render to output shadow map for visual debugging.
             shadowMap_.DrawBuffers(0, 1);
 
             // Render single channel shadow map out for debug viewing.
@@ -651,7 +683,7 @@ namespace Sandbox {
             shadowShader->Bind();
             shadowShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
             shadowShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
-            Backend::Rendering::BindTextureWithSampler(shadowShader, shadowMap_.GetNamedRenderTarget("depth"), "depthTexture", 0);
+            Backend::Rendering::BindTextureWithSampler(shadowShader, shadowMap_.GetNamedRenderTarget("depth buffer"), "depthTexture", 0);
 
             Backend::Rendering::DrawFSQ();
 

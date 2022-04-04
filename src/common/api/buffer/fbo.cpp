@@ -66,6 +66,8 @@ namespace Sandbox {
         if (renderTarget) {
             GLenum attachment;
 
+            renderTarget->Bind();
+
             switch (renderTarget->GetAttachmentType()) {
                 case Texture::AttachmentType::COLOR:
                     attachment = GL_COLOR_ATTACHMENT0 + _currentColorAttachmentID;

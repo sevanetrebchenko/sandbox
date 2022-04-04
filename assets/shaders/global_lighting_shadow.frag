@@ -70,7 +70,7 @@ float G(vec4 p) {
 
     // Check 1: don't project fragments behind the position of the light.
     if (scNDC.w > 0.0f) {
-        scNDC /= scNDC.w;
+        scNDC.xy /= scNDC.w;
 
         // Checks 2 - 5: don't process fragments outside the view frustum of the light.
         // uv = scNDC.xy
@@ -88,11 +88,10 @@ float G(vec4 p) {
             float z2;
             float z3;
             if (!QuadraticFormula(c[2], c[1], c[0], z2, z3)) {
-                // No roots.
                 return 0.0f;
             }
 
-            float bias = 0.005f;
+            float bias = 0.000f;
 
             if (zf + bias <= z2) {
                 return 0.0f;

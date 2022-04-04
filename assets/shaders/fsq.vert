@@ -7,8 +7,7 @@ layout (location = 2) in vec2 uvCoordinates;
 
 out vec2 uv;
 
-void main()
-{
+void main() {
     uv = uvCoordinates;
     gl_Position = vec4(vertexPosition, 1.0f);
 }
