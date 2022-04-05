@@ -273,7 +273,8 @@ namespace Sandbox {
             Material* phong = materialLibrary_.GetMaterialInstance("Phong");
             phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
             phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
-            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.85f));
+            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.0f));
+            phong->GetUniform("specularExponent")->SetData(0.0f);
 
             materialCollection.SetMaterial(phong);
         });
@@ -584,18 +585,17 @@ namespace Sandbox {
 
     glm::mat4 SceneCS562Project2::CalculateShadowMatrix() {
         // Construct shadow map transformation matrices.
-        float dimension = 30.0f;
-        glm::mat4 projection = camera_.GetPerspectiveTransform(); //glm::ortho(-dimension, dimension, -dimension, dimension, camera_.GetNearPlaneDistance(), camera_.GetFarPlaneDistance());
+        glm::mat4 projection = camera_.GetPerspectiveTransform();
 
-        static glm::vec3 lightPosition = glm::vec3(5.0f);
+        static glm::vec3 lightPosition = glm::vec3(3.0f, 8.0f, 3.0f);
         static glm::mat4 rotation = glm::rotate(glm::radians(0.5f * Time::Instance().dt), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        // lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
+        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
         glm::vec3 targetPosition = glm::vec3(0.0f);
 
         directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);
 
-        glm::mat4 view = glm::lookAt(lightPosition, directionalLight_.direction_, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(glm::normalize(lightPosition) * 12.0f, directionalLight_.direction_, glm::vec3(0.0f, 1.0f, 0.0f));
 
         return projection * view;
     }

@@ -2,7 +2,7 @@
 #version 450 core
 
 // Inputs from the vertex shader.
-in vec2 uv; // TODO: maybe use glFragCoord?
+in vec2 uv;
 
 // Texture samplers for various geometry buffers.
 uniform sampler2D position;
@@ -71,16 +71,17 @@ float remap(float depth) {
 
 // Returns the amount of shadowing present on point 'p'.
 float G(vec4 p) {
-    vec4 scNDC = shadowTransform * p; // Range: [0.0f, 1.0f] (UV space).
-    vec2 scUV = scNDC.xy / scNDC.w;
+    vec4 shadowCoordinate = shadowTransform * p; // Range: [0.0f, 1.0f] (UV space).
+    shadowCoordinate /= shadowCoordinate.w;
 
     // Check 1: don't project fragments behind the position of the light.
-    if (scNDC.w > 0.0f) {
+    if (shadowCoordinate.w > 0.0f) {
         // Checks 2 - 5: don't process fragments outside the view frustum of the light.
-        if (InRange(scUV.x, 0.0f, 1.0f) && InRange(scUV.y, 0.0f, 1.0f)) {
-            float zf = remap(scNDC.z / scNDC.w);
+        // uv = shadowCoordinate.xy
+        if (InRange(shadowCoordinate.x, 0.0f, 1.0f) && InRange(shadowCoordinate.y, 0.0f, 1.0f)) {
+            float zf = remap(shadowCoordinate.z);
 
-            vec4 b = texture(shadowMap, scUV);
+            vec4 b = texture(shadowMap, shadowCoordinate.xy);
 
             float alpha = 0.001f;
             vec4 bp = (1.0f - alpha) * b + alpha * vec4(0.5f);
@@ -94,12 +95,15 @@ float G(vec4 p) {
                 return 0.0f;
             }
 
-            float bias = 0.5f;
+            // Adjust shadow bias based on the steepness of the surface angle to the light direction.
+            float shadowBiasMin = 0.001f;
+            float shadowBiasMax = 0.05f;
+            float shadowBias = max(shadowBiasMax * (1.0f - dot(texture(normal, uv).rgb, normalize(-lightDirection))), shadowBiasMin);
 
-            if (zf + bias <= z2) {
+            if (zf + shadowBias <= z2) {
                 return 0.0f;
             }
-            else if (zf + bias <= z3) {
+            else if (zf + shadowBias <= z3) {
                 float n = (zf * z3) - bp[0] * (zf + z3) + bp[1];
                 float d = (z3 - z2) * (zf - z2);
 
