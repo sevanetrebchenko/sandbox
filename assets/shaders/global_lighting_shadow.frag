@@ -84,7 +84,7 @@ float G(vec4 p) {
             vec4 b = texture(shadowMap, shadowCoordinate.xy);
 
             float alpha = 0.001f;
-            vec4 bp = (1.0f - alpha) * b + alpha * vec4(0.5f);
+            vec4 bp = (1.0f - alpha) * b + alpha * vec4(0.8f);
 
             vec3 c = CholeskyDecomposition(1.0f, bp[0], bp[1], bp[1], bp[2], bp[3], 1.0f, zf, zf * zf);
 
@@ -97,7 +97,7 @@ float G(vec4 p) {
 
             // Adjust shadow bias based on the steepness of the surface angle to the light direction.
             float shadowBiasMin = 0.001f;
-            float shadowBiasMax = 0.05f;
+            float shadowBiasMax = 0.005f;
             float shadowBias = max(shadowBiasMax * (1.0f - dot(texture(normal, uv).rgb, normalize(-lightDirection))), shadowBiasMin);
 
             if (zf + shadowBias <= z2) {

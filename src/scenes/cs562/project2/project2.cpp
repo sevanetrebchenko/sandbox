@@ -184,6 +184,12 @@ namespace Sandbox {
                     InitializeBlurKernel();
                 }
 
+                ImGui::Text("Camera Far Plane: ");
+                float far = camera_.GetFarPlaneDistance();
+                if (ImGui::SliderFloat("##nearPlane", &far, 0.0f, 50.0f)) {
+                    camera_.SetFarPlaneDistance(far);
+                }
+
                 Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur output");
                 float maxWidth = ImGui::GetWindowContentRegionWidth();
                 ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
