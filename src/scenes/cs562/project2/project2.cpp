@@ -162,6 +162,10 @@ namespace Sandbox {
                 ImGui::Text("Specular component:");
                 ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("specular")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
                 ImGui::Separator();
+
+                ImGui::Text("Scene depth:");
+                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("depth")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Separator();
             }
 
             {
@@ -218,10 +222,11 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
         shaderLibrary.CreateShader("Global Lighting Shadow Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting_shadow.frag" });
         shaderLibrary.CreateShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
-        shaderLibrary.CreateShader("Depth Buffer Pass", { "assets/shaders/shadow.vert" });
-        shaderLibrary.CreateShader("Four Channel Shadow Map Pass", { "assets/shaders/fsq.vert", "assets/shaders/shadow.frag" });
-        shaderLibrary.CreateShader("Shadow Out Pass", { "assets/shaders/fsq.vert", "assets/shaders/shadow_out.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
+
+        shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
+        shaderLibrary.CreateShader("Depth Pass", { "assets/shaders/fsq.vert", "assets/shaders/depth.frag" });
+        shaderLibrary.CreateShader("Depth Out", { "assets/shaders/fsq.vert", "assets/shaders/depth_out.frag" });
         shaderLibrary.CreateShader("Blur Horizontal", { "assets/shaders/blur_horizontal.comp" });
         shaderLibrary.CreateShader("Blur Vertical", { "assets/shaders/blur_vertical.comp" });
     }
@@ -275,8 +280,19 @@ namespace Sandbox {
 
         ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
             transform.SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
-            transform.SetScale(glm::vec3(20.0f));
+            transform.SetScale(glm::vec3(5.0f));
             transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+        });
+
+        // Compute scene bounds.
+        ecs.IterateOver<Transform, Mesh>([this](Transform& transform, Mesh& mesh) {
+            // Compute object bounds.
+            std::vector<glm::vec3> vertices = mesh.GetVertices();
+            glm::mat4 matrix = transform.GetMatrix();
+
+            for (const glm::vec3& vertex : vertices) {
+                bounds_.Extend(matrix * glm::vec4(vertex, 1.0f));
+            }
         });
     }
 
@@ -339,6 +355,12 @@ namespace Sandbox {
         specularTexture->Unbind();
         fbo_.AttachRenderTarget(specularTexture);
 
+        Texture* depthTexture = new Texture("depth");
+        depthTexture->Bind();
+        depthTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        depthTexture->Unbind();
+        fbo_.AttachRenderTarget(depthTexture);
+
         // Output texture.
         Texture* outputTexture = new Texture("output");
         outputTexture->Bind();
@@ -347,17 +369,17 @@ namespace Sandbox {
         fbo_.AttachRenderTarget(outputTexture);
 
         // Depth buffer.
-//        Texture* depthBuffer = new Texture("depthBuffer");
-//        depthBuffer->Bind();
-//        depthBuffer->ReserveData(Texture::AttachmentType::DEPTH, contentWidth, contentHeight);
-//        depthBuffer->Unbind();
-//        fbo_.AttachRenderTarget(depthBuffer);
+        Texture* depthBuffer = new Texture("depth buffer");
+        depthBuffer->Bind();
+        depthBuffer->ReserveData(Texture::AttachmentType::DEPTH, contentWidth, contentHeight);
+        depthBuffer->Unbind();
+        fbo_.AttachRenderTarget(depthBuffer);
 
         // Depth buffer (RBO).
-        RenderBufferObject* depthBuffer = new RenderBufferObject();
-        depthBuffer->Bind();
-        depthBuffer->ReserveData(contentWidth, contentHeight);
-        fbo_.AttachDepthBuffer(depthBuffer);
+//        RenderBufferObject* depthBuffer = new RenderBufferObject();
+//        depthBuffer->Bind();
+//        depthBuffer->ReserveData(contentWidth, contentHeight);
+//        fbo_.AttachDepthBuffer(depthBuffer);
 
         if (!fbo_.CheckStatus()) {
             throw std::runtime_error("Custom FBO is not complete.");
@@ -457,11 +479,30 @@ namespace Sandbox {
         });
 
         geometryShader->Unbind();
+
+        Backend::Core::DisableFlag(GL_DEPTH_TEST);
+
+        // Render scene depth.
+        {
+            fbo_.DrawBuffers(5, 1);
+            Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // Clear everything for a new scene.
+
+            Shader* depthShader = ShaderLibrary::Instance().GetShader("Depth Pass");
+            depthShader->Bind();
+            depthShader->SetUniform("near", camera_.GetNearPlaneDistance());
+            depthShader->SetUniform("far", camera_.GetFarPlaneDistance());
+            Backend::Rendering::BindTextureWithSampler(depthShader, fbo_.GetNamedRenderTarget("depth buffer"), "inputTexture", 0);
+            Backend::Rendering::DrawFSQ();
+            depthShader->Unbind();
+        }
+
+        Backend::Core::EnableFlag(GL_DEPTH_TEST);
     }
 
     void SceneCS562Project2::GlobalLightingPass() {
         // Render to 'output' texture.
-        fbo_.DrawBuffers(5, 1);
+        fbo_.DrawBuffers(6, 1);
 
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
@@ -471,7 +512,10 @@ namespace Sandbox {
 
         // Set camera uniforms.
         globalLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
-        globalLightingShader->SetUniform("shadowTransform", CalculateShadowMatrix());
+        glm::mat4 B = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
+        globalLightingShader->SetUniform("shadowTransform", B * CalculateShadowMatrix());
+        globalLightingShader->SetUniform("near", camera_.GetNearPlaneDistance());
+        globalLightingShader->SetUniform("far", camera_.GetFarPlaneDistance());
 
         // Set global lighting uniforms.
         globalLightingShader->SetUniform("lightDirection", directionalLight_.direction_);
@@ -503,7 +547,7 @@ namespace Sandbox {
 
     void SceneCS562Project2::LocalLightingPass() {
         // Render to 'output' texture.
-        fbo_.DrawBuffers(5, 1);
+        fbo_.DrawBuffers(6, 1);
         // No clearing here.
 
         Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting Pass");
@@ -540,18 +584,18 @@ namespace Sandbox {
 
     glm::mat4 SceneCS562Project2::CalculateShadowMatrix() {
         // Construct shadow map transformation matrices.
-        float distance = 30.0f;
-        glm::mat4 projection = glm::ortho(-distance, distance, -distance, distance, camera_.GetNearPlaneDistance(), camera_.GetFarPlaneDistance());
+        float dimension = 30.0f;
+        glm::mat4 projection = camera_.GetPerspectiveTransform(); //glm::ortho(-dimension, dimension, -dimension, dimension, camera_.GetNearPlaneDistance(), camera_.GetFarPlaneDistance());
 
-        static glm::vec3 lightPosition = glm::vec3(-2.0f, 4.0f, -2.0f);
+        static glm::vec3 lightPosition = glm::vec3(5.0f);
         static glm::mat4 rotation = glm::rotate(glm::radians(0.5f * Time::Instance().dt), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
+        // lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
         glm::vec3 targetPosition = glm::vec3(0.0f);
 
         directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);
 
-        glm::mat4 view = glm::lookAt(lightPosition * 3.0f, targetPosition, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(lightPosition, directionalLight_.direction_, glm::vec3(0.0f, 1.0f, 0.0f));
 
         return projection * view;
     }
@@ -603,8 +647,8 @@ namespace Sandbox {
         int offset = 0;
 
         for (int i = -static_cast<int>(blurKernelRadius_); i <= static_cast<int>(blurKernelRadius_); ++i) {
-            float p = (static_cast<float>(i) / s) * (static_cast<float>(i) / s);
-            kernel[offset++] = glm::exp(-0.5f * p);
+            float p = -(static_cast<float>(i * i)) / (2.0f * static_cast<float>(s * s));
+            kernel[offset++] = glm::exp(p);
         }
 
         // Normalize data to sum to 1.
@@ -634,15 +678,16 @@ namespace Sandbox {
         shadowMap_.DrawBuffers(0, 2);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Render scene geometry to generate four-channel depth buffer for MSM algorithm.
         {
-            // Render all scene geometry to generate depth buffer.
-            // This stage happens without vertex shader, as this is only to generate the scene depth information.
-            glDrawBuffer(GL_NONE);
+            shadowMap_.DrawBuffers(1, 1);
 
             // Render four channel depth buffer.
-            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Depth Buffer Pass");
+            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Pass");
             shadowShader->Bind();
             shadowShader->SetUniform("shadowTransform", CalculateShadowMatrix());
+            shadowShader->SetUniform("near", camera_.GetNearPlaneDistance());
+            shadowShader->SetUniform("far", camera_.GetFarPlaneDistance());
 
             ECS::Instance().IterateOver<Transform, Mesh>([shadowShader](Transform& transform, Mesh& mesh) {
                 shadowShader->SetUniform("modelTransform", transform.GetMatrix());
@@ -655,38 +700,17 @@ namespace Sandbox {
             shadowShader->Unbind();
         }
 
-        // No more modifications to scene depth.
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
+        // Render output shadow map for visual debugging.
         {
-            // Render four-channel shadow map for MSM algorithm.
-            shadowMap_.DrawBuffers(1, 1);
-
-            // Render single channel shadow map out for debug viewing.
-            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Four Channel Shadow Map Pass");
-            shadowShader->Bind();
-            shadowShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
-            shadowShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
-            Backend::Rendering::BindTextureWithSampler(shadowShader, shadowMap_.GetNamedRenderTarget("depth buffer"), "depthTexture", 0);
-
-            Backend::Rendering::DrawFSQ();
-
-            shadowShader->Unbind();
-        }
-
-        {
-            // Render to output shadow map for visual debugging.
             shadowMap_.DrawBuffers(0, 1);
 
             // Render single channel shadow map out for debug viewing.
-            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Shadow Out Pass");
+            Shader* shadowShader = ShaderLibrary::Instance().GetShader("Depth Out");
             shadowShader->Bind();
-            shadowShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
-            shadowShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
-            Backend::Rendering::BindTextureWithSampler(shadowShader, shadowMap_.GetNamedRenderTarget("depth buffer"), "depthTexture", 0);
-
+            Backend::Rendering::BindTextureWithSampler(shadowShader, shadowMap_.GetNamedRenderTarget("depth"), "inputTexture", 0);
             Backend::Rendering::DrawFSQ();
-
             shadowShader->Unbind();
         }
 
@@ -760,20 +784,10 @@ namespace Sandbox {
         {
             shadowMap_.DrawBuffers(2, 1);
 
-            Shader* depthShader = ShaderLibrary::Instance().GetShader("Shadow Out Pass");
+            Shader* depthShader = ShaderLibrary::Instance().GetShader("Depth Out");
             depthShader->Bind();
-            depthShader->SetUniform("cameraNearPlane", camera_.GetNearPlaneDistance());
-            depthShader->SetUniform("cameraFarPlane", camera_.GetFarPlaneDistance());
-
-            if (blurKernelRadius_ > 0) {
-                Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "depthTexture", 0);
-            }
-            else {
-                Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget("depth"), "depthTexture", 0);
-            }
-
+            Backend::Rendering::BindTextureWithSampler(depthShader, shadowMap_.GetNamedRenderTarget(blurKernelRadius_ > 0 ? "blur vertical" : "depth"), "depthTexture", 0);
             Backend::Rendering::DrawFSQ();
-
             depthShader->Unbind();
         }
 

@@ -13,8 +13,8 @@ namespace Sandbox {
                                               eulerAngles_(0.0f, -glm::pi<float>() / 2.0f, 0.0f),
                                               fov_(75.0),
                                               aspectRatio_((float) width / (float) height),
-                                              nearPlaneDistance_(0.0001f),
-                                              farPlaneDistance_(40.0f),
+                                              nearPlaneDistance_(0.01f),
+                                              farPlaneDistance_(25.0f),
                                               isDirty_(true) {
     }
 

@@ -5,6 +5,7 @@
 #include "pch.h"
 #include "common/api/buffer/vao.h"
 #include "common/ecs/component/component.h"
+#include "common/geometry/bounds.h"
 
 #include "common/geometry/mesh/topology.h"
 
@@ -41,6 +42,8 @@ namespace Sandbox {
             void Render();
             virtual void Complete();
 
+            [[nodiscard]] const Bounds& GetBounds() const;
+
             // Allows for manual construction of meshes.
             // Mesh is always rendered using indexed rendering.
             // Mesh data is clamped to the number of vertices in the mesh.
@@ -73,6 +76,8 @@ namespace Sandbox {
             // Mesh data.
             std::vector<Vertex> vertexData_;
             std::vector<unsigned> indices_;
+
+            Bounds bounds_;
     };
 
 }

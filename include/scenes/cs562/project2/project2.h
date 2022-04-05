@@ -8,6 +8,7 @@
 #include "common/api/shader/shader_library.h"
 #include "common/camera/fps_camera.h"
 #include "common/api/buffer/ubo.h"
+#include "common/geometry/bounds.h"
 
 #include "scenes/cs562/project1/light.h"
 
@@ -56,6 +57,10 @@ namespace Sandbox {
 
             void GenerateShadowMap();
             void BlurShadowMap();
+
+            Bounds bounds_;
+            float near_;
+            float far_;
 
             FrameBufferObject fbo_;
             FPSCamera camera_;

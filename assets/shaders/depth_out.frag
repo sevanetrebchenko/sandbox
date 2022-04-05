@@ -7,5 +7,5 @@ in vec2 uv;
 uniform sampler2D inputTexture; // Explicit binding.
 
 void main() {
-    fragColor = vec4(texture(inputTexture, uv).rgb, 1.0f);
+    fragColor = vec4(vec3(texture(inputTexture, uv).r), 1.0f);
 }

@@ -194,6 +194,7 @@ namespace Sandbox {
 
         for (int i = 0; i < numVertices; ++i) {
             vertexData_[i].vertex_ = vertices[i];
+            bounds_.Extend(vertices[i]);
         }
 
         isDirty_ = true;
@@ -262,6 +263,10 @@ namespace Sandbox {
         }
 
         return normals;
+    }
+
+    const Bounds& Mesh::GetBounds() const {
+        return bounds_;
     }
 
 }

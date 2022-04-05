@@ -2,15 +2,16 @@
 #version 450 core
 
 in vec2 uv;
+layout (location = 0) out vec4 fragColor;
 
 uniform sampler2D inputTexture; // Explicit binding.
-uniform float cameraNearPlane;
-uniform float cameraFarPlane;
+uniform float near;
+uniform float far;
 
-out vec4 fragColor;
+float remap(float depth) {
+    return (2.0 * near) / (far + near - depth * (far - near));
+}
 
 void main() {
-    // Convert from depth buffer range to [0.0, 1.0].
-    float depth = (texture(inputTexture, uv).r - cameraNearPlane) / (cameraFarPlane - cameraNearPlane);
-    fragColor = vec4(vec3(texture(inputTexture, uv).r), 1.0f);
+    fragColor = vec4(vec3(remap(texture(inputTexture, uv).r)), 1.0f);
 }

@@ -55,6 +55,7 @@ set(CORE_SOURCE_FILES
         "common/geometry/mesh.cpp"
         "common/geometry/model.cpp"
         "common/geometry/model_manager.cpp"
+        "common/geometry/bounds.cpp"
         "common/material/material.cpp"
         "common/material/material_library.cpp"
         "common/geometry/model_manager.cpp"

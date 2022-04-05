@@ -20,6 +20,8 @@ uniform vec3 lightDirection;
 uniform vec3 lightColor;
 uniform float lightBrightness;
 uniform mat4 shadowTransform;
+uniform float near;
+uniform float far;
 
 // Shader outputs.
 layout (location = 0) out vec4 fragColor;
@@ -63,24 +65,25 @@ vec3 CholeskyDecomposition(float m11, float m12, float m13, float m22, float m23
     return vec3(x, y, z);
 }
 
+float remap(float depth) {
+    return (2.0 * near) / (far + near - depth * (far - near));
+}
+
 // Returns the amount of shadowing present on point 'p'.
 float G(vec4 p) {
-    vec4 scNDC = shadowTransform * p; // Range: [-1.0, 1.0] (NDC space).
-    scNDC = (scNDC + 1.0f) / 2.0f; // Range: [0.0f, 1.0f] (UV space).
+    vec4 scNDC = shadowTransform * p; // Range: [0.0f, 1.0f] (UV space).
+    vec2 scUV = scNDC.xy / scNDC.w;
 
     // Check 1: don't project fragments behind the position of the light.
     if (scNDC.w > 0.0f) {
-        scNDC.xy /= scNDC.w;
-
         // Checks 2 - 5: don't process fragments outside the view frustum of the light.
-        // uv = scNDC.xy
-        if (InRange(scNDC.x, 0.0f, 1.0f) && InRange(scNDC.y, 0.0f, 1.0f)) {
-            float zf = scNDC.z;
+        if (InRange(scUV.x, 0.0f, 1.0f) && InRange(scUV.y, 0.0f, 1.0f)) {
+            float zf = remap(scNDC.z / scNDC.w);
 
-            vec4 b = texture(shadowMap, scNDC.xy);
+            vec4 b = texture(shadowMap, scUV);
 
-            float a = 0.001f;
-            vec4 bp = (1.0f - a) * b + a * vec4(0.5f);
+            float alpha = 0.001f;
+            vec4 bp = (1.0f - alpha) * b + alpha * vec4(0.5f);
 
             vec3 c = CholeskyDecomposition(1.0f, bp[0], bp[1], bp[1], bp[2], bp[3], 1.0f, zf, zf * zf);
 
@@ -91,7 +94,7 @@ float G(vec4 p) {
                 return 0.0f;
             }
 
-            float bias = 0.000f;
+            float bias = 0.5f;
 
             if (zf + bias <= z2) {
                 return 0.0f;
