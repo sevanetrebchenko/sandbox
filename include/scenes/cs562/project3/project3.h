@@ -58,6 +58,8 @@ namespace Sandbox {
             void GenerateShadowMap();
             void BlurShadowMap();
 
+            void GenerateRandomPoints();
+
             Bounds bounds_;
 
             FrameBufferObject fbo_;
@@ -68,6 +70,8 @@ namespace Sandbox {
             FrameBufferObject shadowMap_;
             UniformBufferObject blurKernel_;
             int blurKernelRadius_;
+
+            UniformBufferObject randomPoints_;
     };
 
 }

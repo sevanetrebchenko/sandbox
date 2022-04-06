@@ -226,8 +226,8 @@ namespace Sandbox {
         ShaderLibrary& shaderLibrary = ShaderLibrary::Instance();
 
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
-        shaderLibrary.CreateShader("Global Lighting Shadow Pass", { "assets/shaders/fsq.vert", "assets/shaders/global_lighting_shadow.frag" });
-        shaderLibrary.CreateShader("Local Lighting Pass", { "assets/shaders/model.vert", "assets/shaders/local_lighting.frag" });
+        shaderLibrary.CreateShader("Global Lighting BRDF Pass", { "assets/shaders/global_brdf.vert", "assets/shaders/global_brdf.frag" });
+        // shaderLibrary.CreateShader("Local Lighting BRDF Pass", { "assets/shaders/local_brdf.vert", "assets/shaders/local_brdf.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
 
         shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
@@ -265,6 +265,9 @@ namespace Sandbox {
         ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
             Material* phong = materialLibrary_.GetMaterialInstance("Phong");
             phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.8f));
+            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
+            phong->GetUniform("specularExponent")->SetData(50.0f);
 
             materialCollection.SetMaterial(phong);
         });
@@ -279,8 +282,8 @@ namespace Sandbox {
             Material* phong = materialLibrary_.GetMaterialInstance("Phong");
             phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
             phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
-            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.0f));
-            phong->GetUniform("specularExponent")->SetData(0.0f);
+            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
+            phong->GetUniform("specularExponent")->SetData(14.0f);
 
             materialCollection.SetMaterial(phong);
         });
@@ -362,6 +365,7 @@ namespace Sandbox {
         specularTexture->Unbind();
         fbo_.AttachRenderTarget(specularTexture);
 
+        // Depth texture (for visualizing depth information).
         Texture* depthTexture = new Texture("depth");
         depthTexture->Bind();
         depthTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
@@ -514,7 +518,7 @@ namespace Sandbox {
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
 
-        Shader* globalLightingShader = ShaderLibrary::Instance().GetShader("Global Lighting Shadow Pass");
+        Shader* globalLightingShader = ShaderLibrary::Instance().GetShader("Global Lighting BRDF Pass");
         globalLightingShader->Bind();
 
         // Set camera uniforms.
@@ -528,6 +532,12 @@ namespace Sandbox {
         globalLightingShader->SetUniform("lightDirection", directionalLight_.direction_);
         globalLightingShader->SetUniform("lightColor", directionalLight_.color_);
         globalLightingShader->SetUniform("lightBrightness", directionalLight_.brightness_);
+
+        // BRDF model.
+        const int phong = 0;
+        const int ggx = 1;
+        const int beckman = 2;
+        globalLightingShader->SetUniform("model", phong);
 
         // Bind geometry pass textures.
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
@@ -553,40 +563,40 @@ namespace Sandbox {
     }
 
     void SceneCS562Project3::LocalLightingPass() {
-        // Render to 'output' texture.
-        fbo_.DrawBuffers(6, 1);
-        // No clearing here.
-
-        Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting Pass");
-        localLightingShader->Bind();
-
-        localLightingShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
-
-        // Set camera uniforms.
-        localLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
-        localLightingShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
-
-        // Bind geometry pass textures.
-        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
-        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
-        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
-        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
-        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
-
-        ECS::Instance().IterateOver<Transform, Mesh, LocalLight>([localLightingShader](Transform& transform, Mesh& mesh, LocalLight& light) {
-            localLightingShader->SetUniform("modelTransform", transform.GetMatrix());
-
-            localLightingShader->SetUniform("lightPosition", transform.GetPosition());
-            localLightingShader->SetUniform("lightRadius", transform.GetScale().x);
-            localLightingShader->SetUniform("lightColor", light.color_);
-            localLightingShader->SetUniform("lightBrightness", light.brightness_);
-
-            mesh.Bind();
-            mesh.Render();
-            mesh.Unbind();
-        });
-
-        localLightingShader->Unbind();
+//        // Render to 'output' texture.
+//        fbo_.DrawBuffers(6, 1);
+//        // No clearing here.
+//
+//        Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting Pass");
+//        localLightingShader->Bind();
+//
+//        localLightingShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
+//
+//        // Set camera uniforms.
+//        localLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
+//        localLightingShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+//
+//        // Bind geometry pass textures.
+//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
+//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
+//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
+//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
+//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
+//
+//        ECS::Instance().IterateOver<Transform, Mesh, LocalLight>([localLightingShader](Transform& transform, Mesh& mesh, LocalLight& light) {
+//            localLightingShader->SetUniform("modelTransform", transform.GetMatrix());
+//
+//            localLightingShader->SetUniform("lightPosition", transform.GetPosition());
+//            localLightingShader->SetUniform("lightRadius", transform.GetScale().x);
+//            localLightingShader->SetUniform("lightColor", light.color_);
+//            localLightingShader->SetUniform("lightBrightness", light.brightness_);
+//
+//            mesh.Bind();
+//            mesh.Render();
+//            mesh.Unbind();
+//        });
+//
+//        localLightingShader->Unbind();
     }
 
     glm::mat4 SceneCS562Project3::CalculateShadowMatrix() {
@@ -798,6 +808,58 @@ namespace Sandbox {
         }
 
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
+    }
+
+    void SceneCS562Project3::GenerateRandomPoints() {
+        // Initialize uniform block layout.
+        const int numRandomPoints = 40;
+
+        {
+            std::vector<UniformBufferElement> layoutElements;
+            layoutElements.reserve(2 * numRandomPoints + 1);
+
+            layoutElements.emplace_back(UniformBufferElement { ShaderDataType::INT, "count" } );
+            for (unsigned i = 0; i < 2 * numRandomPoints; ++i) {
+                layoutElements.emplace_back(UniformBufferElement { ShaderDataType::FLOAT, "points[" + std::to_string(i) + "]" } );
+            }
+
+            UniformBlockLayout layout { };
+            layout.SetBufferElements(1, 1, layoutElements);
+
+            UniformBlock block { 4, layout };
+            randomPoints_.SetUniformBlock(block);
+        }
+
+        {
+            // Generate random points (https://en.wikipedia.org/wiki/Low-discrepancy_sequence).
+            std::vector<float> points;
+            int kk;
+
+            for (int k = 0; k < numRandomPoints; ++k) {
+                kk = k;
+                float u = 0.0f;
+                for (float p = 0.5f; kk; p *= 0.5f, kk >>= 1) {
+                    if (kk & 1) {
+                        u += p;
+                    }
+                }
+
+                points.emplace_back(u); // u
+                points.emplace_back((static_cast<float>(k) + 0.5f) / static_cast<float>(numRandomPoints)); // v
+            }
+
+            // Set data.
+            const std::vector<UniformBufferElement>& layoutElements = randomPoints_.GetUniformBlock().GetUniformBlockLayout().GetBufferElements();
+            int index = 0;
+
+            randomPoints_.Bind();
+            randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 16, static_cast<const void*>(&numRandomPoints));
+            for (float value : points) {
+                randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 16, static_cast<const void*>(&value));
+            }
+            randomPoints_.Unbind();
+        }
+
     }
 
 }

@@ -596,7 +596,7 @@ namespace Sandbox {
         static glm::vec3 lightPosition = glm::vec3(3.0f, 8.0f, 3.0f);
         static glm::mat4 rotation = glm::rotate(glm::radians(0.5f * Time::Instance().dt), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
+//        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
         glm::vec3 targetPosition = glm::vec3(0.0f);
 
         directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);

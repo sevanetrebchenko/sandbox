@@ -3,8 +3,7 @@
 [  TRACE  ]  OpenGL Version: 4.6.0 NVIDIA 496.76
 [  TRACE  ]  Setting startup scene as: 'CS562: Project 3'
 [  TRACE  ]  Compiling Shader 'Geometry Pass' from source.
-[  TRACE  ]  Compiling Shader 'Global Lighting Shadow Pass' from source.
-[  TRACE  ]  Compiling Shader 'Local Lighting Pass' from source.
+[  TRACE  ]  Compiling Shader 'Global Lighting BRDF Pass' from source.
 [  TRACE  ]  Compiling Shader 'FSQ' from source.
 [  TRACE  ]  Compiling Shader 'Shadow Pass' from source.
 [  TRACE  ]  Compiling Shader 'Depth Pass' from source.
@@ -13,7 +12,7 @@
 [  TRACE  ]  Compiling Shader 'Blur Vertical' from source.
 [  TRACE  ]  Loading scene: 'CS562: Project 3'
 [  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_3\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 344 ms.
+[  TRACE  ]  Scene loaded in: 333 ms.
 [  TRACE  ]  Unloading scene: 'CS562: Project 3'
 [  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_3\ui_layout.ini
-[  TRACE  ]  Scene unloaded in: 12 ms.
+[  TRACE  ]  Scene unloaded in: 0 ms.
