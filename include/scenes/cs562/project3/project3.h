@@ -14,10 +14,10 @@
 
 namespace Sandbox {
 
-    class SceneCS562Project2 : public IScene {
+    class SceneCS562Project3 : public IScene {
         public:
-            SceneCS562Project2();
-            ~SceneCS562Project2() override;
+            SceneCS562Project3();
+            ~SceneCS562Project3() override;
 
         protected:
             void OnInit() override;
@@ -59,6 +59,7 @@ namespace Sandbox {
             void BlurShadowMap();
 
             Bounds bounds_;
+
             FrameBufferObject fbo_;
             FPSCamera camera_;
             MaterialLibrary materialLibrary_;
