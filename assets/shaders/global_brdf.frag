@@ -33,7 +33,7 @@ uniform mat4 shadowTransform;
 uniform float near;
 uniform float far;
 
-layout (binding = 4, std140) uniform HammersleyDistribution {
+layout (std140, binding = 4) uniform HammersleyDistribution {
     int count;
     vec2 points[NUM_RANDOM_POINTS];
 } hammersley;
@@ -153,15 +153,17 @@ float ToPhong(float alpha) {
 float D(vec3 H) {
     vec3 N = normalize(texture(normal, uvCoord).xyz);
     float alpha = texture(specular, uvCoord).a;
+    float error = 0.0f; // TODO: what is the error term?
 
     float hn = dot(H, N);
     if (hn > 1.0f) {
-        return 1.0f;
+        hammersley.points[0];
+        return error;
     }
 
     float t = sqrt(1.0f - hn * hn) / hn;
     if (abs(t) < epsilon) {
-        return 1.0f;
+        return error;
     }
 
     switch (model) {
@@ -176,7 +178,7 @@ float D(vec3 H) {
             return 1.0f / (PI * (alpha * alpha) * pow(hn, 4)) * exp(-(t * t) / (alpha * alpha));
         }
         default: {
-            return 1.0f;
+            return error;
         }
     }
 }
@@ -195,15 +197,16 @@ float G(vec3 v, vec3 H) {
 
     vec3 N = normalize(texture(normal, uvCoord).xyz);
     float alpha = texture(specular, uvCoord).a;
+    float error = 1.0f;
 
     float vn = dot(v, N);
     if (vn > 1.0f) {
-        return 1.0f;
+        return error;
     }
 
     float t = sqrt(1.0f - vn * vn) / vn;
     if (abs(t) < epsilon) {
-        return 1.0f;
+        return error;
     }
 
     switch (model) {
@@ -229,7 +232,7 @@ float G(vec3 v, vec3 H) {
             }
         }
         default: {
-            return 1.0f;
+            return error;
         }
     }
 }

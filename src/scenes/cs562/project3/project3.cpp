@@ -30,6 +30,7 @@ namespace Sandbox {
         ConstructFBO();
         ConstructShadowMap();
         InitializeBlurKernel();
+        GenerateRandomPoints();
 
         camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
@@ -182,12 +183,6 @@ namespace Sandbox {
                 ImGui::Text("Blur Kernel Radius: ");
                 if (ImGui::SliderInt("##kernelRadius", &blurKernelRadius_, 0, 50)) {
                     InitializeBlurKernel();
-                }
-
-                ImGui::Text("Camera Far Plane: ");
-                float far = camera_.GetFarPlaneDistance();
-                if (ImGui::SliderFloat("##nearPlane", &far, 0.0f, 50.0f)) {
-                    camera_.SetFarPlaneDistance(far);
                 }
 
                 Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur output");
@@ -816,11 +811,11 @@ namespace Sandbox {
 
         {
             std::vector<UniformBufferElement> layoutElements;
-            layoutElements.reserve(2 * numRandomPoints + 1);
+            layoutElements.reserve(numRandomPoints + 1);
 
             layoutElements.emplace_back(UniformBufferElement { ShaderDataType::INT, "count" } );
-            for (unsigned i = 0; i < 2 * numRandomPoints; ++i) {
-                layoutElements.emplace_back(UniformBufferElement { ShaderDataType::FLOAT, "points[" + std::to_string(i) + "]" } );
+            for (unsigned i = 0; i < numRandomPoints; ++i) {
+                layoutElements.emplace_back(UniformBufferElement { ShaderDataType::VEC2, "points[" + std::to_string(i) + "]" } );
             }
 
             UniformBlockLayout layout { };
@@ -832,7 +827,7 @@ namespace Sandbox {
 
         {
             // Generate random points (https://en.wikipedia.org/wiki/Low-discrepancy_sequence).
-            std::vector<float> points;
+            std::vector<glm::vec2> points;
             int kk;
 
             for (int k = 0; k < numRandomPoints; ++k) {
@@ -844,8 +839,7 @@ namespace Sandbox {
                     }
                 }
 
-                points.emplace_back(u); // u
-                points.emplace_back((static_cast<float>(k) + 0.5f) / static_cast<float>(numRandomPoints)); // v
+                points.emplace_back(u, (static_cast<float>(k) + 0.5f) / static_cast<float>(numRandomPoints)); // (u, v)
             }
 
             // Set data.
@@ -853,9 +847,9 @@ namespace Sandbox {
             int index = 0;
 
             randomPoints_.Bind();
-            randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 16, static_cast<const void*>(&numRandomPoints));
-            for (float value : points) {
-                randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 16, static_cast<const void*>(&value));
+            randomPoints_.SetSubData(layoutElements[index].GetBufferOffset(), 4, static_cast<const void*>(&numRandomPoints));
+            for (const glm::vec2& value : points) {
+                randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 8, static_cast<const void*>(&value));
             }
             randomPoints_.Unbind();
         }
