@@ -277,6 +277,6 @@ void main(void) {
 
     vec3 I = lightColor * lightBrightness;
 
-    vec3 color = ambient + (1.0f - G(p)) * (I * dot(N, L) * (diffuse + specular));
+    vec3 color = ambient + (1.0f - G(p)) * (I * max(dot(N, L), 0.0f) * (diffuse + specular));
     fragColor = vec4(color, 1.0f);
 }
