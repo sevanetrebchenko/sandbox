@@ -18,12 +18,14 @@ uniform sampler2D specular;
 uniform sampler2D shadowMap;
 
 // Samplers for BRDF / Environment Lighting.
-uniform sampler2D environment;
-uniform sampler2D irradiance;
+uniform sampler2D environmentMap;
+uniform sampler2D irradianceMap;
 uniform int model; // 0 for Phong, 1 for GGX, 2 for Beckman.
 #define PHONG   0
 #define GGX     1
 #define BECKMAN 2
+uniform float exposure;
+uniform float contrast;
 
 uniform vec3 cameraPosition;
 uniform vec3 lightDirection;
@@ -136,7 +138,7 @@ float G(vec4 p) {
     return 0.0f;
 }
 
-// Section: Physically Based Shading.
+// Section: Physically Based Lighting.
 
 // Converter between Phong and GGX/Beckman alpha values.
 float FromPhong(float alpha) {
@@ -186,7 +188,7 @@ float D(vec3 H) {
 // F - Fresnel (reflection).
 vec3 F(vec3 L, vec3 H) {
     vec3 Ks = texture(specular, uvCoord).xyz;
-    return Ks + (1.0f - Ks) * pow(1.0f - dot(L, H), 5.0f);
+    return Ks + (1.0f - Ks) * pow(1.0f - max(dot(L, H), 0.0f), 5.0f);
 }
 
 // G - visibility
@@ -237,6 +239,25 @@ float G(vec3 v, vec3 H) {
     }
 }
 
+float T(float xi) {
+    float alpha = texture(specular, uvCoord).a;
+
+    switch (model) {
+        case PHONG: {
+            return acos(pow(xi, 1.0f / (alpha + 1.0f)));
+        }
+        case GGX: {
+            return atan((alpha * sqrt(xi)) / (sqrt(1.0f - xi)));
+        }
+        case BECKMAN: {
+            return atan(sqrt(-(alpha * alpha) * log(1.0f - xi)));
+        }
+        default: {
+            return 0.0f;
+        }
+    }
+}
+
 // Section: Image Based Lighting
 vec2 NormalToSphereMapUV(vec3 n) {
     n = normalize(n);
@@ -244,8 +265,58 @@ vec2 NormalToSphereMapUV(vec3 n) {
 }
 
 vec3 SphereMapUVToNormal(vec2 uv) {
-    float spiv = sin(PI * uv.y);
-    return vec3(cos((2.0f * PI) * (0.5f - uv.x)) * spiv, sin((2.0f * PI) * (0.5f - uv.x)) * spiv, cos(PI * uv.y));
+    float u = uv.x;
+    float v = uv.y;
+    return vec3(cos((2.0f * PI) * (0.5f - u)) * sin(PI * v), sin((2.0f * PI) * (0.5f - u)) * sin(PI * v), cos(PI * v));
+}
+
+vec3 BRDFSpecular(vec3 N, vec3 L, vec3 H, vec3 V) {
+    vec3 specular = vec3(0.0f);
+    if (dot(N, L) > 0.0f) {
+        // Components of BRDF model.
+        float roughness = D(H);
+        vec3 fresnel = F(L, H);
+        float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
+
+        specular = (roughness * fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N));
+    }
+
+    return specular;
+}
+
+vec3 EnvironmentSpecular(vec3 N, vec3 V) {
+    vec3 specular = vec3(0.0f);
+    int count = hammersley.count;
+
+    // Build orthonormal basis around the reflection direction.
+    vec3 R = 2.0f * dot(N, V) * N - V;
+    vec3 A = normalize(vec3(-R.y, R.x, 0.0f)); // normalize(cross(vec3(0.0f, 0.0f, 1.0f), R);
+    vec3 B = normalize(cross(R, A));
+
+    ivec2 dimensions = textureSize(environmentMap, 0);
+
+    for (int i = 0; i < count; ++i) {
+        vec2 random = hammersley.points[i];
+        vec3 L = SphereMapUVToNormal(vec2(random.x, T(random.y) / PI));
+        L = normalize(L.x * A + L.y * B + L.z * R); // Rotated direction 'wk'.
+        vec3 H = normalize(L + V);
+
+        // Filter.
+        float level = 0.5f * log2(float(dimensions.x * dimensions.y) / float(count)) - 0.5f * log2(D(H) / 4.0f);
+        vec3 Li = texture(environmentMap, NormalToSphereMapUV(L), level).rgb;
+
+        if (dot(N, L) > 0.0f) {
+            // Components of BRDF model.
+            // D(H) component is canceled out by careful selection of sampled directions (importance sampling).
+            // vec3 roughness = D(H);
+            vec3 fresnel = F(L, H);
+            float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
+
+            specular += (fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N)) * Li * dot(N, L);
+        }
+    }
+
+    return specular / float(count);
 }
 
 void main(void) {
@@ -262,21 +333,56 @@ void main(void) {
 
     // Diffuse.
     vec3 Kd = texture(diffuse, uvCoord).rgb;
-    vec3 diffuse = Kd / PI;
+    vec3 irradiance = texture(irradianceMap, NormalToSphereMapUV(N)).rgb; // No alpha.
+    vec3 diffuse = (Kd / PI) * irradiance;
 
     // Specular.
-    vec3 specular = vec3(0.0f);
-    if (dot(N, L) > 0.0f) {
-        // Components of BRDF model.
-        float roughness = D(H);
-        vec3 fresnel = F(L, H);
-        float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
+    vec3 Ks = texture(specular, uvCoord).xyz;
+    vec3 specular = Ks * EnvironmentSpecular(N, V);
 
-        specular = (roughness * fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N));
-    }
+    vec3 Li = lightColor * lightBrightness;
+    float shadow = (1.0f - G(p));
 
-    vec3 I = lightColor * lightBrightness;
+    vec3 color = ambient + shadow * (Li * max(dot(N, L), 0.0f) * (diffuse + specular));
 
-    vec3 color = ambient + (1.0f - G(p)) * (I * max(dot(N, L), 0.0f) * (diffuse + specular));
+    // Tone mapping.
+    color.r = pow((exposure * color.r) / (exposure * color.r + 1.0f), contrast / 2.2f);
+    color.g = pow((exposure * color.g) / (exposure * color.g + 1.0f), contrast / 2.2f);
+    color.b = pow((exposure * color.b) / (exposure * color.b + 1.0f), contrast / 2.2f);
+
     fragColor = vec4(color, 1.0f);
 }
+
+
+// Pure PBL (no IBL).
+//    vec4 p = texture(position, uvCoord);
+//
+//    vec3 N = normalize(texture(normal, uvCoord).xyz);
+//    vec3 V = normalize(cameraPosition - p.xyz);
+//    vec3 L = normalize(-lightDirection); // Directional light.
+//    vec3 H = normalize(L + V);
+//
+//    // Ambient.
+//    vec3 Ka = texture(ambient, uvCoord).rgb;
+//    vec3 ambient = Ka;
+//
+//    // Diffuse.
+//    vec3 Kd = texture(diffuse, uvCoord).rgb;
+//    vec3 diffuse = Kd / PI;
+//
+//    // Specular.
+//    vec3 specular = vec3(0.0f);
+//    if (dot(N, L) > 0.0f) {
+//        // Components of BRDF model.
+//        float roughness = D(H);
+//        vec3 fresnel = F(L, H);
+//        float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
+//
+//        specular = (roughness * fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N));
+//    }
+//
+//    vec3 I = lightColor * lightBrightness;
+//    float shadow = (1.0f - G(p));
+//
+//    vec3 color = ambient + shadow * (I * max(dot(N, L), 0.0f) * (diffuse + specular));
+//    fragColor = vec4(color, 1.0f);

@@ -60,10 +60,13 @@ namespace Sandbox {
                 throw std::runtime_error("Usage of attachment type UNKNOWN is reserved.");
         }
 
+        // Texture wrapping.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        // Texturing filtering.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         Unbind();
     }
@@ -71,37 +74,46 @@ namespace Sandbox {
     void Texture::ReserveData(const std::string &textureName) {
         _stbLoaded = true;
 
-        Bind();
 
-        // Set texture wrapping parameters to GL_CLAMP_TO_EDGE
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        // Set texture filtering parameters to GL_LINEAR.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         stbi_set_flip_vertically_on_load(true);
 
-        // Load in texture data.
-        int width, height, channels;
-        stbi_uc* data = stbi_load(ConvertToNativeSeparators(textureName).c_str(), &width, &height, &channels, STBI_rgb_alpha);
-        if (data) {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        std::string name = ConvertToNativeSeparators(textureName);
+        std::string extension = GetAssetExtension(textureName);
 
-            GLenum errorCode = glGetError();
-            if (errorCode != GL_NO_ERROR) {
-                ImGuiLog& log = ImGuiLog::Instance();
-                log.LogError("Error ( %s ) after loading texture: %s", glGetError(), textureName.c_str());
-                return;
+        int width, height, channels;
+
+        Bind();
+
+        if (extension == "png" || extension == "jpg") {
+            unsigned char* data = stbi_load(name.c_str(), &width, &height, &channels, 0);
+            if (!data) {
+                throw std::runtime_error("Failed to load texture: " + textureName);
             }
 
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
+            stbi_image_free(data);
         }
-        else {
-            throw std::runtime_error("Failed to load texture: " + textureName);
+        else if (extension == "hdr") {
+            // High definition range image.
+            float* data = stbi_loadf(name.c_str(), &width, &height, &channels, 0);
+            if (!data) {
+                throw std::runtime_error("Failed to load texture: " + textureName);
+            }
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+            stbi_image_free(data);
         }
-        stbi_image_free(data);
+
+        // Texture wrapping.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        // Texturing filtering.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         Unbind();
     }

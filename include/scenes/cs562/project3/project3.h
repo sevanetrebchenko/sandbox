@@ -37,6 +37,7 @@ namespace Sandbox {
         private:
             void InitializeShaders();
             void InitializeMaterials();
+            void InitializeTextures();
             void ConfigureModels();
             void ConfigureLights();
             void ConstructFBO();
@@ -72,6 +73,10 @@ namespace Sandbox {
             int blurKernelRadius_;
 
             UniformBufferObject randomPoints_;
+            Texture environmentMap_;
+            Texture irradianceMap_;
+            float exposure_;
+            float contrast_;
     };
 
 }

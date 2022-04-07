@@ -12,7 +12,11 @@ namespace Sandbox {
     SceneCS562Project3::SceneCS562Project3() : fbo_(2560, 1440),
                                                shadowMap_(2048, 2048),
                                                camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
-                                               blurKernelRadius_(25)
+                                               blurKernelRadius_(25),
+                                               environmentMap_("environment"),
+                                               irradianceMap_("irradiance"),
+                                               exposure_(3.0f),
+                                               contrast_(2.0f)
                                                {
     }
 
@@ -24,6 +28,7 @@ namespace Sandbox {
 
         InitializeShaders();
         InitializeMaterials();
+        InitializeTextures();
 
         ConfigureLights();
         ConfigureModels();
@@ -195,6 +200,16 @@ namespace Sandbox {
         }
         ImGui::End();
 
+        static bool showSceneConfiguration = false;
+        if (ImGui::Begin("Scene Configuration"), &showSceneConfiguration) {
+            ImGui::Text("Exposure: ");
+            ImGui::SliderFloat("##exposure", &exposure_, 0.1f, 100.0f);
+
+            ImGui::Text("Contrast: ");
+            ImGui::SliderFloat("##contrast", &contrast_, 0.0f, 5.0f);
+        }
+        ImGui::End();
+
         ImGuiLog::Instance().OnImGui();
     }
 
@@ -260,9 +275,9 @@ namespace Sandbox {
         ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
             Material* phong = materialLibrary_.GetMaterialInstance("Phong");
             phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.8f));
-            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
-            phong->GetUniform("specularExponent")->SetData(50.0f);
+            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
+            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(M_PI));
+            phong->GetUniform("specularExponent")->SetData(1280.0f);
 
             materialCollection.SetMaterial(phong);
         });
@@ -533,6 +548,8 @@ namespace Sandbox {
         const int ggx = 1;
         const int beckman = 2;
         globalLightingShader->SetUniform("model", phong);
+        globalLightingShader->SetUniform("exposure", exposure_);
+        globalLightingShader->SetUniform("contrast", contrast_);
 
         // Bind geometry pass textures.
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
@@ -550,6 +567,9 @@ namespace Sandbox {
         else {
             Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("depth"), "shadowMap", 5);
         }
+
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, &environmentMap_, "environmentMap", 6);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, &irradianceMap_, "irradianceMap", 7);
 
         // Render to output texture using FSQ.
         Backend::Rendering::DrawFSQ();
@@ -847,13 +867,18 @@ namespace Sandbox {
             int index = 0;
 
             randomPoints_.Bind();
-            randomPoints_.SetSubData(layoutElements[index].GetBufferOffset(), 4, static_cast<const void*>(&numRandomPoints));
+            randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 4, static_cast<const void*>(&numRandomPoints));
             for (const glm::vec2& value : points) {
                 randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 8, static_cast<const void*>(&value));
             }
             randomPoints_.Unbind();
         }
 
+    }
+
+    void SceneCS562Project3::InitializeTextures() {
+        environmentMap_.ReserveData("assets/textures/ibl/barce_rooftop.hdr");
+        irradianceMap_.ReserveData("assets/textures/ibl/barce_rooftop_irradiance.hdr");
     }
 
 }
