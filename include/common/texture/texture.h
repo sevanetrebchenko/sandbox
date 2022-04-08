@@ -28,6 +28,10 @@ namespace Sandbox {
             void ReserveData(AttachmentType attachmentType, int contentWidth, int contentHeight);
             void ReserveData(const std::string& textureName);
 
+            void SetData(int contentWidth, int contentHeight, const std::vector<unsigned char>& data);
+            void SetData(int contentWidth, int contentHeight, const std::vector<float>& data);
+
+
             void WriteDataToDirectory(const std::string& directory) const;
 
             void SetAttachmentLocation(GLuint attachmentLocation);

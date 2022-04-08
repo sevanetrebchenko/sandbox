@@ -70,6 +70,7 @@ set(CORE_SOURCE_FILES
         "common/lighting/lighting_manager.cpp"
         "common/lighting/light.cpp"
         "common/utility/reloadable.cpp"
+        # "common/utility/rgbe.cpp"
         )
 
 add_executable(Sandbox ${CORE_SOURCE_FILES})

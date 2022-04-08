@@ -74,10 +74,7 @@ namespace Sandbox {
     void Texture::ReserveData(const std::string &textureName) {
         _stbLoaded = true;
 
-
-
-
-        stbi_set_flip_vertically_on_load(true);
+        stbi_set_flip_vertically_on_load(false);
 
         std::string name = ConvertToNativeSeparators(textureName);
         std::string extension = GetAssetExtension(textureName);
@@ -188,6 +185,38 @@ namespace Sandbox {
         stbi_write_png(filepath.c_str(), _contentWidth, _contentHeight, channels, textureData, 0);
 
         delete[] textureData;
+    }
+
+    void Texture::SetData(int contentWidth, int contentHeight, const std::vector<unsigned char>& data) {
+        Bind();
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, contentWidth, contentHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+
+        // Texture wrapping.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        // Texturing filtering.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        Unbind();
+    }
+
+    void Texture::SetData(int contentWidth, int contentHeight, const std::vector<float>& data) {
+        Bind();
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, contentWidth, contentHeight, 0, GL_RGB, GL_FLOAT, data.data());
+
+        // Texture wrapping.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        // Texturing filtering.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        Unbind();
     }
 
 }

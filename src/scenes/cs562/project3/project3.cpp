@@ -276,7 +276,7 @@ namespace Sandbox {
             Material* phong = materialLibrary_.GetMaterialInstance("Phong");
             phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
             phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
-            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(M_PI));
+            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
             phong->GetUniform("specularExponent")->SetData(1280.0f);
 
             materialCollection.SetMaterial(phong);
@@ -618,15 +618,15 @@ namespace Sandbox {
         // Construct shadow map transformation matrices.
         glm::mat4 projection = camera_.GetPerspectiveTransform();
 
-        static glm::vec3 lightPosition = glm::vec3(3.0f, 8.0f, 3.0f);
+        static glm::vec3 lightPosition = glm::vec3(0.0f, 8.0f, 0.0f);
         static glm::mat4 rotation = glm::rotate(glm::radians(0.5f * Time::Instance().dt), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
+        // lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
         glm::vec3 targetPosition = glm::vec3(0.0f);
 
         directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);
 
-        glm::mat4 view = glm::lookAt(glm::normalize(lightPosition) * 12.0f, directionalLight_.direction_, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(glm::normalize(lightPosition) * 12.0f, directionalLight_.direction_, glm::vec3(0.0f, 0.0f, -1.0f));
 
         return projection * view;
     }
@@ -877,8 +877,223 @@ namespace Sandbox {
     }
 
     void SceneCS562Project3::InitializeTextures() {
-        environmentMap_.ReserveData("assets/textures/ibl/barce_rooftop.hdr");
-        irradianceMap_.ReserveData("assets/textures/ibl/barce_rooftop_irradiance.hdr");
+        environmentMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref.hdr");
+        irradianceMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref_irradiance.hdr");
+
+        GenerateIrradianceMap("assets/textures/ibl/Newport_Loft_Ref.hdr");
+    }
+
+//    SceneCS562Project3::HDRImageData SceneCS562Project3::ReadHDRImage(const std::string& filename) const {
+//        rgbe_header_info info;
+//        char buffer[256] = { '\0' };
+//
+//        HDRImageData out { };
+//        FILE* fp = fopen(filename.c_str(), "rb");
+//        if (!fp) {
+//            throw std::runtime_error("Failed to open '" + filename + "' for read.");
+//        }
+//
+//        // Read header.
+//        if (RGBE_ReadHeader(fp, &out.width, &out.height, &info, buffer) != RGBE_RETURN_SUCCESS) {
+//            fclose(fp);
+//            throw std::runtime_error("Failed to read .hdr (HDR) image header (" + filename + ").");
+//        }
+//
+//        // Read data.
+//        out.channels = 3;
+//        out.data.resize(out.width * out.height * out.channels, 0.0f); // Allocate space for image.
+//
+//        if (RGBE_ReadPixels_RLE(fp, out.data.data(), out.width, out.height, buffer) != RGBE_RETURN_SUCCESS) {
+//            fclose(fp);
+//            throw std::runtime_error("Failed to read .hdr (HDR) image data (" + filename + ").");
+//        }
+//
+//        fclose(fp);
+//        return out;
+//    }
+//
+//    void SceneCS562Project3::WriteHDRImage(HDRImageData data, const std::string& filename) const {
+//        rgbe_header_info info;
+//        char buffer[256] = { '\0' };
+//
+//        // Open file.
+//        FILE* fp = fopen(ConvertToNativeSeparators(filename).c_str(), "wb");
+//        if (!fp) {
+//            throw std::runtime_error("Failed to open '" + filename + "' for write.");
+//        }
+//
+//        // Write header.
+//        if (RGBE_WriteHeader(fp, data.width, data.height, nullptr, buffer) != RGBE_RETURN_SUCCESS) {
+//            fclose(fp);
+//            throw std::runtime_error("Failed to write .hdr (HDR) image header (" + filename + ").");
+//        }
+//
+//        // Write data.
+//        if (RGBE_WritePixels_RLE(fp, data.data.data(), data.width, data.height, buffer) != RGBE_RETURN_SUCCESS) {
+//            fclose(fp);
+//            throw std::runtime_error("Failed to read .hdr (HDR) image data (" + filename + ").");
+//        }
+//
+//        fclose(fp);
+//    }
+
+    void SceneCS562Project3::GenerateIrradianceMap(std::string filename) const {
+        filename = ConvertToNativeSeparators(filename);
+        std::string name = GetAssetName(filename);
+        std::string location = GetAssetDirectory(filename);
+        std::string extension = GetAssetExtension(filename);
+
+        if (extension != "hdr") {
+            throw std::runtime_error("GenerateIrradianceMap expects an .hdr (HDR) input file.");
+        }
+
+        // Load raw image data.
+        struct HDRImageData {
+            void Allocate() {
+                if (width < 0 || height < 0 || channels < 0) {
+                    throw std::runtime_error("HDRImageData dimensions not initialized.");
+                }
+                data = new float[width * height * channels];
+
+                for (int i = 0; i < width * height * channels; ++i) {
+                    data[i] = 0.0f;
+                }
+            }
+
+            void Deallocate(bool stbi) const {
+                stbi ? stbi_image_free(data) : delete[] data;
+            }
+
+            int width = -1;
+            int height = -1;
+            int channels = -1;
+
+            float* data = nullptr;
+        };
+
+        HDRImageData in { };
+        in.data = stbi_loadf(filename.c_str(), &in.width, &in.height, &in.channels, 0);
+        if (!in.data) {
+            throw std::runtime_error("Failed to read .hdr (HDR) image (" + filename + ").");
+        }
+
+        // Set 1: (Analytic) Projection of the dot product term.
+        std::array<float, 3> A = { glm::pi<float>(), 2.0f / 3.0f * glm::pi<float>(), 1.0f / 4.0f * glm::pi<float>() };
+
+        // Set 2: Projection of the pixels of the input image.
+        // Y - nine spherical harmonic basis functions (first three bands).
+        static std::array<std::vector<float (*)(float, float, float)>, 3> Y; // Constant, linear, quadratic.
+        static bool initialized = false;
+
+        if (!initialized) {
+            // Constant.
+            Y[0].emplace_back(+[](float x, float y, float z) -> float {
+                return 1.0f / 2.0f * glm::sqrt(1.0f / glm::pi<float>());
+            });
+
+            // Linear.
+            Y[1].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f * glm::sqrt(3.0f / glm::pi<float>())) * y;
+            });
+            Y[1].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f * glm::sqrt(3.0f / glm::pi<float>())) * z;
+            });
+            Y[1].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f * glm::sqrt(3.0f / glm::pi<float>())) * x;
+            });
+
+            // Quadratic.
+            Y[2].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f * glm::sqrt(15.0f / glm::pi<float>())) * x * y;
+            });
+            Y[2].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f * glm::sqrt(15.0f / glm::pi<float>())) * y * z;
+            });
+            Y[2].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 4.0f * glm::sqrt(5.0f / glm::pi<float>())) * (3.0f * (z * z) - 1.0f);
+            });
+            Y[2].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f * glm::sqrt(15.0f / glm::pi<float>())) * x * z;
+            });
+            Y[2].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 4.0f * glm::sqrt(15.0f / glm::pi<float>())) * ((x * x) - (y * y));
+            });
+
+            initialized = true;
+        }
+
+        std::array<std::vector<glm::vec3>, 3> L; // RGB values, one for each harmonic.
+
+        float dTheta = glm::pi<float>() / static_cast<float>(in.height);
+        float dPhi = 2.0f * glm::pi<float>() / static_cast<float>(in.width);
+
+        for (int l = 0; l < Y.size(); ++l) {
+            L[l].resize(Y[l].size());
+
+            for (int m = 0; m < Y[l].size(); ++m) {
+                // Validation test.
+                // float test = 0.0f;
+
+                for (int j = 0; j < in.height; ++j) {
+                    for (int i = 0; i < in.width; ++i) {
+                        int index = ((in.width * j) + i) * in.channels;
+                        glm::vec3 pixel = glm::vec3(in.data[index + 0], in.data[index + 1], in.data[index + 2]);
+
+                        // Compute the center of the corresponding point on the sphere.
+                        float theta = glm::pi<float>() * (static_cast<float>(j) + 0.5f) / static_cast<float>(in.height);
+                        float phi = 2.0f * glm::pi<float>() * (static_cast<float>(i) + 0.5f) / static_cast<float>(in.width);
+
+                        float x = glm::sin(theta) * glm::cos(phi);
+                        float y = glm::sin(theta) * glm::sin(phi);
+                        float z = glm::cos(theta);
+
+                        float sinTheta = glm::sin(theta);
+
+                        // RGB pixel value * basis function evaluation at (x, y, z) * sine function * step-size deltas.
+                        L[l][m] += pixel * Y[l][m](x, y, z) * sinTheta * dTheta * dPhi;
+
+                        // test += sinTheta * dTheta * dPhi;
+                    }
+                }
+
+                // Prints: Area of a unit sphere: 12.4942 (3.97704pi)
+                // std::cout << "Area of a unit sphere: " << test << " (" << test / glm::pi<float>() << "pi)" << std::endl;
+            }
+        }
+
+        in.Deallocate(true);
+
+        HDRImageData out { };
+        out.width = 400;
+        out.height = 200;
+        out.channels = 3;
+        out.Allocate();
+
+        // Set 3: Final set of harmonic coefficients comes from the product of the above sets.
+        for (int j = 0; j < out.height; ++j) {
+            for (int i = 0; i < out.width; ++i) {
+                int index = ((out.width * j) + i) * out.channels; // Only writing RGB.
+                glm::vec3& pixel = *reinterpret_cast<glm::vec3*>(out.data + index);
+                pixel = glm::vec3(0.0f);
+
+                float theta = glm::pi<float>() * (static_cast<float>(j) + 0.5f) / static_cast<float>(out.height);
+                float phi = 2.0f * glm::pi<float>() * (static_cast<float>(i) + 0.5f) / static_cast<float>(out.width);
+
+                float x = glm::sin(theta) * glm::cos(phi);
+                float y = glm::sin(theta) * glm::sin(phi);
+                float z = glm::cos(theta);
+
+                for (int l = 0; l < Y.size(); ++l) {
+                    for (int m = 0; m < Y[l].size(); ++m) {
+                        // Evaluate irradiance at every pixel.
+                        pixel += (A[l] * L[l][m]) * Y[l][m](x, y, z);
+                    }
+                }
+            }
+        }
+
+        stbi_write_hdr(ConvertToNativeSeparators(location + "/" + name + "_irradiance.hdr").c_str(), out.width, out.height, out.channels, out.data);
+        out.Deallocate(false);
     }
 
 }

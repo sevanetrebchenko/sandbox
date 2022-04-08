@@ -61,6 +61,16 @@ namespace Sandbox {
 
             void GenerateRandomPoints();
 
+//            struct HDRImageData {
+//                int width;
+//                int height;
+//                int channels;
+//                std::vector<float> data;
+//            };
+//            [[nodiscard]] HDRImageData ReadHDRImage(const std::string& filename) const;
+//            void WriteHDRImage(HDRImageData data, const std::string& filename) const;
+            void GenerateIrradianceMap(std::string filename) const;
+
             Bounds bounds_;
 
             FrameBufferObject fbo_;
