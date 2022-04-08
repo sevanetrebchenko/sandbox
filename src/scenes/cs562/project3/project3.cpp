@@ -878,9 +878,9 @@ namespace Sandbox {
 
     void SceneCS562Project3::InitializeTextures() {
         environmentMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref.hdr");
-        irradianceMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref_irradiance.hdr");
 
         GenerateIrradianceMap("assets/textures/ibl/Newport_Loft_Ref.hdr");
+        irradianceMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref_irradiance.hdr");
     }
 
 //    SceneCS562Project3::HDRImageData SceneCS562Project3::ReadHDRImage(const std::string& filename) const {
