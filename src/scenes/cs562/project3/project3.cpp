@@ -1022,42 +1022,33 @@ namespace Sandbox {
             initialized = true;
         }
 
-        std::array<std::vector<glm::vec3>, 3> L; // RGB values, one for each harmonic.
+        std::array<std::vector<glm::vec3>, 3> L; // RGB coefficients, one for each harmonic basis function of Y.
 
         float dTheta = glm::pi<float>() / static_cast<float>(in.height);
         float dPhi = 2.0f * glm::pi<float>() / static_cast<float>(in.width);
 
-        for (int l = 0; l < Y.size(); ++l) {
-            L[l].resize(Y[l].size());
+        for (int j = 0; j < in.height; ++j) {
+            for (int i = 0; i < in.width; ++i) {
+                int index = ((in.width * j) + i) * in.channels;
+                glm::vec3 rgb = glm::vec3(in.data[index + 0], in.data[index + 1], in.data[index + 2]);
 
-            for (int m = 0; m < Y[l].size(); ++m) {
-                // Validation test.
-                // float test = 0.0f;
+                // +0.5 to compute the center of the corresponding point on the sphere.
+                float theta = glm::pi<float>() * (static_cast<float>(j) + 0.5f) / static_cast<float>(in.height);
+                float phi = 2.0f * glm::pi<float>() * (static_cast<float>(i) + 0.5f) / static_cast<float>(in.width);
 
-                for (int j = 0; j < in.height; ++j) {
-                    for (int i = 0; i < in.width; ++i) {
-                        int index = ((in.width * j) + i) * in.channels;
-                        glm::vec3 pixel = glm::vec3(in.data[index + 0], in.data[index + 1], in.data[index + 2]);
+                float x = glm::sin(theta) * glm::cos(phi);
+                float y = glm::sin(theta) * glm::sin(phi);
+                float z = glm::cos(theta);
 
-                        // Compute the center of the corresponding point on the sphere.
-                        float theta = glm::pi<float>() * (static_cast<float>(j) + 0.5f) / static_cast<float>(in.height);
-                        float phi = 2.0f * glm::pi<float>() * (static_cast<float>(i) + 0.5f) / static_cast<float>(in.width);
+                float sinTheta = glm::sin(theta);
 
-                        float x = glm::sin(theta) * glm::cos(phi);
-                        float y = glm::sin(theta) * glm::sin(phi);
-                        float z = glm::cos(theta);
-
-                        float sinTheta = glm::sin(theta);
-
+                for (int l = 0; l < Y.size(); ++l) {
+                    L[l].resize(Y[l].size()); // Number of coefficients matches the number of harmonic basis functions at index 'l'.
+                    for (int m = 0; m < Y[l].size(); ++m) {
                         // RGB pixel value * basis function evaluation at (x, y, z) * sine function * step-size deltas.
-                        L[l][m] += pixel * Y[l][m](x, y, z) * sinTheta * dTheta * dPhi;
-
-                        // test += sinTheta * dTheta * dPhi;
+                        L[l][m] += rgb * Y[l][m](x, y, z) * sinTheta * dTheta * dPhi;
                     }
                 }
-
-                // Prints: Area of a unit sphere: 12.4942 (3.97704pi)
-                // std::cout << "Area of a unit sphere: " << test << " (" << test / glm::pi<float>() << "pi)" << std::endl;
             }
         }
 
@@ -1072,9 +1063,7 @@ namespace Sandbox {
         // Set 3: Final set of harmonic coefficients comes from the product of the above sets.
         for (int j = 0; j < out.height; ++j) {
             for (int i = 0; i < out.width; ++i) {
-                int index = ((out.width * j) + i) * out.channels; // Only writing RGB.
-                glm::vec3& pixel = *reinterpret_cast<glm::vec3*>(out.data + index);
-                pixel = glm::vec3(0.0f);
+                int index = ((out.width * j) + i) * out.channels;
 
                 float theta = glm::pi<float>() * (static_cast<float>(j) + 0.5f) / static_cast<float>(out.height);
                 float phi = 2.0f * glm::pi<float>() * (static_cast<float>(i) + 0.5f) / static_cast<float>(out.width);
@@ -1083,12 +1072,17 @@ namespace Sandbox {
                 float y = glm::sin(theta) * glm::sin(phi);
                 float z = glm::cos(theta);
 
+                // Computing irradiance at pixel (x, y, z).
+                glm::vec3 irradiance = glm::vec3(0.0f);
                 for (int l = 0; l < Y.size(); ++l) {
                     for (int m = 0; m < Y[l].size(); ++m) {
-                        // Evaluate irradiance at every pixel.
-                        pixel += (A[l] * L[l][m]) * Y[l][m](x, y, z);
+                        irradiance += (A[l] * L[l][m]) * Y[l][m](x, y, z);
                     }
                 }
+
+                out.data[index + 0] = irradiance.r;
+                out.data[index + 1] = irradiance.g;
+                out.data[index + 2] = irradiance.b;
             }
         }
 
