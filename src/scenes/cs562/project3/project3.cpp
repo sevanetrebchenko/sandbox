@@ -37,7 +37,7 @@ namespace Sandbox {
         InitializeBlurKernel();
         GenerateRandomPoints();
 
-        camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
+        camera_.SetPosition(glm::vec3(5.0f, 0.0f, 0.0f));
     }
 
     void SceneCS562Project3::OnUpdate() {
@@ -268,7 +268,7 @@ namespace Sandbox {
         // Bunny.
         int bunny = ecs.CreateEntity("Bunny");
 
-        ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
+        ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"))).Configure([](Mesh& mesh) {
             mesh.Complete();
         });
 
@@ -618,10 +618,10 @@ namespace Sandbox {
         // Construct shadow map transformation matrices.
         glm::mat4 projection = camera_.GetPerspectiveTransform();
 
-        static glm::vec3 lightPosition = glm::vec3(0.0f, 8.0f, 0.0f);
+        static glm::vec3 lightPosition = glm::vec3(16.0f, 8.0f, 16.0f);
         static glm::mat4 rotation = glm::rotate(glm::radians(0.5f * Time::Instance().dt), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        // lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
+        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
         glm::vec3 targetPosition = glm::vec3(0.0f);
 
         directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);
@@ -848,18 +848,17 @@ namespace Sandbox {
         {
             // Generate random points (https://en.wikipedia.org/wiki/Low-discrepancy_sequence).
             std::vector<glm::vec2> points;
-            int kk;
 
-            for (int k = 0; k < numRandomPoints; ++k) {
-                kk = k;
-                float u = 0.0f;
-                for (float p = 0.5f; kk; p *= 0.5f, kk >>= 1) {
-                    if (kk & 1) {
+            float p = 0;
+            float u = 0;
+            size_t kk = 0;
+
+            for (int k = 0; k < numRandomPoints; k++) {
+                for (p = 0.5f, kk = k, u = 0.0f; kk; p *= 0.5f, kk >>= 1)
+                    if (kk & 1)
                         u += p;
-                    }
-                }
-
-                points.emplace_back(u, (static_cast<float>(k) + 0.5f) / static_cast<float>(numRandomPoints)); // (u, v)
+                float v = ((float)k + 0.5f) / (float)numRandomPoints;
+                points.emplace_back(u, v);
             }
 
             // Set data.
@@ -877,10 +876,10 @@ namespace Sandbox {
     }
 
     void SceneCS562Project3::InitializeTextures() {
-        environmentMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref.hdr");
+        environmentMap_.ReserveData("assets/textures/ibl/barce_rooftop.hdr");
 
-        GenerateIrradianceMap("assets/textures/ibl/Newport_Loft_Ref.hdr");
-        irradianceMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref_irradiance.hdr");
+        GenerateIrradianceMap("assets/textures/ibl/barce_rooftop.hdr");
+        irradianceMap_.ReserveData("assets/textures/ibl/barce_rooftop_irradiance.hdr");
     }
 
 //    SceneCS562Project3::HDRImageData SceneCS562Project3::ReadHDRImage(const std::string& filename) const {
@@ -978,7 +977,7 @@ namespace Sandbox {
         }
 
         // Set 1: (Analytic) Projection of the dot product term.
-        std::array<float, 3> A = { glm::pi<float>(), 2.0f / 3.0f * glm::pi<float>(), 1.0f / 4.0f * glm::pi<float>() };
+        std::array<float, 3> A = { glm::pi<float>(), (2.0f / 3.0f) * glm::pi<float>(), (1.0f / 4.0f) * glm::pi<float>() };
 
         // Set 2: Projection of the pixels of the input image.
         // Y - nine spherical harmonic basis functions (first three bands).
@@ -986,37 +985,41 @@ namespace Sandbox {
         static bool initialized = false;
 
         if (!initialized) {
+            int constant = 0;
+            int linear = 1;
+            int quadratic = 2;
+
             // Constant.
-            Y[0].emplace_back(+[](float x, float y, float z) -> float {
-                return 1.0f / 2.0f * glm::sqrt(1.0f / glm::pi<float>());
+            Y[constant].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f) * glm::sqrt(1.0f / glm::pi<float>());
             });
 
             // Linear.
-            Y[1].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 2.0f * glm::sqrt(3.0f / glm::pi<float>())) * y;
+            Y[linear].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f) * glm::sqrt(3.0f / glm::pi<float>()) * y;
             });
-            Y[1].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 2.0f * glm::sqrt(3.0f / glm::pi<float>())) * z;
+            Y[linear].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f) * glm::sqrt(3.0f / glm::pi<float>()) * z;
             });
-            Y[1].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 2.0f * glm::sqrt(3.0f / glm::pi<float>())) * x;
+            Y[linear].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f) * glm::sqrt(3.0f / glm::pi<float>()) * x;
             });
 
             // Quadratic.
-            Y[2].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 2.0f * glm::sqrt(15.0f / glm::pi<float>())) * x * y;
+            Y[quadratic].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f) * glm::sqrt(15.0f / glm::pi<float>()) * x * y;
             });
-            Y[2].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 2.0f * glm::sqrt(15.0f / glm::pi<float>())) * y * z;
+            Y[quadratic].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f) * glm::sqrt(15.0f / glm::pi<float>()) * y * z;
             });
-            Y[2].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 4.0f * glm::sqrt(5.0f / glm::pi<float>())) * (3.0f * (z * z) - 1.0f);
+            Y[quadratic].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 4.0f) * glm::sqrt(5.0f / glm::pi<float>()) * (3.0f * (z * z) - 1.0f);
             });
-            Y[2].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 2.0f * glm::sqrt(15.0f / glm::pi<float>())) * x * z;
+            Y[quadratic].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 2.0f) * glm::sqrt(15.0f / glm::pi<float>()) * x * z;
             });
-            Y[2].emplace_back(+[](float x, float y, float z) -> float {
-                return (1.0f / 4.0f * glm::sqrt(15.0f / glm::pi<float>())) * ((x * x) - (y * y));
+            Y[quadratic].emplace_back(+[](float x, float y, float z) -> float {
+                return (1.0f / 4.0f) * glm::sqrt(15.0f / glm::pi<float>()) * ((x * x) - (y * y));
             });
 
             initialized = true;
@@ -1055,8 +1058,8 @@ namespace Sandbox {
         in.Deallocate(true);
 
         HDRImageData out { };
-        out.width = 400;
-        out.height = 200;
+        out.width = 800;
+        out.height = 400;
         out.channels = 3;
         out.Allocate();
 

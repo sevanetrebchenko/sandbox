@@ -198,7 +198,7 @@ float G(vec3 v, vec3 H) {
 
     vec3 N = normalize(texture(normal, uvCoord).xyz);
     float alpha = texture(specular, uvCoord).a;
-    float error = 1.0f;
+    float error = 0.0f;
 
     float vn = dot(v, N);
     if (vn > 1.0f) {
@@ -259,14 +259,8 @@ float T(float xi) {
 
 // Section: Image Based Lighting
 vec2 NormalToSphereMapUV(vec3 n) {
-//    float theta = atan(n.z, n.x);
-//    float r = length(n);
-//    float phi = degrees(acos(n.y / r));
-//
-//    return vec2(theta / 360, phi / 180);
-
     n = normalize(n);
-    return vec2(0.5f - atan(n.y, n.x) / (2.0f * PI), acos(n.z) / PI);
+    return vec2(0.5f - atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
 }
 
 vec3 SphereMapUVToNormal(vec2 uv) {
@@ -293,8 +287,8 @@ vec3 EnvironmentSpecular(vec3 N, vec3 V) {
     int count = hammersley.count;
 
     // Build orthonormal basis around the reflection direction.
-    vec3 R = normalize(2.0f * dot(N, V) * N - V);
-    vec3 A = normalize(vec3(-R.y, R.x, 0.0f)); // normalize(cross(vec3(0.0f, 0.0f, 1.0f), R);
+    vec3 R = 2.0f * dot(N, V) * N - V;
+    vec3 A = normalize(vec3(R.z, 0, -R.x));//normalize(cross(vec3(0.0f, 0.0f, 1.0f), R));
     vec3 B = normalize(cross(R, A));
 
     ivec2 dimensions = textureSize(environmentMap, 0);
@@ -338,14 +332,14 @@ void main(void) {
 
     // Diffuse.
     vec3 Kd = texture(diffuse, uvCoord).rgb;
-    vec3 diffuse = (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
+    vec3 diffuse = vec3(0.0f);// (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
 
     // Specular.
     vec3 Ks = texture(specular, uvCoord).xyz;
-    vec3 specular = vec3(0.0f);//Ks * EnvironmentSpecular(N, V);
+    vec3 specular = Ks * EnvironmentSpecular(N, V);
 
     vec3 Li = lightColor * lightBrightness;
-    float shadow = 1.0f;//(1.0f - G(p));
+    float shadow = (1.0f - G(p));
 
     vec3 color = ambient + shadow * (Li * max(dot(N, L), 0.0f) * (diffuse + specular));
 
