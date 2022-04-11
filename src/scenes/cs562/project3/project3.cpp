@@ -1,6 +1,7 @@
 
 #include "scenes/cs562/project3/project3.h"
 #include "scenes/cs562/project3/skydome.h"
+#include "scenes/cs562/project3/shadow_caster.h"
 #include "common/api/window.h"
 #include "common/geometry/object_loader.h"
 #include "common/utility/log.h"
@@ -10,10 +11,15 @@
 
 namespace Sandbox {
 
+    static const int PHONG = 0;
+    static const int GGX = 0;
+    static const int BECKMAN = 0;
+
     SceneCS562Project3::SceneCS562Project3() : fbo_(2560, 1440),
                                                shadowMap_(2048, 2048),
                                                camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
                                                blurKernelRadius_(25),
+                                               brdfModel_(PHONG),
                                                environmentMap_("environment"),
                                                irradianceMap_("irradiance"),
                                                exposure_(3.0f),
@@ -81,7 +87,7 @@ namespace Sandbox {
 
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
-        // 2. Lighting pass.
+        // 2. Global lighting pass.
         GlobalLightingPass();
 
         // 3. Local lighting pass.
@@ -240,7 +246,7 @@ namespace Sandbox {
 
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
         shaderLibrary.CreateShader("Global Lighting BRDF Pass", { "assets/shaders/global_brdf.vert", "assets/shaders/global_brdf.frag" });
-        // shaderLibrary.CreateShader("Local Lighting BRDF Pass", { "assets/shaders/local_brdf.vert", "assets/shaders/local_brdf.frag" });
+         shaderLibrary.CreateShader("Local Lighting BRDF Pass", { "assets/shaders/local_brdf.vert", "assets/shaders/local_brdf.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
 
         shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
@@ -285,6 +291,7 @@ namespace Sandbox {
 
                 materialCollection.SetMaterial(phong);
             });
+            ecs.AddComponent<ShadowCaster>(bunny);
         }
 
         // Floor.
@@ -307,6 +314,7 @@ namespace Sandbox {
                 transform.SetScale(glm::vec3(5.0f));
                 transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
             });
+            ecs.AddComponent<ShadowCaster>(floor);
         }
 
         // Compute scene bounds.
@@ -346,19 +354,39 @@ namespace Sandbox {
     void SceneCS562Project3::ConfigureLights() {
         directionalLight_.brightness_ = 1.0f;
 
-//        ECS& ecs = ECS::Instance();
-//        Mesh mesh = OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"));
-//
-//        int ID = ecs.CreateEntity("light");
-//        ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
-//            mesh.Complete();
-//        });
-//
-//        ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
-//            transform.SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
-//            transform.SetScale(glm::vec3(20.f));
-//        });
-//        ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f), 4.0f);
+        ECS& ecs = ECS::Instance();
+        Mesh mesh = OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"));
+
+        // Orange light.
+        {
+            int ID = ecs.CreateEntity("light 1");
+            ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
+
+            ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
+                transform.SetPosition(glm::vec3(2.0f, 2.0f, 0.0f));
+                transform.SetScale(glm::vec3(6.0f));
+            });
+            ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f, 0.6f, 0.25f), 1.0f);
+        }
+
+        // Purple light.
+        {
+            int ID = ecs.CreateEntity("light 2");
+            ecs.AddComponent<Mesh>(ID, mesh).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
+
+            ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
+                transform.SetPosition(glm::vec3(-2.0f, 2.0f, 0.0f));
+                transform.SetScale(glm::vec3(6.0f));
+            });
+            ecs.AddComponent<LocalLight>(ID, glm::vec3(0.5f, 0.3f, 0.8f), 1.0f);
+        }
+
+        // Light volumes cast no shadows.
+        // ecs.AddComponent<ShadowCaster>(ID);
     }
 
     void SceneCS562Project3::ConstructFBO() {
@@ -571,10 +599,7 @@ namespace Sandbox {
         globalLightingShader->SetUniform("lightBrightness", directionalLight_.brightness_);
 
         // BRDF model.
-        const int phong = 0;
-        const int ggx = 1;
-        const int beckman = 2;
-        globalLightingShader->SetUniform("model", phong);
+        globalLightingShader->SetUniform("model", brdfModel_);
         globalLightingShader->SetUniform("exposure", exposure_);
         globalLightingShader->SetUniform("contrast", contrast_);
 
@@ -605,50 +630,52 @@ namespace Sandbox {
     }
 
     void SceneCS562Project3::LocalLightingPass() {
-//        // Render to 'output' texture.
-//        fbo_.DrawBuffers(6, 1);
-//        // No clearing here.
-//
-//        Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting Pass");
-//        localLightingShader->Bind();
-//
-//        localLightingShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
-//
-//        // Set camera uniforms.
-//        localLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
-//        localLightingShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
-//
-//        // Bind geometry pass textures.
-//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
-//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
-//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
-//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
-//        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
-//
-//        ECS::Instance().IterateOver<Transform, Mesh, LocalLight>([localLightingShader](Transform& transform, Mesh& mesh, LocalLight& light) {
-//            localLightingShader->SetUniform("modelTransform", transform.GetMatrix());
-//
-//            localLightingShader->SetUniform("lightPosition", transform.GetPosition());
-//            localLightingShader->SetUniform("lightRadius", transform.GetScale().x);
-//            localLightingShader->SetUniform("lightColor", light.color_);
-//            localLightingShader->SetUniform("lightBrightness", light.brightness_);
-//
-//            mesh.Bind();
-//            mesh.Render();
-//            mesh.Unbind();
-//        });
-//
-//        localLightingShader->Unbind();
+        // Render to 'output' texture.
+        fbo_.DrawBuffers(6, 1);
+
+        Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting BRDF Pass");
+        localLightingShader->Bind();
+
+        localLightingShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
+
+        // Set camera uniforms.
+        localLightingShader->SetUniform("cameraPosition", camera_.GetPosition());
+        localLightingShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+        localLightingShader->SetUniform("model", brdfModel_);
+        localLightingShader->SetUniform("exposure", exposure_);
+        localLightingShader->SetUniform("contrast", contrast_);
+
+        // Bind geometry pass textures.
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
+        Backend::Rendering::BindTextureWithSampler(localLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
+
+        ECS::Instance().IterateOver<Transform, Mesh, LocalLight>([localLightingShader](Transform& transform, Mesh& mesh, LocalLight& light) {
+            localLightingShader->SetUniform("modelTransform", transform.GetMatrix());
+
+            localLightingShader->SetUniform("lightPosition", transform.GetPosition());
+            localLightingShader->SetUniform("lightRadius", transform.GetScale().x);
+            localLightingShader->SetUniform("lightColor", light.color_);
+            localLightingShader->SetUniform("lightBrightness", light.brightness_);
+
+            mesh.Bind();
+            mesh.Render();
+            mesh.Unbind();
+        });
+
+        localLightingShader->Unbind();
     }
 
     glm::mat4 SceneCS562Project3::CalculateShadowMatrix() {
         // Construct shadow map transformation matrices.
         glm::mat4 projection = camera_.GetPerspectiveTransform();
 
-        static glm::vec3 lightPosition = glm::vec3(16.0f, 8.0f, 16.0f);
+        static glm::vec3 lightPosition = glm::vec3(0.0f, 8.0f, 0.0f);
         static glm::mat4 rotation = glm::rotate(glm::radians(0.5f * Time::Instance().dt), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
+        // lightPosition = rotation * glm::vec4(lightPosition, 1.0f);
         glm::vec3 targetPosition = glm::vec3(0.0f);
 
         directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);
@@ -747,7 +774,7 @@ namespace Sandbox {
             shadowShader->SetUniform("near", camera_.GetNearPlaneDistance());
             shadowShader->SetUniform("far", camera_.GetFarPlaneDistance());
 
-            ECS::Instance().IterateOver<Transform, Mesh>([shadowShader](Transform& transform, Mesh& mesh) {
+            ECS::Instance().IterateOver<Transform, Mesh, ShadowCaster>([shadowShader](Transform& transform, Mesh& mesh, ShadowCaster&) {
                 shadowShader->SetUniform("modelTransform", transform.GetMatrix());
 
                 mesh.Bind();
@@ -902,14 +929,14 @@ namespace Sandbox {
     }
 
     void SceneCS562Project3::InitializeTextures() {
-        const std::string environmentMapName = ConvertToNativeSeparators("assets/textures/ibl/barce_rooftop.hdr");
+        const std::string environmentMapName = ConvertToNativeSeparators("assets/textures/ibl/monument_valley.hdr");
         const std::string irradianceMapName = ConvertToNativeSeparators(GetAssetDirectory(environmentMapName) + "/" + GetAssetName(environmentMapName) + "_irradiance.hdr");
 
         environmentMap_.ReserveData(environmentMapName);
 
         if (!Exists(irradianceMapName)) {
             ImGuiLog::Instance().LogTrace("Generating irradiance map for environment map: '%s'", environmentMapName.c_str());
-            GenerateIrradianceMap(irradianceMapName);
+            GenerateIrradianceMap(environmentMapName);
         }
 
         irradianceMap_.ReserveData(irradianceMapName);
@@ -978,6 +1005,8 @@ namespace Sandbox {
         if (extension != "hdr") {
             throw std::runtime_error("GenerateIrradianceMap expects an .hdr (HDR) input file.");
         }
+
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
         // Load raw image data.
         struct HDRImageData {
@@ -1091,8 +1120,9 @@ namespace Sandbox {
         in.Deallocate(true);
 
         HDRImageData out { };
-        out.width = 800;
-        out.height = 400;
+        // Native resolution.
+        out.width = in.width;
+        out.height = in.height;
         out.channels = 3;
         out.Allocate();
 
@@ -1124,6 +1154,13 @@ namespace Sandbox {
 
         stbi_write_hdr(ConvertToNativeSeparators(location + "/" + name + "_irradiance.hdr").c_str(), out.width, out.height, out.channels, out.data);
         out.Deallocate(false);
+
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration t = end - start;
+        std::chrono::duration ms = std::chrono::duration_cast<std::chrono::milliseconds>(t);
+        std::chrono::duration s = std::chrono::duration_cast<std::chrono::seconds>(t);
+
+        ImGuiLog::Instance().LogTrace("Generating irradiance map '%s' at resolution %i x %i (native resolution %i x %i) took %i milliseconds (%i seconds).", filename.c_str(), out.width, out.height, in.width, in.height, ms.count(), s.count());
     }
 
     void SceneCS562Project3::RenderSkydome() {

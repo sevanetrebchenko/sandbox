@@ -83,6 +83,8 @@ namespace Sandbox {
             UniformBufferObject blurKernel_;
             int blurKernelRadius_;
 
+            int brdfModel_;
+
             UniformBufferObject randomPoints_;
             Texture environmentMap_;
             Texture irradianceMap_;

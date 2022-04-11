@@ -2,12 +2,11 @@
 #version 450 core
 
 layout (location = 0) in vec3 vertexPosition;
-layout (location = 2) in vec2 uvCoordinates;
+layout (location = 1) in vec3 vertexNormal;
 
-out vec2 uv;
+uniform mat4 cameraTransform;
+uniform mat4 modelTransform;
 
 void main() {
-    uv = uvCoordinates;
-    gl_Position = vec4(vertexPosition, 1.0f);
+    gl_Position = cameraTransform * modelTransform * vec4(vertexPosition, 1.0f);
 }
-

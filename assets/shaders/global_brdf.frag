@@ -274,19 +274,19 @@ vec3 SphereMapUVToNormal(vec2 uv) {
     return normalize(vec3(cos((2.0f * PI) * (0.5f - u)) * sin(PI * v), sin((2.0f * PI) * (0.5f - u)) * sin(PI * v), cos(PI * v)));
 }
 
-vec3 BRDFSpecular(vec3 N, vec3 L, vec3 H, vec3 V) {
-    vec3 specular = vec3(0.0f);
-    if (dot(N, L) > 0.0f) {
-        // Components of BRDF model.
-        float roughness = D(H);
-        vec3 fresnel = F(L, H);
-        float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
-
-        specular = (roughness * fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N));
-    }
-
-    return specular;
-}
+//vec3 BRDFSpecular(vec3 N, vec3 L, vec3 H, vec3 V) {
+//    vec3 specular = vec3(0.0f);
+//    if (dot(N, L) > 0.0f) {
+//        // Components of BRDF model.
+//        float roughness = D(H);
+//        vec3 fresnel = F(L, H);
+//        float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
+//
+//        specular = (roughness * fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N));
+//    }
+//
+//    return specular;
+//}
 
 vec3 EnvironmentSpecular(vec3 N, vec3 V) {
     int count = hammersley.count;
