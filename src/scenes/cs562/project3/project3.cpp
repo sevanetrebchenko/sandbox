@@ -12,8 +12,8 @@
 namespace Sandbox {
 
     static const int PHONG = 0;
-    static const int GGX = 0;
-    static const int BECKMAN = 0;
+    static const int GGX = 1;
+    static const int BECKMAN = 2;
 
     SceneCS562Project3::SceneCS562Project3() : fbo_(2560, 1440),
                                                shadowMap_(2048, 2048),
