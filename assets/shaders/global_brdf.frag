@@ -155,7 +155,7 @@ float ToPhong(float alpha) {
 float D(vec3 H) {
     vec3 N = normalize(texture(normal, uvCoord).xyz);
     float alpha = texture(specular, uvCoord).a;
-    float error = 0.0f; // TODO: what is the error term?
+    float error = 1.0f; // TODO: what is the error term?
 
     float hn = dot(H, N);
     if (hn > 1.0f) {
@@ -268,12 +268,6 @@ vec2 NormalToSphereMapUV(vec3 n) {
     return vec2(theta / (2.0f * PI), phi / PI);
 }
 
-vec3 SphereMapUVToNormal(vec2 uv) {
-    float u = uv.x;
-    float v = uv.y;
-    return normalize(vec3(cos((2.0f * PI) * (0.5f - u)) * sin(PI * v), sin((2.0f * PI) * (0.5f - u)) * sin(PI * v), cos(PI * v)));
-}
-
 //vec3 BRDFSpecular(vec3 N, vec3 L, vec3 H, vec3 V) {
 //    vec3 specular = vec3(0.0f);
 //    if (dot(N, L) > 0.0f) {
@@ -299,14 +293,20 @@ vec3 EnvironmentSpecular(vec3 N, vec3 V) {
     ivec2 dimensions = textureSize(environmentMap, 0);
     vec3 specular = vec3(0.0f);
 
+    float p = 0.5f * log2(float(dimensions.x * dimensions.y) / float(count));
+
     for (int i = 0; i < count; ++i) {
+        // Generate pseudo-random specular reflection direction using Hammersley distribution.
         vec2 random = hammersley.points[i];
-        vec3 L = SphereMapUVToNormal(vec2(random.x, T(random.y) / PI));
-        L = normalize(L.x * A + L.y * B + L.z * R); // Rotated direction 'wk'.
+        float theta = T(random.x);
+        float phi = random.y * (2.0f * PI);
+        vec3 L = normalize((sin(theta) * cos(phi) * A) + (sin(theta) * sin(phi) * B) + (cos(theta) * R)); // Rotated direction 'wk'.
+
         vec3 H = normalize(L + V);
 
-        // Filter.
-        float level = 0.5f * log2(float(dimensions.x * dimensions.y) / float(count)) - 0.5f * log2(D(H) / 4.0f);
+        // https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-20-gpu-based-importance-sampling
+        // Averaging all pixels within the solid angle can be approximated by choosing an appropriate mipmap level.
+        float level = p - 0.5f * log2(D(H) / 4.0f);
         vec3 Li = textureLod(environmentMap, NormalToSphereMapUV(L), level).rgb;
 
         float NdotL = dot(N, L);
@@ -335,20 +335,20 @@ void main(void) {
 
     // Ambient.
     vec3 Ka = texture(ambient, uvCoord).rgb;
-    vec3 ambient = Ka;
+    vec3 ambientComponent = Ka;
 
     // Diffuse.
     vec3 Kd = texture(diffuse, uvCoord).rgb;
-    vec3 diffuse = (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
+    vec3 diffuseComponent = (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
 
     // Specular.
     vec3 Ks = texture(specular, uvCoord).xyz;
-    vec3 specular = Ks * EnvironmentSpecular(N, V);
+    vec3 specularComponent = Ks * EnvironmentSpecular(N, V);
 
     vec3 Li = lightColor * lightBrightness;
-    float shadow = (1.0f - G(p));
+    float shadowComponent = (1.0f - G(p));
 
-    vec3 color = ambient + shadow * (Li * max(dot(N, L), 0.0f) * (diffuse + specular));
+    vec3 color = ambientComponent + shadowComponent * (Li * max(dot(N, L), 0.0f) * (diffuseComponent + specularComponent));
 
     // Tone mapping.
     color.r = pow((exposure * color.r) / (exposure * color.r + 1.0f), contrast / 2.2f);

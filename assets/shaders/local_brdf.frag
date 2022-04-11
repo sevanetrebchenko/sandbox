@@ -138,31 +138,35 @@ void main(void) {
     if (abs(distanceToLight) <= lightRadius) {
         // Point lights give off no ambient light.
         // vec3 Ka = texture(ambient, uvCoord).rgb;
-        vec3 ambient = vec3(0.0f);
+        vec3 ambientComponent = vec3(0.0f);
 
         // Diffuse.
         vec3 Kd = texture(diffuse, uvCoord).rgb;
-        vec3 diffuse = Kd / PI;
+        vec3 diffuseComponent = Kd;
 
         // Specular.
-        vec3 specular = vec3(0.0f);
+        vec3 Ks = texture(specular, uvCoord).rgb;
+        vec3 specularComponent = vec3(0.0f);
         float NdotL = dot(N, L);
+
+        // Avoid division by 0.
         if (NdotL > 0.0f) {
             // Components of BRDF model.
             float roughness = D(H);
             vec3 fresnel = F(L, H);
             float occlusion = G(L, H) * G(V, H);// Calculated using Smith form.
 
-            specular = (roughness * fresnel * occlusion) / (4.0f * NdotL * dot(V, N));
+            specularComponent = Ks * (roughness * fresnel * occlusion) / (4.0f * NdotL * dot(V, N));
         }
 
         // Attenuate light brightness based on the distance from the light position.
-        vec3 I = lightColor * mix(lightBrightness, 0.0f, distanceToLight / lightRadius);
+        // vec3 Li = lightColor * (1.0f / (distanceToLight * distanceToLight));
+        vec3 Li = lightColor * mix(lightBrightness, 0.0f, distanceToLight / lightRadius);
 
-        // Shadow for point lights requires a different shadow map.
+        // / TODO: Shadows for point lights require a different shadow map.
         // float shadow = (1.0f - G(p));
 
-        color = ambient + (I * max(NdotL, 0.0f) * (diffuse + specular));
+        color = ambientComponent + (Li * max(NdotL, 0.0f) * (diffuseComponent + specularComponent));
 
         // Tone mapping.
         color.r = pow((exposure * color.r) / (exposure * color.r + 1.0f), contrast / 2.2f);

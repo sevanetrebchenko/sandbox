@@ -49,17 +49,6 @@ namespace Sandbox {
         _contentWidth = contentWidth;
         _contentHeight = contentHeight;
 
-        switch (_attachmentType) {
-            case COLOR:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, contentWidth, contentHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-                break;
-            case DEPTH:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, contentWidth, contentHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
-                break;
-            case UNKNOWN:
-                throw std::runtime_error("Usage of attachment type UNKNOWN is reserved.");
-        }
-
         // Texture wrapping.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -67,6 +56,19 @@ namespace Sandbox {
         // Texturing filtering.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        switch (_attachmentType) {
+            case COLOR:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, contentWidth, contentHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
+                break;
+            case DEPTH:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, contentWidth, contentHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+                break;
+            case UNKNOWN:
+                throw std::runtime_error("Usage of attachment type UNKNOWN is reserved.");
+        }
+
+        glGenerateMipmap(GL_TEXTURE_2D);
 
         Unbind();
     }
@@ -82,6 +84,14 @@ namespace Sandbox {
         int width, height, channels;
 
         Bind();
+
+        // Texture wrapping.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        // Texturing filtering.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         if (extension == "png" || extension == "jpg") {
             unsigned char* data = stbi_load(name.c_str(), &width, &height, &channels, 0);
@@ -104,14 +114,6 @@ namespace Sandbox {
         }
 
         glGenerateMipmap(GL_TEXTURE_2D);
-
-        // Texture wrapping.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        // Texturing filtering.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         Unbind();
     }

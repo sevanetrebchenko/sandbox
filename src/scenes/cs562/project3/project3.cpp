@@ -90,6 +90,8 @@ namespace Sandbox {
         // 2. Global lighting pass.
         GlobalLightingPass();
 
+        glDepthMask(GL_FALSE); // Don't write to depth buffer.
+
         // 3. Local lighting pass.
         Backend::Core::EnableFlag(GL_BLEND); // Enable blending.
         glBlendFunc(GL_ONE, GL_ONE);         // Additive blending TODO: abstract out.
@@ -101,8 +103,13 @@ namespace Sandbox {
 
         Backend::Core::DisableFlag(GL_CULL_FACE);
         Backend::Core::DisableFlag(GL_BLEND);
+
+        Backend::Core::DisableFlag(GL_BLEND); // Disable blending.
+
+        glDepthMask(GL_TRUE);
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
 
+        // 4. Render skydome.
         RenderSkydome();
 
         // Restore viewport.
@@ -264,7 +271,7 @@ namespace Sandbox {
                 { "ambientCoefficient", glm::vec3(0.5f) },
                 { "diffuseCoefficient", glm::vec3(0.5f) },
                 { "specularCoefficient", glm::vec3(1.0f) },
-                { "specularExponent", 50.0f }
+                { "specularExponent", 2.0f }
         });
         phongMaterial->GetUniform("ambientCoefficient")->UseColorPicker(true);
         phongMaterial->GetUniform("diffuseCoefficient")->UseColorPicker(true);
@@ -287,7 +294,7 @@ namespace Sandbox {
                 phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
                 phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
                 phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
-                phong->GetUniform("specularExponent")->SetData(1280.0f);
+                phong->GetUniform("specularExponent")->SetData(50.0f);
 
                 materialCollection.SetMaterial(phong);
             });
@@ -305,7 +312,7 @@ namespace Sandbox {
                 phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
                 phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
                 phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
-                phong->GetUniform("specularExponent")->SetData(14.0f);
+                phong->GetUniform("specularExponent")->SetData(1400.0f);
 
                 materialCollection.SetMaterial(phong);
             });
@@ -365,8 +372,8 @@ namespace Sandbox {
             });
 
             ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
-                transform.SetPosition(glm::vec3(2.0f, 2.0f, 0.0f));
-                transform.SetScale(glm::vec3(6.0f));
+                transform.SetPosition(glm::vec3(2.0f, 0.0f, 0.0f));
+                transform.SetScale(glm::vec3(4.0f));
             });
             ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f, 0.6f, 0.25f), 1.0f);
         }
@@ -379,8 +386,8 @@ namespace Sandbox {
             });
 
             ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
-                transform.SetPosition(glm::vec3(-2.0f, 2.0f, 0.0f));
-                transform.SetScale(glm::vec3(6.0f));
+                transform.SetPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
+                transform.SetScale(glm::vec3(4.0f));
             });
             ecs.AddComponent<LocalLight>(ID, glm::vec3(0.5f, 0.3f, 0.8f), 1.0f);
         }
@@ -887,7 +894,7 @@ namespace Sandbox {
             std::vector<UniformBufferElement> layoutElements;
             layoutElements.reserve(numRandomPoints + 1);
 
-            layoutElements.emplace_back(UniformBufferElement { ShaderDataType::INT, "count" } );
+            layoutElements.emplace_back(UniformBufferElement { ShaderDataType::VEC4, "count" } );
             for (unsigned i = 0; i < numRandomPoints; ++i) {
                 layoutElements.emplace_back(UniformBufferElement { ShaderDataType::VEC2, "points[" + std::to_string(i) + "]" } );
             }
@@ -920,9 +927,9 @@ namespace Sandbox {
             int index = 0;
 
             randomPoints_.Bind();
-            randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 4, static_cast<const void*>(&numRandomPoints));
+            randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 16, static_cast<const void*>(&numRandomPoints));
             for (const glm::vec2& value : points) {
-                randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 8, static_cast<const void*>(&value));
+                randomPoints_.SetSubData(layoutElements[index++].GetBufferOffset(), 16, static_cast<const void*>(&value));
             }
             randomPoints_.Unbind();
         }
