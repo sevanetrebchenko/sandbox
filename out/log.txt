@@ -10,9 +10,10 @@
 [  TRACE  ]  Compiling Shader 'Depth Out' from source.
 [  TRACE  ]  Compiling Shader 'Blur Horizontal' from source.
 [  TRACE  ]  Compiling Shader 'Blur Vertical' from source.
+[  TRACE  ]  Compiling Shader 'Skydome' from source.
 [  TRACE  ]  Loading scene: 'CS562: Project 3'
 [  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_3\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 3303 ms.
+[  TRACE  ]  Scene loaded in: 2879 ms.
 [  TRACE  ]  Unloading scene: 'CS562: Project 3'
 [  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_3\ui_layout.ini
 [  TRACE  ]  Scene unloaded in: 0 ms.

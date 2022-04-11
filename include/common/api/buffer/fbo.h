@@ -45,6 +45,8 @@ namespace Sandbox {
             [[nodiscard]] unsigned GetWidth() const;
             [[nodiscard]] unsigned GetHeight() const;
 
+            unsigned _bufferID;
+
         private:
             void RegenerateBufferID();
 
@@ -59,7 +61,6 @@ namespace Sandbox {
             std::vector<GLenum> _drawBuffers;
 
             unsigned _currentColorAttachmentID;
-            unsigned _bufferID;
     };
 
     void CopyDepthBuffer(FrameBufferObject* source, FrameBufferObject* destination);

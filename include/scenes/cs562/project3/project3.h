@@ -70,6 +70,7 @@ namespace Sandbox {
 //            [[nodiscard]] HDRImageData ReadHDRImage(const std::string& filename) const;
 //            void WriteHDRImage(HDRImageData data, const std::string& filename) const;
             void GenerateIrradianceMap(std::string filename) const;
+            void RenderSkydome();
 
             Bounds bounds_;
 

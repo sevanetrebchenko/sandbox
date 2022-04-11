@@ -6,7 +6,7 @@ namespace Sandbox {
 
     // All components need to derive from IComponent.
     struct IComponent {
-        virtual ~IComponent() = 0;
+        virtual ~IComponent() = default;
     };
 
 }

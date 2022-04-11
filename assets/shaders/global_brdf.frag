@@ -332,7 +332,7 @@ void main(void) {
 
     // Diffuse.
     vec3 Kd = texture(diffuse, uvCoord).rgb;
-    vec3 diffuse = vec3(0.0f);// (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
+    vec3 diffuse = (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
 
     // Specular.
     vec3 Ks = texture(specular, uvCoord).xyz;

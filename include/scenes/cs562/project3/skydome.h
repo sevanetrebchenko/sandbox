@@ -1,9 +1,11 @@
 
+#pragma once
+
 #include "common/ecs/component/component.h"
 
 namespace Sandbox {
 
-//    IComponent::~IComponent() {
-//    }
+    struct Skydome : public IComponent {
+    };
 
 }

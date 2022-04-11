@@ -1,5 +1,6 @@
 
 #include "scenes/cs562/project3/project3.h"
+#include "scenes/cs562/project3/skydome.h"
 #include "common/api/window.h"
 #include "common/geometry/object_loader.h"
 #include "common/utility/log.h"
@@ -95,6 +96,8 @@ namespace Sandbox {
         Backend::Core::DisableFlag(GL_CULL_FACE);
         Backend::Core::DisableFlag(GL_BLEND);
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
+
+        RenderSkydome();
 
         // Restore viewport.
         fbo_.Unbind();
@@ -245,6 +248,8 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Depth Out", { "assets/shaders/fsq.vert", "assets/shaders/depth_out.frag" });
         shaderLibrary.CreateShader("Blur Horizontal", { "assets/shaders/blur_horizontal.comp" });
         shaderLibrary.CreateShader("Blur Vertical", { "assets/shaders/blur_vertical.comp" });
+
+        shaderLibrary.CreateShader("Skydome", { "assets/shaders/skydome.vert", "assets/shaders/skydome.frag" });
     }
 
     void SceneCS562Project3::InitializeMaterials() {
@@ -266,43 +271,43 @@ namespace Sandbox {
         ECS& ecs = ECS::Instance();
 
         // Bunny.
-        int bunny = ecs.CreateEntity("Bunny");
+        {
+            int bunny = ecs.CreateEntity("Bunny");
+            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"))).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
+            ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
+                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
+                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
+                phong->GetUniform("specularExponent")->SetData(1280.0f);
 
-        ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"))).Configure([](Mesh& mesh) {
-            mesh.Complete();
-        });
-
-        ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
-            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
-            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
-            phong->GetUniform("specularExponent")->SetData(1280.0f);
-
-            materialCollection.SetMaterial(phong);
-        });
+                materialCollection.SetMaterial(phong);
+            });
+        }
 
         // Floor.
-        int floor = ecs.CreateEntity("Floor");
-        ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
-            mesh.Complete();
-        });
+        {
+            int floor = ecs.CreateEntity("Floor");
+            ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
+            ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
+                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
+                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
+                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
+                phong->GetUniform("specularExponent")->SetData(14.0f);
 
-        ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
-            Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-            phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
-            phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
-            phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
-            phong->GetUniform("specularExponent")->SetData(14.0f);
-
-            materialCollection.SetMaterial(phong);
-        });
-
-        ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
-            transform.SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
-            transform.SetScale(glm::vec3(5.0f));
-            transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
-        });
+                materialCollection.SetMaterial(phong);
+            });
+            ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
+                transform.SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
+                transform.SetScale(glm::vec3(5.0f));
+                transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+            });
+        }
 
         // Compute scene bounds.
         ecs.IterateOver<Transform, Mesh>([this](Transform& transform, Mesh& mesh) {
@@ -314,6 +319,25 @@ namespace Sandbox {
                 bounds_.Extend(matrix * glm::vec4(vertex, 1.0f));
             }
         });
+
+        // Skydome.
+        {
+            int skydome = ecs.CreateEntity("Skydome");
+            ecs.AddComponent<Mesh>(skydome, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"))).Configure([](Mesh& mesh) {
+                mesh.Complete();
+            });
+            ecs.AddComponent<Skydome>(skydome);
+            ecs.GetComponent<Transform>(skydome).Configure([this](Transform& transform) {
+                float max = std::numeric_limits<float>::lowest();
+                for (int axis = 0; axis < 3; ++axis) {
+                    if (bounds_.GetDiagonal()[axis] > max) {
+                        max = bounds_.GetDiagonal()[axis];
+                    }
+                }
+
+                transform.SetScale(glm::vec3(max * 5.0f));
+            });
+        }
     }
 
     void SceneCS562Project3::ConfigureLights() {
@@ -1091,6 +1115,33 @@ namespace Sandbox {
 
         stbi_write_hdr(ConvertToNativeSeparators(location + "/" + name + "_irradiance.hdr").c_str(), out.width, out.height, out.channels, out.data);
         out.Deallocate(false);
+    }
+
+    void SceneCS562Project3::RenderSkydome() {
+        fbo_.DrawBuffers(6, 1);
+
+        // Render four channel depth buffer.
+        Shader* skydomeShader = ShaderLibrary::Instance().GetShader("Skydome");
+        skydomeShader->Bind();
+
+        glm::mat4 view = glm::mat4(glm::mat3(camera_.GetViewTransform())); // Remove translation.
+        glm::mat4 perspective = camera_.GetPerspectiveTransform();
+
+        skydomeShader->SetUniform("cameraTransform", perspective * view);
+        skydomeShader->SetUniform("exposure", exposure_);
+        skydomeShader->SetUniform("contrast", contrast_);
+        Backend::Rendering::BindTextureWithSampler(skydomeShader, &environmentMap_, "environmentMap", 0);
+
+        ECS::Instance().IterateOver<Transform, Mesh, Skydome>([skydomeShader](Transform& transform, Mesh& mesh, Skydome&) {
+            skydomeShader->SetUniform("modelTransform", transform.GetMatrix());
+            skydomeShader->SetUniform("normalTransform", glm::inverse(glm::transpose(transform.GetMatrix())));
+
+            mesh.Bind();
+            mesh.Render();
+            mesh.Unbind();
+        });
+
+        skydomeShader->Unbind();
     }
 
 }
