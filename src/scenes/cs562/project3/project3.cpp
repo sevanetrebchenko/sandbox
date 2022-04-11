@@ -38,7 +38,7 @@ namespace Sandbox {
         InitializeBlurKernel();
         GenerateRandomPoints();
 
-        camera_.SetPosition(glm::vec3(5.0f, 0.0f, 0.0f));
+        camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
 
     void SceneCS562Project3::OnUpdate() {
@@ -899,14 +899,20 @@ namespace Sandbox {
             }
             randomPoints_.Unbind();
         }
-
     }
 
     void SceneCS562Project3::InitializeTextures() {
-        environmentMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref.hdr");
+        const std::string environmentMapName = ConvertToNativeSeparators("assets/textures/ibl/barce_rooftop.hdr");
+        const std::string irradianceMapName = ConvertToNativeSeparators(GetAssetDirectory(environmentMapName) + "/" + GetAssetName(environmentMapName) + "_irradiance.hdr");
 
-        GenerateIrradianceMap("assets/textures/ibl/Newport_Loft_Ref.hdr");
-        irradianceMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref_irradiance.hdr");
+        environmentMap_.ReserveData(environmentMapName);
+
+        if (!Exists(irradianceMapName)) {
+            ImGuiLog::Instance().LogTrace("Generating irradiance map for environment map: '%s'", environmentMapName.c_str());
+            GenerateIrradianceMap(irradianceMapName);
+        }
+
+        irradianceMap_.ReserveData(irradianceMapName);
     }
 
 //    SceneCS562Project3::HDRImageData SceneCS562Project3::ReadHDRImage(const std::string& filename) const {

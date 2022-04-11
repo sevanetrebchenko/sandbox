@@ -293,7 +293,7 @@ vec3 EnvironmentSpecular(vec3 N, vec3 V) {
 
     // Build orthonormal basis around the reflection direction.
     vec3 R = 2.0f * dot(N, V) * N - V;
-    vec3 A = normalize(vec3(-R.y, R.x, 0.0f));//normalize(cross(vec3(0.0f, 0.0f, 1.0f), R));
+    vec3 A = normalize(vec3(-R.z, 0, R.x)); // normalize(cross(vec3(0.0f, 1.0f, 0.0f), R));
     vec3 B = normalize(cross(R, A));
 
     ivec2 dimensions = textureSize(environmentMap, 0);
@@ -307,16 +307,18 @@ vec3 EnvironmentSpecular(vec3 N, vec3 V) {
 
         // Filter.
         float level = 0.5f * log2(float(dimensions.x * dimensions.y) / float(count)) - 0.5f * log2(D(H) / 4.0f);
-        vec3 Li = texture(environmentMap, NormalToSphereMapUV(L), level).rgb;
+        vec3 Li = textureLod(environmentMap, NormalToSphereMapUV(L), level).rgb;
 
-        if (dot(N, L) > 0.0f) {
+        float NdotL = dot(N, L);
+
+        if (NdotL > 0.0f) {
             // Components of BRDF model.
             // D(H) component is canceled out by careful selection of sampled directions (importance sampling).
             // vec3 roughness = D(H);
             vec3 fresnel = F(L, H);
             float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
 
-            specular += (fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N)) * Li * dot(N, L);
+            specular += (fresnel * occlusion) / (4.0f * NdotL * dot(V, N)) * Li * NdotL;
         }
     }
 
