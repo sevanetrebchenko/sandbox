@@ -21,6 +21,9 @@ namespace Sandbox {
 
             Mesh LoadFromFile(const Request& request);
 
+            // Loads UV sphere.
+            Mesh LoadSphere(); // TODO: Abstract.
+
         private:
             OBJLoader();
             ~OBJLoader();

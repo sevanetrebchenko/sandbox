@@ -273,7 +273,7 @@ namespace Sandbox {
         // Bunny.
         {
             int bunny = ecs.CreateEntity("Bunny");
-            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"))).Configure([](Mesh& mesh) {
+            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
                 mesh.Complete();
             });
             ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
@@ -323,7 +323,10 @@ namespace Sandbox {
         // Skydome.
         {
             int skydome = ecs.CreateEntity("Skydome");
-            ecs.AddComponent<Mesh>(skydome, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"))).Configure([](Mesh& mesh) {
+//            ecs.AddComponent<Mesh>(skydome, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/sphere.obj"))).Configure([](Mesh& mesh) {
+//                mesh.Complete();
+//            });
+            ecs.AddComponent<Mesh>(skydome, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
                 mesh.Complete();
             });
             ecs.AddComponent<Skydome>(skydome);
@@ -900,10 +903,10 @@ namespace Sandbox {
     }
 
     void SceneCS562Project3::InitializeTextures() {
-        environmentMap_.ReserveData("assets/textures/ibl/barce_rooftop.hdr");
+        environmentMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref.hdr");
 
-        GenerateIrradianceMap("assets/textures/ibl/barce_rooftop.hdr");
-        irradianceMap_.ReserveData("assets/textures/ibl/barce_rooftop_irradiance.hdr");
+        GenerateIrradianceMap("assets/textures/ibl/Newport_Loft_Ref.hdr");
+        irradianceMap_.ReserveData("assets/textures/ibl/Newport_Loft_Ref_irradiance.hdr");
     }
 
 //    SceneCS562Project3::HDRImageData SceneCS562Project3::ReadHDRImage(const std::string& filename) const {

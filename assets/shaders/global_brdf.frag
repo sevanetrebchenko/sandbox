@@ -260,7 +260,12 @@ float T(float xi) {
 // Section: Image Based Lighting
 vec2 NormalToSphereMapUV(vec3 n) {
     n = normalize(n);
-    return vec2(0.5f - atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
+
+    float theta = atan(n.z, n.x);
+    float r = length(n);
+    float phi = acos(n.y / r);
+
+    return vec2(theta / (2.0f * PI), phi / PI);
 }
 
 vec3 SphereMapUVToNormal(vec2 uv) {
@@ -288,7 +293,7 @@ vec3 EnvironmentSpecular(vec3 N, vec3 V) {
 
     // Build orthonormal basis around the reflection direction.
     vec3 R = 2.0f * dot(N, V) * N - V;
-    vec3 A = normalize(vec3(R.z, 0, -R.x));//normalize(cross(vec3(0.0f, 0.0f, 1.0f), R));
+    vec3 A = normalize(vec3(-R.y, R.x, 0.0f));//normalize(cross(vec3(0.0f, 0.0f, 1.0f), R));
     vec3 B = normalize(cross(R, A));
 
     ivec2 dimensions = textureSize(environmentMap, 0);
