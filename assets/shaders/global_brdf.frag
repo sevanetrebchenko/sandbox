@@ -11,6 +11,7 @@ out vec4 fragColor;
 uniform sampler2D position;
 uniform sampler2D normal;
 uniform sampler2D ambient;
+uniform sampler2D ambientOcclusion;
 uniform sampler2D diffuse;
 uniform sampler2D specular;
 
@@ -335,7 +336,8 @@ void main(void) {
 
     // Ambient.
     vec3 Ka = texture(ambient, uvCoord).rgb;
-    vec3 ambientComponent = Ka;
+    float factor = texture(ambientOcclusion, uvCoord).r;
+    vec3 ambientComponent = Ka * factor;
 
     // Diffuse.
     vec3 Kd = texture(diffuse, uvCoord).rgb;

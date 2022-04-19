@@ -60,16 +60,10 @@ namespace Sandbox {
 
             void GenerateRandomPoints();
 
-//            struct HDRImageData {
-//                int width;
-//                int height;
-//                int channels;
-//                std::vector<float> data;
-//            };
-//            [[nodiscard]] HDRImageData ReadHDRImage(const std::string& filename) const;
-//            void WriteHDRImage(HDRImageData data, const std::string& filename) const;
             void GenerateIrradianceMap(std::string filename) const;
             void RenderSkydome();
+
+            void AmbientOcclusionPass();
 
             Bounds bounds_;
 
@@ -89,6 +83,10 @@ namespace Sandbox {
             Texture irradianceMap_;
             float exposure_;
             float contrast_;
+
+            float ambientOcclusionRadius_;
+            float ambientOcclusionScale_;
+            float ambientOcclusionContrast_;
     };
 
 }

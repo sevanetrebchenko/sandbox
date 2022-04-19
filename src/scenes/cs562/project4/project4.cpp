@@ -23,8 +23,11 @@ namespace Sandbox {
                                                environmentMap_("environment"),
                                                irradianceMap_("irradiance"),
                                                exposure_(3.0f),
-                                               contrast_(2.0f)
-    {
+                                               contrast_(2.0f),
+                                               ambientOcclusionRadius_(1.0f),
+                                               ambientOcclusionScale_(1.0f),
+                                               ambientOcclusionContrast_(1.0f)
+                                               {
     }
 
     SceneCS562Project4::~SceneCS562Project4() {
@@ -87,6 +90,8 @@ namespace Sandbox {
 
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
+        AmbientOcclusionPass();
+
         // 2. Global lighting pass.
         GlobalLightingPass();
 
@@ -99,7 +104,7 @@ namespace Sandbox {
         Backend::Core::EnableFlag(GL_CULL_FACE);
         Backend::Core::CullFace(GL_FRONT);
 
-        LocalLightingPass();
+        // LocalLightingPass();
 
         Backend::Core::DisableFlag(GL_CULL_FACE);
         Backend::Core::DisableFlag(GL_BLEND);
@@ -185,6 +190,19 @@ namespace Sandbox {
                 ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("specular")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
                 ImGui::Separator();
 
+                ImGui::Text("Ambient Occlusion Radius:");
+                ImGui::SliderFloat("##aoRadius", &ambientOcclusionRadius_, 0.0f, 5.0f);
+
+                ImGui::Text("Ambient Occlusion Scaling Factor:");
+                ImGui::SliderFloat("##aoScale", &ambientOcclusionScale_, 0.0f, 5.0f);
+
+                ImGui::Text("Ambient Occlusion Contrast:");
+                ImGui::SliderFloat("##aoContrast", &ambientOcclusionContrast_, 0.0f, 5.0f);
+
+                ImGui::Text("Ambient Occlusion:");
+                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("ambient occlusion")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Separator();
+
                 ImGui::Text("Scene depth:");
                 ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("depth")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
                 ImGui::Separator();
@@ -263,6 +281,8 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Blur Vertical", { "assets/shaders/blur_vertical.comp" });
 
         shaderLibrary.CreateShader("Skydome", { "assets/shaders/skydome.vert", "assets/shaders/skydome.frag" });
+
+        shaderLibrary.CreateShader("Ambient Occlusion Pass", { "assets/shaders/ao.vert", "assets/shaders/ao.frag" });
     }
 
     void SceneCS562Project4::InitializeMaterials() {
@@ -291,7 +311,7 @@ namespace Sandbox {
             });
             ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.4f));
                 phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
                 phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
                 phong->GetUniform("specularExponent")->SetData(50.0f);
@@ -437,6 +457,13 @@ namespace Sandbox {
         specularTexture->Unbind();
         fbo_.AttachRenderTarget(specularTexture);
 
+        // Ambient occlusion.
+        Texture* ambientOcclusionTexture = new Texture("ambient occlusion");
+        ambientOcclusionTexture->Bind();
+        ambientOcclusionTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        ambientOcclusionTexture->Unbind();
+        fbo_.AttachRenderTarget(ambientOcclusionTexture);
+
         // Depth texture (for visualizing depth information).
         Texture* depthTexture = new Texture("depth");
         depthTexture->Bind();
@@ -530,7 +557,7 @@ namespace Sandbox {
     }
 
     void SceneCS562Project4::GeometryPass() {
-        fbo_.DrawBuffers(0, 5);
+        fbo_.DrawBuffers(0, 6);
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
 
@@ -567,7 +594,7 @@ namespace Sandbox {
 
         // Render scene depth.
         {
-            fbo_.DrawBuffers(5, 1);
+            fbo_.DrawBuffers(6, 1);
             Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // Clear everything for a new scene.
 
@@ -585,7 +612,7 @@ namespace Sandbox {
 
     void SceneCS562Project4::GlobalLightingPass() {
         // Render to 'output' texture.
-        fbo_.DrawBuffers(6, 1);
+        fbo_.DrawBuffers(7, 1);
 
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
@@ -614,21 +641,22 @@ namespace Sandbox {
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
-        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 3);
-        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("specular"), 4);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("ambient occlusion"), "ambientOcclusion", 3);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 4);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("specular"), 5);
 
         // Bind shadow map.
         shadowMap_.BindForRead();
         if (blurKernelRadius_ > 0) {
             // Vertical blurring pass happens after horizontal blurring pass.
-            Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "shadowMap", 5);
+            Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "shadowMap", 6);
         }
         else {
-            Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("depth"), "shadowMap", 5);
+            Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("depth"), "shadowMap", 6);
         }
 
-        Backend::Rendering::BindTextureWithSampler(globalLightingShader, &environmentMap_, "environmentMap", 6);
-        Backend::Rendering::BindTextureWithSampler(globalLightingShader, &irradianceMap_, "irradianceMap", 7);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, &environmentMap_, "environmentMap", 7);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, &irradianceMap_, "irradianceMap", 8);
 
         // Render to output texture using FSQ.
         Backend::Rendering::DrawFSQ();
@@ -638,7 +666,7 @@ namespace Sandbox {
 
     void SceneCS562Project4::LocalLightingPass() {
         // Render to 'output' texture.
-        fbo_.DrawBuffers(6, 1);
+        fbo_.DrawBuffers(7, 1);
 
         Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting BRDF Pass");
         localLightingShader->Bind();
@@ -949,60 +977,6 @@ namespace Sandbox {
         irradianceMap_.ReserveData(irradianceMapName);
     }
 
-//    SceneCS562Project4::HDRImageData SceneCS562Project4::ReadHDRImage(const std::string& filename) const {
-//        rgbe_header_info info;
-//        char buffer[256] = { '\0' };
-//
-//        HDRImageData out { };
-//        FILE* fp = fopen(filename.c_str(), "rb");
-//        if (!fp) {
-//            throw std::runtime_error("Failed to open '" + filename + "' for read.");
-//        }
-//
-//        // Read header.
-//        if (RGBE_ReadHeader(fp, &out.width, &out.height, &info, buffer) != RGBE_RETURN_SUCCESS) {
-//            fclose(fp);
-//            throw std::runtime_error("Failed to read .hdr (HDR) image header (" + filename + ").");
-//        }
-//
-//        // Read data.
-//        out.channels = 3;
-//        out.data.resize(out.width * out.height * out.channels, 0.0f); // Allocate space for image.
-//
-//        if (RGBE_ReadPixels_RLE(fp, out.data.data(), out.width, out.height, buffer) != RGBE_RETURN_SUCCESS) {
-//            fclose(fp);
-//            throw std::runtime_error("Failed to read .hdr (HDR) image data (" + filename + ").");
-//        }
-//
-//        fclose(fp);
-//        return out;
-//    }
-//
-//    void SceneCS562Project4::WriteHDRImage(HDRImageData data, const std::string& filename) const {
-//        rgbe_header_info info;
-//        char buffer[256] = { '\0' };
-//
-//        // Open file.
-//        FILE* fp = fopen(ConvertToNativeSeparators(filename).c_str(), "wb");
-//        if (!fp) {
-//            throw std::runtime_error("Failed to open '" + filename + "' for write.");
-//        }
-//
-//        // Write header.
-//        if (RGBE_WriteHeader(fp, data.width, data.height, nullptr, buffer) != RGBE_RETURN_SUCCESS) {
-//            fclose(fp);
-//            throw std::runtime_error("Failed to write .hdr (HDR) image header (" + filename + ").");
-//        }
-//
-//        // Write data.
-//        if (RGBE_WritePixels_RLE(fp, data.data.data(), data.width, data.height, buffer) != RGBE_RETURN_SUCCESS) {
-//            fclose(fp);
-//            throw std::runtime_error("Failed to read .hdr (HDR) image data (" + filename + ").");
-//        }
-//
-//        fclose(fp);
-//    }
-
     void SceneCS562Project4::GenerateIrradianceMap(std::string filename) const {
         filename = ConvertToNativeSeparators(filename);
         std::string name = GetAssetName(filename);
@@ -1171,7 +1145,7 @@ namespace Sandbox {
     }
 
     void SceneCS562Project4::RenderSkydome() {
-        fbo_.DrawBuffers(6, 1);
+        fbo_.DrawBuffers(7, 1);
 
         // Render four channel depth buffer.
         Shader* skydomeShader = ShaderLibrary::Instance().GetShader("Skydome");
@@ -1195,6 +1169,30 @@ namespace Sandbox {
         });
 
         skydomeShader->Unbind();
+    }
+
+    void SceneCS562Project4::AmbientOcclusionPass() {
+        fbo_.DrawBuffers(5, 1);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+
+        // Render four channel depth buffer.
+        Shader* aoShader = ShaderLibrary::Instance().GetShader("Ambient Occlusion Pass");
+        aoShader->Bind();
+
+        aoShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
+        aoShader->SetUniform("aoRadius", ambientOcclusionRadius_);
+        aoShader->SetUniform("aoScale", ambientOcclusionScale_);
+        aoShader->SetUniform("aoContrast", ambientOcclusionContrast_);
+        aoShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+
+        // Bind geometry pass textures.
+        Backend::Rendering::BindTextureWithSampler(aoShader, fbo_.GetNamedRenderTarget("position"), 0);
+        Backend::Rendering::BindTextureWithSampler(aoShader, fbo_.GetNamedRenderTarget("normal"), 1);
+        // Backend::Rendering::BindTextureWithSampler(aoShader, fbo_.GetNamedRenderTarget("depth buffer"), 2);
+
+        Backend::Rendering::DrawFSQ();
+
+        aoShader->Unbind();
     }
 
 }
