@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "pch.h"
+
 #include "common/application/scene.h"
 #include "common/api/buffer/fbo.h"
 #include "common/api/shader/shader.h"
@@ -14,10 +16,10 @@
 
 namespace Sandbox {
 
-    class SceneCS562Project3 : public IScene {
+    class SceneCS562Project5 : public IScene {
         public:
-            SceneCS562Project3();
-            ~SceneCS562Project3() override;
+            SceneCS562Project5();
+            ~SceneCS562Project5() override;
 
         protected:
             void OnInit() override;

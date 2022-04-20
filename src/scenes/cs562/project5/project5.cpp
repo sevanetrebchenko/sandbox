@@ -1,5 +1,5 @@
 
-#include "scenes/cs562/project3/project3.h"
+#include "scenes/cs562/project5/project5.h"
 #include "scenes/cs562/project3/skydome.h"
 #include "scenes/cs562/project3/shadow_caster.h"
 #include "common/api/window.h"
@@ -15,7 +15,7 @@ namespace Sandbox {
     static const int GGX = 1;
     static const int BECKMAN = 2;
 
-    SceneCS562Project3::SceneCS562Project3() : fbo_(2560, 1440),
+    SceneCS562Project5::SceneCS562Project5() : fbo_(2560, 1440),
                                                shadowMap_(2048, 2048),
                                                camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
                                                blurKernelRadius_(25),
@@ -24,13 +24,13 @@ namespace Sandbox {
                                                irradianceMap_("irradiance"),
                                                exposure_(3.0f),
                                                contrast_(2.0f)
-                                               {
+    {
     }
 
-    SceneCS562Project3::~SceneCS562Project3() {
+    SceneCS562Project5::~SceneCS562Project5() {
     }
 
-    void SceneCS562Project3::OnInit() {
+    void SceneCS562Project5::OnInit() {
         IScene::OnInit();
 
         InitializeShaders();
@@ -47,7 +47,7 @@ namespace Sandbox {
         camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
 
-    void SceneCS562Project3::OnUpdate() {
+    void SceneCS562Project5::OnUpdate() {
         IScene::OnUpdate();
         camera_.Update();
 
@@ -56,11 +56,11 @@ namespace Sandbox {
 //        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
     }
 
-    void SceneCS562Project3::OnPreRender() {
+    void SceneCS562Project5::OnPreRender() {
         IScene::OnPreRender();
     }
 
-    void SceneCS562Project3::OnRender() {
+    void SceneCS562Project5::OnRender() {
         IScene::OnRender();
 
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
@@ -99,7 +99,7 @@ namespace Sandbox {
         Backend::Core::EnableFlag(GL_CULL_FACE);
         Backend::Core::CullFace(GL_FRONT);
 
-        LocalLightingPass();
+        // LocalLightingPass();
 
         Backend::Core::DisableFlag(GL_CULL_FACE);
         Backend::Core::DisableFlag(GL_BLEND);
@@ -117,11 +117,11 @@ namespace Sandbox {
         Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
     }
 
-    void SceneCS562Project3::OnPostRender() {
+    void SceneCS562Project5::OnPostRender() {
         IScene::OnPostRender();
     }
 
-    void SceneCS562Project3::OnImGui() {
+    void SceneCS562Project5::OnImGui() {
         // Enable window docking.
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
@@ -229,11 +229,11 @@ namespace Sandbox {
         ImGuiLog::Instance().OnImGui();
     }
 
-    void SceneCS562Project3::OnShutdown() {
+    void SceneCS562Project5::OnShutdown() {
         IScene::OnShutdown();
     }
 
-    void SceneCS562Project3::OnWindowResize(int width, int height) {
+    void SceneCS562Project5::OnWindowResize(int width, int height) {
         IScene::OnWindowResize(width, height);
 
         // Rebuild swapchain.
@@ -248,12 +248,12 @@ namespace Sandbox {
         Backend::Core::SetViewport(0, 0, width, height);
     }
 
-    void SceneCS562Project3::InitializeShaders() {
+    void SceneCS562Project5::InitializeShaders() {
         ShaderLibrary& shaderLibrary = ShaderLibrary::Instance();
 
         shaderLibrary.CreateShader("Geometry Pass", { "assets/shaders/geometry_buffer.vert", "assets/shaders/geometry_buffer.frag" });
         shaderLibrary.CreateShader("Global Lighting BRDF Pass", { "assets/shaders/global_brdf.vert", "assets/shaders/global_brdf.frag" });
-         shaderLibrary.CreateShader("Local Lighting BRDF Pass", { "assets/shaders/local_brdf.vert", "assets/shaders/local_brdf.frag" });
+        shaderLibrary.CreateShader("Local Lighting BRDF Pass", { "assets/shaders/local_brdf.vert", "assets/shaders/local_brdf.frag" });
         shaderLibrary.CreateShader("FSQ", { "assets/shaders/fsq.vert", "assets/shaders/fsq.frag" });
 
         shaderLibrary.CreateShader("Shadow Pass", { "assets/shaders/shadow.vert", "assets/shaders/shadow.frag" });
@@ -265,7 +265,7 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Skydome", { "assets/shaders/skydome.vert", "assets/shaders/skydome.frag" });
     }
 
-    void SceneCS562Project3::InitializeMaterials() {
+    void SceneCS562Project5::InitializeMaterials() {
         // Phong shading material.
         Material* phongMaterial = new Material("Phong", {
                 { "ambientCoefficient", glm::vec3(0.5f) },
@@ -280,7 +280,7 @@ namespace Sandbox {
         materialLibrary_.AddMaterial(phongMaterial);
     }
 
-    void SceneCS562Project3::ConfigureModels() {
+    void SceneCS562Project5::ConfigureModels() {
         ECS& ecs = ECS::Instance();
 
         // Bunny.
@@ -358,7 +358,7 @@ namespace Sandbox {
         }
     }
 
-    void SceneCS562Project3::ConfigureLights() {
+    void SceneCS562Project5::ConfigureLights() {
         directionalLight_.brightness_ = 1.0f;
 
         ECS& ecs = ECS::Instance();
@@ -396,7 +396,7 @@ namespace Sandbox {
         // ecs.AddComponent<ShadowCaster>(ID);
     }
 
-    void SceneCS562Project3::ConstructFBO() {
+    void SceneCS562Project5::ConstructFBO() {
         int contentWidth = 2560;
         int contentHeight = 1440;
 
@@ -471,7 +471,7 @@ namespace Sandbox {
         fbo_.Unbind();
     }
 
-    void SceneCS562Project3::ConstructShadowMap() {
+    void SceneCS562Project5::ConstructShadowMap() {
         int contentWidth = 2048;
         int contentHeight = 2048;
 
@@ -529,7 +529,7 @@ namespace Sandbox {
         shadowMap_.Unbind();
     }
 
-    void SceneCS562Project3::GeometryPass() {
+    void SceneCS562Project5::GeometryPass() {
         fbo_.DrawBuffers(0, 5);
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
@@ -583,7 +583,7 @@ namespace Sandbox {
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
     }
 
-    void SceneCS562Project3::GlobalLightingPass() {
+    void SceneCS562Project5::GlobalLightingPass() {
         // Render to 'output' texture.
         fbo_.DrawBuffers(6, 1);
 
@@ -636,7 +636,7 @@ namespace Sandbox {
         globalLightingShader->Unbind();
     }
 
-    void SceneCS562Project3::LocalLightingPass() {
+    void SceneCS562Project5::LocalLightingPass() {
         // Render to 'output' texture.
         fbo_.DrawBuffers(6, 1);
 
@@ -675,7 +675,7 @@ namespace Sandbox {
         localLightingShader->Unbind();
     }
 
-    glm::mat4 SceneCS562Project3::CalculateShadowMatrix() {
+    glm::mat4 SceneCS562Project5::CalculateShadowMatrix() {
         // Construct shadow map transformation matrices.
         glm::mat4 projection = camera_.GetPerspectiveTransform();
 
@@ -692,7 +692,7 @@ namespace Sandbox {
         return projection * view;
     }
 
-    void SceneCS562Project3::InitializeBlurKernel() {
+    void SceneCS562Project5::InitializeBlurKernel() {
         static bool layoutInitialized = false;
 
         // Initialize uniform block layout.
@@ -766,7 +766,7 @@ namespace Sandbox {
 
     // Draws all scene geometry from the perspective of the directional light.
     // Generates 3 textures: depth buffer, output shadow map for visual debugging, and four-channel shadow map for MSM algorithm.
-    void SceneCS562Project3::GenerateShadowMap() {
+    void SceneCS562Project5::GenerateShadowMap() {
         shadowMap_.DrawBuffers(0, 2);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -809,7 +809,7 @@ namespace Sandbox {
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
     }
 
-    void SceneCS562Project3::BlurShadowMap() {
+    void SceneCS562Project5::BlurShadowMap() {
         shadowMap_.DrawBuffers(2, 3);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
 
@@ -886,7 +886,7 @@ namespace Sandbox {
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
     }
 
-    void SceneCS562Project3::GenerateRandomPoints() {
+    void SceneCS562Project5::GenerateRandomPoints() {
         // Initialize uniform block layout.
         const int numRandomPoints = 40;
 
@@ -935,7 +935,7 @@ namespace Sandbox {
         }
     }
 
-    void SceneCS562Project3::InitializeTextures() {
+    void SceneCS562Project5::InitializeTextures() {
         const std::string environmentMapName = ConvertToNativeSeparators("assets/textures/ibl/monument_valley.hdr");
         const std::string irradianceMapName = ConvertToNativeSeparators(GetAssetDirectory(environmentMapName) + "/" + GetAssetName(environmentMapName) + "_irradiance.hdr");
 
@@ -949,7 +949,7 @@ namespace Sandbox {
         irradianceMap_.ReserveData(irradianceMapName);
     }
 
-    void SceneCS562Project3::GenerateIrradianceMap(std::string filename) const {
+    void SceneCS562Project5::GenerateIrradianceMap(std::string filename) const {
         filename = ConvertToNativeSeparators(filename);
         std::string name = GetAssetName(filename);
         std::string location = GetAssetDirectory(filename);
@@ -1116,7 +1116,7 @@ namespace Sandbox {
         ImGuiLog::Instance().LogTrace("Generating irradiance map '%s' at resolution %i x %i (native resolution %i x %i) took %i milliseconds (%i seconds).", filename.c_str(), out.width, out.height, in.width, in.height, ms.count(), s.count());
     }
 
-    void SceneCS562Project3::RenderSkydome() {
+    void SceneCS562Project5::RenderSkydome() {
         fbo_.DrawBuffers(6, 1);
 
         // Render four channel depth buffer.

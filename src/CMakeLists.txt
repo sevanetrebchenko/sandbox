@@ -22,6 +22,7 @@ set(CORE_SOURCE_FILES
         "scenes/cs562/project1/light.cpp"
         "scenes/cs562/project2/project2.cpp"
         "scenes/cs562/project3/project3.cpp"
+        "scenes/cs562/project5/project5.cpp"
 
         # Buffer
         "common/api/buffer/buffer.cpp"
