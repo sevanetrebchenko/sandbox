@@ -9,6 +9,8 @@
 #include "common/ecs/ecs.h"
 #include "common/application/time.h"
 
+#include "scenes/cs562/project5/refractive.h"
+
 namespace Sandbox {
 
     static const int PHONG = 0;
@@ -23,8 +25,11 @@ namespace Sandbox {
                                                environmentMap_("environment"),
                                                irradianceMap_("irradiance"),
                                                exposure_(3.0f),
-                                               contrast_(2.0f)
-    {
+                                               contrast_(2.0f),
+                                               refractionFBO_(2048, 2048),
+                                               refractionCubemap_(-1),
+                                               causticFBO_(2560, 1440)
+                                               {
     }
 
     SceneCS562Project5::~SceneCS562Project5() {
@@ -43,6 +48,9 @@ namespace Sandbox {
         ConstructShadowMap();
         InitializeBlurKernel();
         GenerateRandomPoints();
+
+        ConstructRefractionFBO();
+        ConstructCausticFBO();
 
         camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
@@ -68,6 +76,9 @@ namespace Sandbox {
         // Render shadow map.
         glm::vec4 viewport = Backend::Core::GetViewport();
 
+
+
+
         Backend::Core::SetViewport(0, 0, shadowMap_.GetWidth(), shadowMap_.GetHeight());
         shadowMap_.BindForReadWrite();
 
@@ -78,9 +89,23 @@ namespace Sandbox {
         shadowMap_.Unbind();
         Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
 
-        // Set viewport.
-        fbo_.BindForReadWrite();
+
+
+
+        // Render refractive cubemap.
+        Backend::Core::SetViewport(0, 0, refractionFBO_.GetWidth(), refractionFBO_.GetHeight());
+        refractionFBO_.BindForReadWrite();
+
+        GenerateCubemap();
+
+        refractionFBO_.Unbind();
+        Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+
+
+
+
         Backend::Core::SetViewport(0, 0, fbo_.GetWidth(), fbo_.GetHeight());
+        fbo_.BindForReadWrite();
 
         // 1. G-buffer pass.
         GeometryPass();
@@ -109,7 +134,7 @@ namespace Sandbox {
         glDepthMask(GL_TRUE);
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
 
-        // 4. Render skydome.
+        RenderRefractiveObject();
         RenderSkydome();
 
         // Restore viewport.
@@ -158,43 +183,77 @@ namespace Sandbox {
         }
         ImGui::End();
 
+        // Refractive framebuffer color attachments.
+        static bool showEnvironmentMap = false;
+        if (ImGui::Begin("Environment Mapping Textures"), &showEnvironmentMap) {
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(refractionFBO_.GetWidth()) / static_cast<float>(refractionFBO_.GetHeight())));
+
+            ImGui::Text("Positive X:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(refractionFBO_.GetNamedRenderTarget("posX")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Negative X:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(refractionFBO_.GetNamedRenderTarget("negX")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Positive Y:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(refractionFBO_.GetNamedRenderTarget("posY")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Negative Y:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(refractionFBO_.GetNamedRenderTarget("negY")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Positive Z:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(refractionFBO_.GetNamedRenderTarget("posZ")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Negative Z:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(refractionFBO_.GetNamedRenderTarget("negZ")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+        }
+        ImGui::End();
+
         // Draw individual deferred rendering textures.
-        static bool showDebugTextures = false;
-        if (ImGui::Begin("Debug Textures"), &showDebugTextures) {
-            {
-                float maxWidth = ImGui::GetWindowContentRegionWidth();
-                ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspectRatio);
+        static bool showGBufferTextures = false;
+        if (ImGui::Begin("GBuffer Textures"), &showGBufferTextures) {
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspectRatio);
 
-                ImGui::Text("Position (world space):");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("position")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Position (world space):");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("position")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Normals (world space):");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("normal")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Normals (world space):");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("normal")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Ambient component:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("ambient")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Ambient component:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("ambient")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Diffuse component:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("diffuse")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Diffuse component:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("diffuse")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Specular component:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("specular")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Specular component:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("specular")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Scene depth:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("depth")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
-            }
+            ImGui::Text("Scene depth:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("depth")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+        }
+        ImGui::End();
+
+        static bool showShadowMap = false;
+        if (ImGui::Begin("Shadow Map Textures"), &showShadowMap) {
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap_.GetWidth()) / static_cast<float>(shadowMap_.GetHeight())));
 
             {
                 Texture* shadowMap = shadowMap_.GetNamedRenderTarget("depth output");
-                float maxWidth = ImGui::GetWindowContentRegionWidth();
-                ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
-
                 ImGui::Text("Shadow Map:");
                 ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
                 ImGui::Separator();
@@ -207,14 +266,12 @@ namespace Sandbox {
                 }
 
                 Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur output");
-                float maxWidth = ImGui::GetWindowContentRegionWidth();
-                ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
-
                 ImGui::Text("Blurred Shadow Map:");
                 ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
             }
+
+            ImGui::End();
         }
-        ImGui::End();
 
         static bool showSceneConfiguration = false;
         if (ImGui::Begin("Scene Configuration"), &showSceneConfiguration) {
@@ -263,6 +320,9 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Blur Vertical", { "assets/shaders/blur_vertical.comp" });
 
         shaderLibrary.CreateShader("Skydome", { "assets/shaders/skydome.vert", "assets/shaders/skydome.frag" });
+
+        shaderLibrary.CreateShader("Global Lighting BRDF Forward Pass", { "assets/shaders/global_brdf_forward.vert", "assets/shaders/global_brdf_forward.frag" });
+        shaderLibrary.CreateShader("Environment Mapping", { "assets/shaders/environment_mapping.vert", "assets/shaders/environment_mapping.frag" });
     }
 
     void SceneCS562Project5::InitializeMaterials() {
@@ -288,6 +348,7 @@ namespace Sandbox {
             int bunny = ecs.CreateEntity("Bunny");
             ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
                 mesh.Complete();
+                mesh.SetActive(false);
             });
             ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
@@ -299,6 +360,9 @@ namespace Sandbox {
                 materialCollection.SetMaterial(phong);
             });
             ecs.AddComponent<ShadowCaster>(bunny);
+            ecs.AddComponent<Refractive>(bunny).Configure([](Refractive& refractive) {
+                refractive.ior = 1.33f; // Water.
+            });
         }
 
         // Floor.
@@ -306,6 +370,7 @@ namespace Sandbox {
             int floor = ecs.CreateEntity("Floor");
             ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
                 mesh.Complete();
+                mesh.SetActive(true);
             });
             ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
@@ -322,6 +387,30 @@ namespace Sandbox {
                 transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
             });
             ecs.AddComponent<ShadowCaster>(floor);
+        }
+
+        // Sphere.
+        {
+            int sphere = ecs.CreateEntity("Sphere");
+            ecs.AddComponent<Mesh>(sphere, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
+                mesh.Complete();
+                mesh.SetActive(true);
+            });
+            ecs.AddComponent<MaterialCollection>(sphere).Configure([this](MaterialCollection& materialCollection) {
+                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
+                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
+                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
+                phong->GetUniform("specularExponent")->SetData(1400.0f);
+
+                materialCollection.SetMaterial(phong);
+            });
+            ecs.GetComponent<Transform>(sphere).Configure([](Transform& transform) {
+                transform.SetPosition(glm::vec3(-15.0f, 0.0f, 0.0f));
+                transform.SetScale(glm::vec3(2.0f));
+                transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+            });
+            ecs.AddComponent<ShadowCaster>(sphere);
         }
 
         // Compute scene bounds.
@@ -343,6 +432,7 @@ namespace Sandbox {
 //            });
             ecs.AddComponent<Mesh>(skydome, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
                 mesh.Complete();
+                mesh.SetActive(true);
             });
             ecs.AddComponent<Skydome>(skydome);
             ecs.GetComponent<Transform>(skydome).Configure([this](Transform& transform) {
@@ -541,24 +631,31 @@ namespace Sandbox {
         geometryShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
         geometryShader->SetUniform("normalBlend", 1.0f);
 
+        // Bunny is refractive, should not be rendered during deferred rendering.
+        ECS& ecs = ECS::Instance();
+
+        ecs.GetComponent<Mesh>(ecs.GetNamedEntityID("Bunny")).Data()->SetActive(false);
+
         // Render models to FBO attachments.
         ECS::Instance().IterateOver<Transform, Mesh, MaterialCollection>([geometryShader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection) {
-            const glm::mat4& modelTransform = transform.GetMatrix();
-            geometryShader->SetUniform("modelTransform", modelTransform);
-            geometryShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+            if (mesh.IsActive()) {
+                const glm::mat4& modelTransform = transform.GetMatrix();
+                geometryShader->SetUniform("modelTransform", modelTransform);
+                geometryShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
 
-            // Bind all related uniforms with the Phong shader.
-            Material* phong = materialCollection.GetNamedMaterial("Phong");
-            if (phong) {
-                phong->Bind(geometryShader);
+                // Bind all related uniforms with the Phong shader.
+                Material* phong = materialCollection.GetNamedMaterial("Phong");
+                if (phong) {
+                    phong->Bind(geometryShader);
+                }
+
+                // Render stage.
+                mesh.Bind();
+                mesh.Render();
+                mesh.Unbind();
+
+                // Post render stage.
             }
-
-            // Render stage.
-            mesh.Bind();
-            mesh.Render();
-            mesh.Unbind();
-
-            // Post render stage.
         });
 
         geometryShader->Unbind();
@@ -1141,6 +1238,332 @@ namespace Sandbox {
         });
 
         skydomeShader->Unbind();
+    }
+
+    void SceneCS562Project5::ConstructRefractionFBO() {
+        int contentWidth = 2048;
+        int contentHeight = 2048;
+
+//        // Generate cube map texture.
+//        glGenTextures(1, &refractionCubemap_);
+//        glBindTexture(GL_TEXTURE_CUBE_MAP, refractionCubemap_);
+//        glTexImage2D(GL_TEXTURE_CUBE_MAP, 0, GL_RGBA32F, 2048, 2048, 0, GL_RGBA, GL_FLOAT, nullptr);
+//        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//        glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+//
+//        glGenFramebuffers(1, &refractionFBO_);
+//        glBindFramebuffer(GL_FRAMEBUFFER, refractionFBO_);
+//        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTarget->ID(), 0);
+
+
+        refractionFBO_.BindForReadWrite();
+
+        // Textures for cubemap faces.
+        Texture* posX = new Texture("posX");
+        posX->Bind();
+        posX->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        posX->Unbind();
+        refractionFBO_.AttachRenderTarget(posX);
+
+        Texture* negX = new Texture("negX");
+        negX->Bind();
+        negX->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        negX->Unbind();
+        refractionFBO_.AttachRenderTarget(negX);
+
+        Texture* posY = new Texture("posY");
+        posY->Bind();
+        posY->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        posY->Unbind();
+        refractionFBO_.AttachRenderTarget(posY);
+
+        Texture* negY = new Texture("negY");
+        negY->Bind();
+        negY->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        negY->Unbind();
+        refractionFBO_.AttachRenderTarget(negY);
+
+        Texture* posZ = new Texture("posZ");
+        posZ->Bind();
+        posZ->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        posZ->Unbind();
+        refractionFBO_.AttachRenderTarget(posZ);
+
+        Texture* negZ = new Texture("negZ");
+        negZ->Bind();
+        negZ->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        negZ->Unbind();
+        refractionFBO_.AttachRenderTarget(negZ);
+
+        // Depth buffer (RBO).
+        RenderBufferObject* depthBuffer = new RenderBufferObject();
+        depthBuffer->Bind();
+        depthBuffer->ReserveData(contentWidth, contentHeight);
+        refractionFBO_.AttachDepthBuffer(depthBuffer);
+
+        if (!refractionFBO_.CheckStatus()) {
+            throw std::runtime_error("Custom Shadow FBO is not complete.");
+        }
+
+        refractionFBO_.Unbind();
+    }
+
+    void SceneCS562Project5::ConstructCausticFBO() {
+
+    }
+
+    void SceneCS562Project5::GenerateCubemap() {
+        static const int POSX = 0;
+        static const int NEGX = 1;
+        static const int POSY = 2;
+        static const int NEGY = 3;
+        static const int POSZ = 4;
+        static const int NEGZ = 5;
+
+        static const std::vector<int> faces = { POSX, NEGX, POSY, NEGY, POSZ, NEGZ };
+
+        // Clear all buffers.
+        refractionFBO_.BindForReadWrite();
+
+        refractionFBO_.DrawBuffers();
+        Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        FPSCamera camera = camera_;
+        camera.SetAspectRatio(1.0f);
+        camera.SetFOVAngle(90.0f);
+
+        ECS& ecs = ECS::Instance();
+        int bunnyID = ecs.GetNamedEntityID("Bunny");
+        camera.SetPosition(ecs.GetComponent<Transform>(bunnyID)->GetPosition());
+
+        // Disable main refractive model.
+        assert(ecs.HasComponent<Refractive>(bunnyID));
+        ecs.GetComponent<Mesh>(bunnyID).Data()->SetActive(false);
+
+        for (int face : faces) {
+            switch (face) {
+                case POSX: {
+                    camera.SetLookAtDirection(glm::vec3(1.0f, 0.0f, 0.0f));
+                    camera.SetUpVector(glm::vec3(0.0f, 1.0f, 0.0f));
+                    break;
+                }
+
+                case NEGX: {
+                    camera.SetLookAtDirection(glm::vec3(-1.0f, 0.0f, 0.0f));
+                    camera.SetUpVector(glm::vec3(0.0f, 1.0f, 0.0f));
+                    break;
+                }
+
+                case POSY: {
+                    camera.SetLookAtDirection(glm::vec3(0.0f, 1.0f, 0.0f));
+                    camera.SetUpVector(glm::vec3(0.0f, 0.0f, -1.0f));
+                    break;
+                }
+
+                case NEGY: {
+                    camera.SetLookAtDirection(glm::vec3(0.0f, -1.0f, 0.0f));
+                    camera.SetUpVector(glm::vec3(0.0f, 0.0f, 1.0f));
+                    break;
+                }
+
+                case POSZ: {
+                    camera.SetLookAtDirection(glm::vec3(0.0f, 0.0f, 1.0f));
+                    camera.SetUpVector(glm::vec3(0.0f, 1.0f, 0.0f));
+                    break;
+                }
+
+                case NEGZ: {
+                    camera.SetLookAtDirection(glm::vec3(0.0f, 0.0f, -1.0f));
+                    camera.SetUpVector(glm::vec3(0.0f, 1.0f, 0.0f));
+                    break;
+                }
+
+                default:
+                    assert(false); // Oops.
+            }
+
+            refractionFBO_.DrawBuffers(face, 1);
+            RenderScene(camera);
+            Backend::Core::ClearFlag(GL_DEPTH_BUFFER_BIT); // Clear depth buffer for next attachment.
+        }
+
+        // Return to normal.
+        ecs.GetComponent<Mesh>(bunnyID).Data()->SetActive(true);
+
+//        // Construct cube map.
+//        unsigned width = refractionFBO_.GetWidth();
+//        unsigned height = refractionFBO_.GetHeight();
+//
+//        glBindTexture(GL_TEXTURE_CUBE_MAP, refractionCubemap_);
+//
+//        for (int face : faces) {
+//            Texture* attachment = nullptr;
+//
+//            switch (face) {
+//                case POSX: {
+//                    attachment = refractionFBO_.GetNamedRenderTarget("posX");
+//                    break;
+//                }
+//
+//                case NEGX: {
+//                    attachment = refractionFBO_.GetNamedRenderTarget("negX");
+//                    break;
+//                }
+//
+//                case POSY: {
+//                    attachment = refractionFBO_.GetNamedRenderTarget("posY");
+//                    break;
+//                }
+//
+//                case NEGY: {
+//                    attachment = refractionFBO_.GetNamedRenderTarget("negY");
+//                    break;
+//                }
+//
+//                case POSZ: {
+//                    attachment = refractionFBO_.GetNamedRenderTarget("posZ");
+//                    break;
+//                }
+//
+//                case NEGZ: {
+//                    attachment = refractionFBO_.GetNamedRenderTarget("negZ");
+//                    break;
+//                }
+//
+//                default:
+//                    assert(false);
+//            }
+//
+//            glReadBuffer(GL_COLOR_ATTACHMENT0 + attachment->GetAttachmentLocation());
+//            glCopyTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA16, 0, 0, width, height, 0);
+//        }
+//
+//        glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        refractionFBO_.Unbind();
+    }
+
+    void SceneCS562Project5::RenderScene(FPSCamera camera) {
+        // Render scene geometry, fully lit by BRDF lighting.
+        {
+            Shader* shader = ShaderLibrary::Instance().GetShader("Global Lighting BRDF Forward Pass");
+
+            shader->Bind();
+
+            // Bind shadow map.
+            shadowMap_.BindForRead();
+            if (blurKernelRadius_ > 0) {
+                // Vertical blurring pass happens after horizontal blurring pass.
+                Backend::Rendering::BindTextureWithSampler(shader, shadowMap_.GetNamedRenderTarget("blur vertical"), "shadowMap", 0);
+            }
+            else {
+                Backend::Rendering::BindTextureWithSampler(shader, shadowMap_.GetNamedRenderTarget("depth"), "shadowMap", 0);
+            }
+
+            Backend::Rendering::BindTextureWithSampler(shader, &environmentMap_, "environmentMap", 1);
+            Backend::Rendering::BindTextureWithSampler(shader, &irradianceMap_, "irradianceMap", 2);
+
+            shader->SetUniform("model", brdfModel_);
+            shader->SetUniform("exposure", exposure_);
+            shader->SetUniform("contrast", contrast_);
+            shader->SetUniform("cameraPosition", camera.GetPosition());
+            glm::mat4 B = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
+            shader->SetUniform("shadowTransform", B * CalculateShadowMatrix());
+            shader->SetUniform("near", camera.GetNearPlaneDistance());
+            shader->SetUniform("far", camera.GetFarPlaneDistance());
+            shader->SetUniform("lightDirection", directionalLight_.direction_);
+            shader->SetUniform("lightColor", directionalLight_.color_);
+            shader->SetUniform("lightBrightness", directionalLight_.brightness_);
+            shader->SetUniform("cameraTransform", camera.GetCameraTransform());
+
+            ECS::Instance().IterateOver<Transform, Mesh, MaterialCollection, ShadowCaster>([shader](Transform& transform, Mesh& mesh, MaterialCollection& materialCollection, ShadowCaster&) {
+                if (!mesh.IsActive()) {
+                    return;
+                }
+
+                const glm::mat4& modelTransform = transform.GetMatrix();
+                shader->SetUniform("modelTransform", modelTransform);
+                shader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+
+                // Bind all related uniforms with the Phong shader.
+                Material* phong = materialCollection.GetNamedMaterial("Phong");
+                if (phong) {
+                    phong->Bind(shader);
+                }
+
+                mesh.Bind();
+                mesh.Render();
+                mesh.Unbind();
+            });
+
+            shader->Unbind();
+        }
+
+        // TODO: Local pass.
+
+        // Render skydome.
+        {
+            Shader* shader = ShaderLibrary::Instance().GetShader("Skydome");
+            shader->Bind();
+
+            glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewTransform())); // Remove translation.
+            glm::mat4 perspective = camera.GetPerspectiveTransform();
+
+            shader->SetUniform("cameraTransform", perspective * view);
+            shader->SetUniform("exposure", exposure_);
+            shader->SetUniform("contrast", contrast_);
+            Backend::Rendering::BindTextureWithSampler(shader, &environmentMap_, "environmentMap", 0);
+
+            ECS::Instance().IterateOver<Transform, Mesh, Skydome>([shader](Transform& transform, Mesh& mesh, Skydome&) {
+                if (mesh.IsActive()) {
+                    const glm::mat4 modelTransform = transform.GetMatrix();
+
+                    shader->SetUniform("modelTransform", modelTransform);
+                    shader->SetUniform("normalTransform", glm::inverse(glm::transpose(modelTransform)));
+
+                    mesh.Bind();
+                    mesh.Render();
+                    mesh.Unbind();
+                }
+            });
+
+            shader->Unbind();
+        }
+    }
+
+    void SceneCS562Project5::RenderRefractiveObject() {
+        Shader* shader = ShaderLibrary::Instance().GetShader("Environment Mapping");
+        shader->Bind();
+
+        shader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+        shader->SetUniform("cameraPosition", camera_.GetPosition());
+
+        // Bind samplers.
+        refractionFBO_.BindForRead();
+        Backend::Rendering::BindTextureWithSampler(shader, refractionFBO_.GetNamedRenderTarget("posX"), 0);
+        Backend::Rendering::BindTextureWithSampler(shader, refractionFBO_.GetNamedRenderTarget("negX"), 1);
+        Backend::Rendering::BindTextureWithSampler(shader, refractionFBO_.GetNamedRenderTarget("posY"), 2);
+        Backend::Rendering::BindTextureWithSampler(shader, refractionFBO_.GetNamedRenderTarget("negY"), 3);
+        Backend::Rendering::BindTextureWithSampler(shader, refractionFBO_.GetNamedRenderTarget("posZ"), 4);
+        Backend::Rendering::BindTextureWithSampler(shader, refractionFBO_.GetNamedRenderTarget("negZ"), 5);
+
+        ECS::Instance().IterateOver<Transform, Mesh, Refractive>([shader](Transform& transform, Mesh& mesh, Refractive& refractive) {
+            const glm::mat4 modelTransform = transform.GetMatrix();
+
+            shader->SetUniform("modelTransform", modelTransform);
+            shader->SetUniform("normalTransform", glm::inverse(glm::transpose(modelTransform)));
+            shader->SetUniform("ior", refractive.ior);
+
+            mesh.Bind();
+            mesh.Render();
+            mesh.Unbind();
+        });
+
+        shader->Unbind();
     }
 
 }

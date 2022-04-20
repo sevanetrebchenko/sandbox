@@ -11,6 +11,8 @@ namespace Sandbox {
             ICamera(int width, int height);
             virtual ~ICamera();
 
+            ICamera& operator=(const ICamera& other);
+
             // Should be called every frame.
             virtual void Update() = 0;
 
@@ -19,6 +21,8 @@ namespace Sandbox {
             // Look-at vector.
             void SetTargetPosition(const glm::vec3& position);
             void SetLookAtDirection(const glm::vec3& direction);
+
+            void SetUpVector(const glm::vec3& up);
 
             void SetNearPlaneDistance(float distance);
             void SetFarPlaneDistance(float distance);

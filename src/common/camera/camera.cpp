@@ -156,4 +156,31 @@ namespace Sandbox {
         return fov_;
     }
 
+    void ICamera::SetUpVector(const glm::vec3& up) {
+        up_ = up;
+        isDirty_ = true;
+    }
+
+    ICamera& ICamera::operator=(const ICamera& other) {
+        if (&other == this) {
+            return *this;
+        }
+
+        position_ = other.position_;
+        lookAtDirection_ = other.lookAtDirection_;
+        up_ = other.up_;
+
+        eulerAngles_ = other.eulerAngles_;
+
+        fov_ = other.fov_;
+        aspectRatio_ = other.aspectRatio_;
+
+        nearPlaneDistance_ = other.nearPlaneDistance_;
+        farPlaneDistance_ = other.farPlaneDistance_;
+
+        isDirty_ = true;
+
+        return *this;
+    }
+
 }

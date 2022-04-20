@@ -12,6 +12,8 @@ namespace Sandbox {
             FPSCamera(int width, int height);
             ~FPSCamera() override;
 
+            FPSCamera& operator=(const FPSCamera& other);
+
             void Update() override;
 
         private:

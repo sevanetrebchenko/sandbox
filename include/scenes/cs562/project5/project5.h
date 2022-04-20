@@ -44,6 +44,8 @@ namespace Sandbox {
             void ConfigureLights();
             void ConstructFBO();
             void ConstructShadowMap();
+            void ConstructRefractionFBO();
+            void ConstructCausticFBO();
 
             void GeometryPass();
 
@@ -66,6 +68,11 @@ namespace Sandbox {
             void GenerateIrradianceMap(std::string filename) const;
             void RenderSkydome();
 
+            // Generates cubemap around center model for refractive rendering.
+            void GenerateCubemap();
+            void RenderScene(FPSCamera camera); // TODO: don't copy.
+            void RenderRefractiveObject();
+
             Bounds bounds_;
 
             FrameBufferObject fbo_;
@@ -84,6 +91,13 @@ namespace Sandbox {
             Texture irradianceMap_;
             float exposure_;
             float contrast_;
+
+//            GLuint refractionFBO_;
+
+            FrameBufferObject refractionFBO_;
+            GLuint refractionCubemap_;
+
+            FrameBufferObject causticFBO_;
     };
 
 }

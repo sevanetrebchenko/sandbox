@@ -21,7 +21,7 @@ vec2 NormalToSphereMapUV(vec3 n) {
 }
 
 void main(void) {
-    vec4 color = texture(environmentMap, NormalToSphereMapUV(normal.xyz)).rgba;
+    vec3 color = texture(environmentMap, NormalToSphereMapUV(normal.xyz)).rgb;
 
     // Apply tone mapping.
     color.r = pow((exposure * color.r) / (exposure * color.r + 1.0f), contrast / 2.2f);

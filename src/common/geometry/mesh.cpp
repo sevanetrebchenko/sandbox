@@ -8,7 +8,8 @@ namespace Sandbox {
     Mesh::Mesh(VertexArrayObject* vao) : vao_(vao),
                    isDirty_(false),
                    topology_(MeshTopology::TRIANGLES),
-                   vertexData_()
+                   vertexData_(),
+                   isActive_(true)
                    {
 //        // Mesh has one global data layout that does not change.
 //        vao_.Bind();
@@ -267,6 +268,14 @@ namespace Sandbox {
 
     const Bounds& Mesh::GetBounds() const {
         return bounds_;
+    }
+
+    void Mesh::SetActive(bool active) {
+        isActive_ = active;
+    }
+
+    bool Mesh::IsActive() const {
+        return isActive_;
     }
 
 }

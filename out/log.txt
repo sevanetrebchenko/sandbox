@@ -12,9 +12,11 @@
 [  TRACE  ]  Compiling Shader 'Blur Horizontal' from source.
 [  TRACE  ]  Compiling Shader 'Blur Vertical' from source.
 [  TRACE  ]  Compiling Shader 'Skydome' from source.
+[  TRACE  ]  Compiling Shader 'Global Lighting BRDF Forward Pass' from source.
+[  TRACE  ]  Compiling Shader 'Environment Mapping' from source.
 [  TRACE  ]  Loading scene: 'CS562: Project 5'
-[  TRACE  ]  Creating ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_5\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 574 ms.
+[  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_5\ui_layout.ini
+[  TRACE  ]  Scene loaded in: 646 ms.
 [  TRACE  ]  Unloading scene: 'CS562: Project 5'
 [  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_5\ui_layout.ini
 [  TRACE  ]  Scene unloaded in: 0 ms.

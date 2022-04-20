@@ -67,6 +67,9 @@ namespace Sandbox {
             // Recalculates vertex normals.
             void RecalculateNormals();
 
+            void SetActive(bool active);
+            [[nodiscard]] bool IsActive() const;
+
         private:
             VertexArrayObject* vao_;
             bool isDirty_;
@@ -78,6 +81,8 @@ namespace Sandbox {
             std::vector<unsigned> indices_;
 
             Bounds bounds_;
+
+            bool isActive_;
     };
 
 }
