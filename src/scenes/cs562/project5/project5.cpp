@@ -27,7 +27,6 @@ namespace Sandbox {
                                                exposure_(3.0f),
                                                contrast_(2.0f),
                                                refractionFBO_(2048, 2048),
-                                               refractionCubemap_(-1),
                                                causticFBO_(2560, 1440)
                                                {
     }
@@ -60,8 +59,8 @@ namespace Sandbox {
         camera_.Update();
 
         // Rotate center model.
-//        ComponentWrapper<Transform> transform = ECS::Instance().GetComponent<Transform>("Bunny");
-//        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
+        ComponentWrapper<Transform> transform = ECS::Instance().GetComponent<Transform>("Bunny");
+        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
     }
 
     void SceneCS562Project5::OnPreRender() {

@@ -92,11 +92,7 @@ namespace Sandbox {
             float exposure_;
             float contrast_;
 
-//            GLuint refractionFBO_;
-
             FrameBufferObject refractionFBO_;
-            GLuint refractionCubemap_;
-
             FrameBufferObject causticFBO_;
     };
 
