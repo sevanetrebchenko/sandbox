@@ -9,6 +9,8 @@ namespace Sandbox {
                 return GL_LINES;
             case MeshTopology::TRIANGLES:
                 return GL_TRIANGLES;
+            case MeshTopology::POINTS:
+                return GL_POINTS;
         }
     }
 

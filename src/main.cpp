@@ -20,9 +20,9 @@ int main() {
     SceneManager& sceneManager = application.GetSceneManager();
 //    sceneManager.AddScene<SceneCS562Project1>("CS562: Project 1");
 //    sceneManager.AddScene<SceneCS562Project2>("CS562: Project 2");
-//    sceneManager.AddScene<SceneCS562Project3>("CS562: Project 3");
-    sceneManager.AddScene<SceneCS562Project5>("CS562: Project 5");
-    sceneManager.SetActiveScene("CS562: Project 5");
+    sceneManager.AddScene<SceneCS562Project3>("CS562: Project 3");
+//    sceneManager.AddScene<SceneCS562Project5>("CS562: Project 5");
+    sceneManager.SetActiveScene("CS562: Project 3");
 
     application.Run();
     application.Shutdown();

@@ -17,6 +17,8 @@ uniform sampler2D negZ;
 uniform float ior;
 uniform vec3 cameraPosition;
 
+// Samples cube map composed of 6 faces based on the provided direction vector 'd'.
+// https://en.wikipedia.org/wiki/Cube_mapping
 vec3 SampleCubemap(vec3 d) {
     float x = d.x;
     float y = d.y;
@@ -99,8 +101,6 @@ vec3 SampleCubemap(vec3 d) {
 }
 
 void main() {
-    vec3 I = normalize(worldPosition.xyz - cameraPosition);
-    vec3 R = refract(I, normalize(worldNormal.xyz), 1.0f / ior);
-
+    vec3 R = refract(normalize(worldPosition.xyz - cameraPosition), normalize(worldNormal.xyz), 1.0f / ior);
     fragColor = vec4(SampleCubemap(normalize(R)), 1.0f);
 }

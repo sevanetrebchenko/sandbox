@@ -11,7 +11,7 @@
 #include "common/camera/fps_camera.h"
 #include "common/api/buffer/ubo.h"
 #include "common/geometry/bounds.h"
-
+#include "common/geometry/mesh.h"
 #include "scenes/cs562/project1/light.h"
 
 namespace Sandbox {
@@ -72,6 +72,8 @@ namespace Sandbox {
             void GenerateCubemap();
             void RenderScene(FPSCamera camera); // TODO: don't copy.
             void RenderRefractiveObject();
+            void InitializeVertexGrid();
+            void CausticMapping();
 
             Bounds bounds_;
 
@@ -94,6 +96,8 @@ namespace Sandbox {
 
             FrameBufferObject refractionFBO_;
             FrameBufferObject causticFBO_;
+
+            Mesh vertexGrid_;
     };
 
 }

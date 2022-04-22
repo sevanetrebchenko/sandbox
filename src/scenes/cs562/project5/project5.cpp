@@ -8,6 +8,7 @@
 #include "common/geometry/transform.h"
 #include "common/ecs/ecs.h"
 #include "common/application/time.h"
+#include "common/api/buffer/vao_manager.h"
 
 #include "scenes/cs562/project5/refractive.h"
 
@@ -27,7 +28,8 @@ namespace Sandbox {
                                                exposure_(3.0f),
                                                contrast_(2.0f),
                                                refractionFBO_(2048, 2048),
-                                               causticFBO_(2560, 1440)
+                                               causticFBO_(1024, 576),
+                                               vertexGrid_(VAOManager::Instance().GetVAO("assets/models/sphere.obj"))
                                                {
     }
 
@@ -50,6 +52,7 @@ namespace Sandbox {
 
         ConstructRefractionFBO();
         ConstructCausticFBO();
+        InitializeVertexGrid();
 
         camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
@@ -59,8 +62,8 @@ namespace Sandbox {
         camera_.Update();
 
         // Rotate center model.
-        ComponentWrapper<Transform> transform = ECS::Instance().GetComponent<Transform>("Bunny");
-        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
+//        ComponentWrapper<Transform> transform = ECS::Instance().GetComponent<Transform>("Bunny");
+//        transform->SetRotation(transform->GetRotation() + glm::vec3(0.0f, 10.0f, 0.0f) * Time::Instance().dt);
     }
 
     void SceneCS562Project5::OnPreRender() {
@@ -86,6 +89,18 @@ namespace Sandbox {
 
         // Restore viewport.
         shadowMap_.Unbind();
+        Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+
+
+
+
+        Backend::Core::SetViewport(0, 0, causticFBO_.GetWidth(), causticFBO_.GetHeight());
+        causticFBO_.BindForReadWrite();
+
+        CausticMapping();
+
+        // Restore viewport.
+        causticFBO_.Unbind();
         Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
 
 
@@ -214,6 +229,32 @@ namespace Sandbox {
         }
         ImGui::End();
 
+        static bool showShadowMap = false;
+        if (ImGui::Begin("Shadow Map Textures"), &showShadowMap) {
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap_.GetWidth()) / static_cast<float>(shadowMap_.GetHeight())));
+
+            {
+                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("depth output");
+                ImGui::Text("Shadow Map:");
+                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Separator();
+            }
+
+            {
+                ImGui::Text("Blur Kernel Radius: ");
+                if (ImGui::SliderInt("##kernelRadius", &blurKernelRadius_, 0, 50)) {
+                    InitializeBlurKernel();
+                }
+
+                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur output");
+                ImGui::Text("Blurred Shadow Map:");
+                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            }
+
+            ImGui::End();
+        }
+
         // Draw individual deferred rendering textures.
         static bool showGBufferTextures = false;
         if (ImGui::Begin("GBuffer Textures"), &showGBufferTextures) {
@@ -246,28 +287,26 @@ namespace Sandbox {
         }
         ImGui::End();
 
-        static bool showShadowMap = false;
-        if (ImGui::Begin("Shadow Map Textures"), &showShadowMap) {
+        static bool showCausticMap = false;
+        if (ImGui::Begin("Caustic Map Textures"), &showCausticMap) {
             float maxWidth = ImGui::GetWindowContentRegionWidth();
-            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap_.GetWidth()) / static_cast<float>(shadowMap_.GetHeight())));
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(causticFBO_.GetWidth()) / static_cast<float>(causticFBO_.GetHeight())));
 
-            {
-                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("depth output");
-                ImGui::Text("Shadow Map:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
-            }
+            ImGui::Text("Receiver Positions:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(causticFBO_.GetNamedRenderTarget("receiver positions")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-            {
-                ImGui::Text("Blur Kernel Radius: ");
-                if (ImGui::SliderInt("##kernelRadius", &blurKernelRadius_, 0, 50)) {
-                    InitializeBlurKernel();
-                }
+            ImGui::Text("Refractive Positions:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(causticFBO_.GetNamedRenderTarget("refractive positions")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur output");
-                ImGui::Text("Blurred Shadow Map:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-            }
+            ImGui::Text("Refractive Normals:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(causticFBO_.GetNamedRenderTarget("refractive normals")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Caustic Mapping Output:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(causticFBO_.GetNamedRenderTarget("output")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
             ImGui::End();
         }
@@ -322,6 +361,10 @@ namespace Sandbox {
 
         shaderLibrary.CreateShader("Global Lighting BRDF Forward Pass", { "assets/shaders/global_brdf_forward.vert", "assets/shaders/global_brdf_forward.frag" });
         shaderLibrary.CreateShader("Environment Mapping", { "assets/shaders/environment_mapping.vert", "assets/shaders/environment_mapping.frag" });
+
+        shaderLibrary.CreateShader("Caustic Receiver", { "assets/shaders/caustic_pass.vert", "assets/shaders/caustic_receiver.frag" });
+        shaderLibrary.CreateShader("Caustic Refractive", { "assets/shaders/caustic_pass.vert", "assets/shaders/caustic_refractive.frag" });
+        shaderLibrary.CreateShader("Caustic Mapping", { "assets/shaders/caustic_mapping.vert", "assets/shaders/caustic_mapping.frag" });
     }
 
     void SceneCS562Project5::InitializeMaterials() {
@@ -345,9 +388,13 @@ namespace Sandbox {
         // Bunny.
         {
             int bunny = ecs.CreateEntity("Bunny");
-            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
+//            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/cup.obj"))).Configure([](Mesh& mesh) {
+//                mesh.Complete();
+//                mesh.SetActive(false);
+//            });
+            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
                 mesh.Complete();
-                mesh.SetActive(false);
+                mesh.SetActive(true);
             });
             ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
@@ -381,36 +428,36 @@ namespace Sandbox {
                 materialCollection.SetMaterial(phong);
             });
             ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
-                transform.SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
+                transform.SetPosition(glm::vec3(0.0f, -1.3f, 0.0f));
                 transform.SetScale(glm::vec3(5.0f));
                 transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
             });
             ecs.AddComponent<ShadowCaster>(floor);
         }
 
-        // Sphere.
-        {
-            int sphere = ecs.CreateEntity("Sphere");
-            ecs.AddComponent<Mesh>(sphere, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
-                mesh.Complete();
-                mesh.SetActive(true);
-            });
-            ecs.AddComponent<MaterialCollection>(sphere).Configure([this](MaterialCollection& materialCollection) {
-                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
-                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
-                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
-                phong->GetUniform("specularExponent")->SetData(1400.0f);
-
-                materialCollection.SetMaterial(phong);
-            });
-            ecs.GetComponent<Transform>(sphere).Configure([](Transform& transform) {
-                transform.SetPosition(glm::vec3(-15.0f, 0.0f, 0.0f));
-                transform.SetScale(glm::vec3(2.0f));
-                transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-            });
-            ecs.AddComponent<ShadowCaster>(sphere);
-        }
+//        // Sphere.
+//        {
+//            int sphere = ecs.CreateEntity("Sphere");
+//            ecs.AddComponent<Mesh>(sphere, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
+//                mesh.Complete();
+//                mesh.SetActive(true);
+//            });
+//            ecs.AddComponent<MaterialCollection>(sphere).Configure([this](MaterialCollection& materialCollection) {
+//                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+//                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
+//                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
+//                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
+//                phong->GetUniform("specularExponent")->SetData(1400.0f);
+//
+//                materialCollection.SetMaterial(phong);
+//            });
+//            ecs.GetComponent<Transform>(sphere).Configure([](Transform& transform) {
+//                transform.SetPosition(glm::vec3(-15.0f, 0.0f, 0.0f));
+//                transform.SetScale(glm::vec3(2.0f));
+//                transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+//            });
+//            ecs.AddComponent<ShadowCaster>(sphere);
+//        }
 
         // Compute scene bounds.
         ecs.IterateOver<Transform, Mesh>([this](Transform& transform, Mesh& mesh) {
@@ -782,8 +829,9 @@ namespace Sandbox {
         glm::vec3 targetPosition = glm::vec3(0.0f);
 
         directionalLight_.direction_ = glm::normalize(targetPosition - lightPosition);
+        directionalLight_.position_ = glm::normalize(lightPosition) * 6.0f;
 
-        glm::mat4 view = glm::lookAt(glm::normalize(lightPosition) * 12.0f, directionalLight_.direction_, glm::vec3(0.0f, 0.0f, -1.0f));
+        glm::mat4 view = glm::lookAt(directionalLight_.position_, directionalLight_.direction_, glm::vec3(0.0f, 0.0f, -1.0f));
 
         return projection * view;
     }
@@ -878,11 +926,13 @@ namespace Sandbox {
             shadowShader->SetUniform("far", camera_.GetFarPlaneDistance());
 
             ECS::Instance().IterateOver<Transform, Mesh, ShadowCaster>([shadowShader](Transform& transform, Mesh& mesh, ShadowCaster&) {
-                shadowShader->SetUniform("modelTransform", transform.GetMatrix());
+                if (mesh.IsActive()) {
+                    shadowShader->SetUniform("modelTransform", transform.GetMatrix());
 
-                mesh.Bind();
-                mesh.Render();
-                mesh.Unbind();
+                    mesh.Bind();
+                    mesh.Render();
+                    mesh.Unbind();
+                }
             });
 
             shadowShader->Unbind();
@@ -1312,7 +1362,47 @@ namespace Sandbox {
     }
 
     void SceneCS562Project5::ConstructCausticFBO() {
+        int contentWidth = causticFBO_.GetWidth();
+        int contentHeight = causticFBO_.GetHeight();
 
+        // Receiver positions attachment.
+        causticFBO_.BindForReadWrite();
+
+        Texture* receiverPositions = new Texture("receiver positions");
+        receiverPositions->Bind();
+        receiverPositions->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        receiverPositions->Unbind();
+        causticFBO_.AttachRenderTarget(receiverPositions);
+
+        Texture* refractivePositions = new Texture("refractive positions");
+        refractivePositions->Bind();
+        refractivePositions->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        refractivePositions->Unbind();
+        causticFBO_.AttachRenderTarget(refractivePositions);
+
+        Texture* refractiveNormals = new Texture("refractive normals");
+        refractiveNormals->Bind();
+        refractiveNormals->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        refractiveNormals->Unbind();
+        causticFBO_.AttachRenderTarget(refractiveNormals);
+
+        Texture* output = new Texture("output");
+        output->Bind();
+        output->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        output->Unbind();
+        causticFBO_.AttachRenderTarget(output);
+
+        // Depth buffer (RBO).
+        RenderBufferObject* depthBuffer = new RenderBufferObject();
+        depthBuffer->Bind();
+        depthBuffer->ReserveData(contentWidth, contentHeight);
+        causticFBO_.AttachDepthBuffer(depthBuffer);
+
+        if (!causticFBO_.CheckStatus()) {
+            throw std::runtime_error("Custom Caustic FBO is not complete.");
+        }
+
+        causticFBO_.Unbind();
     }
 
     void SceneCS562Project5::GenerateCubemap() {
@@ -1563,6 +1653,130 @@ namespace Sandbox {
         });
 
         shader->Unbind();
+    }
+
+    void SceneCS562Project5::CausticMapping() {
+        causticFBO_.DrawBuffers();
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Render receiver geometry from the position of the light.
+        {
+            causticFBO_.DrawBuffers(0, 1);
+            Backend::Core::ClearFlag(GL_DEPTH_BUFFER_BIT);
+
+            Shader* shader = ShaderLibrary::Instance().GetShader("Caustic Receiver");
+            shader->Bind();
+            shader->SetUniform("cameraTransform", CalculateShadowMatrix());
+
+            // Disable refractive model.
+            ECS::Instance().GetComponent<Mesh>(ECS::Instance().GetNamedEntityID("Bunny"))->SetActive(false);
+
+            ECS::Instance().IterateOver<Transform, Mesh>([shader](Transform& transform, Mesh& mesh) {
+                if (mesh.IsActive()) {
+                    const glm::mat4& modelTransform = transform.GetMatrix();
+
+                    shader->SetUniform("modelTransform", modelTransform);
+                    shader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+
+                    mesh.Bind();
+                    mesh.Render();
+                    mesh.Unbind();
+                }
+            });
+
+            shader->Unbind();
+        }
+
+        {
+            causticFBO_.DrawBuffers(1, 2);
+            Backend::Core::ClearFlag(GL_DEPTH_BUFFER_BIT);
+
+            Shader* shader = ShaderLibrary::Instance().GetShader("Caustic Refractive");
+            shader->Bind();
+            shader->SetUniform("cameraTransform", CalculateShadowMatrix());
+
+            // Disable refractive model.
+            ECS::Instance().GetComponent<Mesh>(ECS::Instance().GetNamedEntityID("Bunny"))->SetActive(true);
+
+            ECS::Instance().IterateOver<Transform, Mesh, Refractive>([shader](Transform& transform, Mesh& mesh, Refractive&) {
+                if (mesh.IsActive()) {
+                    const glm::mat4& modelTransform = transform.GetMatrix();
+
+                    shader->SetUniform("modelTransform", modelTransform);
+                    shader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+                    shader->SetUniform("normalBlend", 1.0f);
+
+                    mesh.Bind();
+                    mesh.Render();
+                    mesh.Unbind();
+                }
+            });
+
+            shader->Unbind();
+        }
+
+        // 3. Local lighting pass.
+        Backend::Core::EnableFlag(GL_BLEND); // Enable blending.
+        glBlendFunc(GL_ONE, GL_ONE);         // Additive blending
+
+        {
+            causticFBO_.DrawBuffers(3, 1);
+            Backend::Core::ClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+            Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            Shader* shader = ShaderLibrary::Instance().GetShader("Caustic Mapping");
+            shader->Bind();
+            shader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+            // shader->SetUniform("cameraPosition", camera_.GetPosition());
+            shader->SetUniform("lightPosition", directionalLight_.position_);
+            // glm::mat4 view = glm::lookAt(glm::normalize(glm::vec3(0.0f, 8.0f, 0.0f)) * 6.0f, directionalLight_.direction_, glm::vec3(0.0f, 0.0f, -1.0f));
+            shader->SetUniform("viewTransform", CalculateShadowMatrix());
+
+            Backend::Rendering::BindTextureWithSampler(shader, causticFBO_.GetNamedRenderTarget("receiver positions"), "receiver", 0);
+            Backend::Rendering::BindTextureWithSampler(shader, causticFBO_.GetNamedRenderTarget("refractive positions"), "refractivePositions", 1);
+            Backend::Rendering::BindTextureWithSampler(shader, causticFBO_.GetNamedRenderTarget("refractive normals"), "refractiveNormals", 2);
+
+//            glEnable(GL_POINT_SMOOTH);
+//            glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+            glPointSize(10);
+
+            if (vertexGrid_.IsActive()) {
+                shader->SetUniform("modelTransform", glm::mat4(1.0f));
+                shader->SetUniform("ior", ECS::Instance().GetComponent<Refractive>(ECS::Instance().GetNamedEntityID("Bunny"))->ior);
+
+                vertexGrid_.Bind();
+                vertexGrid_.Render();
+                vertexGrid_.Unbind();
+            }
+
+            shader->Unbind();
+        }
+
+        Backend::Core::DisableFlag(GL_BLEND); // Disable blending.
+    }
+
+    void SceneCS562Project5::InitializeVertexGrid() {
+        int dimension = 256; // causticFBO_.GetWidth();
+
+        std::vector<glm::vec3> vertices;
+
+        float start = -1.0f;
+        float step = 2.0f / static_cast<float>(dimension);
+
+        for (int i = 0; i < dimension; ++i) {
+            for (int j = 0; j < dimension; ++j) {
+                vertices.emplace_back(glm::vec3(start + static_cast<float>(i) * step, start + static_cast<float>(j) * step, 0.0f) * 10.0f);
+            }
+        }
+
+        std::vector<unsigned> indices;
+        for (unsigned i = 0; i < dimension * dimension; ++i) {
+            indices.emplace_back(i);
+        }
+
+        vertexGrid_.SetVertices(vertices);
+        vertexGrid_.SetIndices(indices, MeshTopology::POINTS);
+        vertexGrid_.Complete();
     }
 
 }
