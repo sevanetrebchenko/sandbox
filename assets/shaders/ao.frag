@@ -8,12 +8,12 @@ in vec2 uvCoord;
 
 uniform sampler2D position; // World-space positions.
 uniform sampler2D normal;   // World-space normals.
+uniform sampler2D depth;
 
 uniform vec2 resolution;
 uniform float aoRadius;
 uniform float aoScale;
 uniform float aoContrast;
-uniform mat4 cameraTransform;
 
 void main() {
     int xp = int(gl_FragCoord.x);
@@ -22,16 +22,17 @@ void main() {
     float x = float(xp) / resolution.x;
     float y = float(yp) / resolution.y;
 
+    // Point 'p' and normal 'n' in world space.
     vec4 p = texture(position, uvCoord);
     vec4 n = texture(normal, uvCoord);
 
-    float d = -(cameraTransform * p).z; //texture(depth, uvCoord).r; // Camera space depth.
+    float d = texture(depth, uvCoord).r; // Camera space depth.
 
     // Pseudo-random rotation.
     float phi = ((30 * xp) ^ yp) + (10 * xp * yp);
 
     // Generate random points.
-    const int numPoints = 20;
+    const int numPoints = 10;
     vec2 points[numPoints];
 
     for (int i = 0; i < numPoints; ++i) {
@@ -50,8 +51,8 @@ void main() {
     for (int i = 0; i < numPoints; ++i) {
         vec4 pi = texture(position, points[i]);
 
-        vec4 wi = pi - p;
-        float di = -(cameraTransform * vec4(pi.xyz, 1.0f)).z; //texture(depth, points[i]).r;
+        vec4 wi = normalize(pi - p);
+        float di = texture(depth, points[i]).r;
 
         // Heaviside step function.
         float H = ((aoRadius - length(wi)) < 0.0f) ? 0.0f : 1.0f;

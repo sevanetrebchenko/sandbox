@@ -1,0 +1,76 @@
+
+#version 450 core
+
+// Size of the maximum allowed blur kernel, in pixels.
+#define MAX_BLUR_KERNEL_RADIUS 50
+#define MAX_BLUR_KERNEL_SIZE   2 * MAX_BLUR_KERNEL_RADIUS + 1
+#define PI 3.14159f
+
+layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in; // Declares (128 x 1 x 1) thread group size.
+
+layout (std140, binding = 3) uniform BlurKernel {
+    float weights[MAX_BLUR_KERNEL_SIZE];
+} blurKernel;
+
+layout (rgba32f) uniform readonly  image2D src;
+layout (rgba32f) uniform writeonly image2D dst;
+
+layout (rgba32f) uniform readonly image2D normal;
+layout (rgba32f) uniform readonly image2D depth;
+
+uniform int blurKernelRadius; // w
+
+// Data that is shared with other threads in the dispatch group.
+struct fragment {
+    vec4 data;
+    vec3 normal;
+    float depth;
+};
+shared fragment v[128 + MAX_BLUR_KERNEL_SIZE];
+
+void main() {
+    ivec2 imagePosition = ivec2(gl_GlobalInvocationID.xy);
+    uint threadIndex = gl_LocalInvocationID.x; // 128 x 1, only x matters.
+
+    ivec2 offset = ivec2(-blurKernelRadius, 0);
+
+    v[threadIndex].data = vec4(imageLoad(src, imagePosition + offset).xyz, 1.0f);
+    v[threadIndex].normal = imageLoad(normal, imagePosition + offset).xyz;
+    v[threadIndex].depth = imageLoad(depth, imagePosition + offset).r;  // Depth texture is one channel.
+
+    // First 2 w threads load an extra pixel out past the 128 thread boundary.
+    if (threadIndex < 2 * blurKernelRadius) {
+        offset = ivec2(128 - blurKernelRadius, 0);
+        v[threadIndex + 128].data = vec4(imageLoad(src, imagePosition + offset).xyz, 1.0f);
+        v[threadIndex + 128].normal = imageLoad(normal, imagePosition + offset).xyz;
+        v[threadIndex + 128].depth = imageLoad(depth, imagePosition + offset).r;
+    }
+
+    // Force memory synchronization.
+    barrier();
+
+    // Compute blur.
+    vec4 numerator = vec4(0.0f);
+    float denominator = 0.0f;
+
+    for (int i = 0; i <= 2 * blurKernelRadius; ++i) {
+        // Spatial kernel, a Gaussian based on the distance between the two pixels.
+        float S = blurKernel.weights[i];
+
+        float d = abs(v[threadIndex + i].depth - v[threadIndex + blurKernelRadius].depth);
+        float s = 0.01f; // Variance of the Gaussian.
+        float R = max(0.0f, dot(v[threadIndex + i].normal, v[threadIndex + blurKernelRadius].normal)) * (1.0f / sqrt(2.0f * PI * s)) * exp(-(d * d) / (2.0f * s));
+
+        if (isinf(R) || isnan(R)) {
+            continue;
+        }
+
+        float weight = R * S;
+
+        numerator += weight * v[threadIndex + i].data;
+        denominator += weight;
+    }
+
+    // Store in output image.
+    imageStore(dst, imagePosition, vec4((numerator / denominator).xyz, 1.0f));
+}

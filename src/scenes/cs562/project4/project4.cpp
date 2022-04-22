@@ -24,6 +24,7 @@ namespace Sandbox {
                                                irradianceMap_("irradiance"),
                                                exposure_(3.0f),
                                                contrast_(2.0f),
+                                               ao_(2560, 1440),
                                                ambientOcclusionRadius_(1.0f),
                                                ambientOcclusionScale_(1.0f),
                                                ambientOcclusionContrast_(1.0f)
@@ -47,6 +48,8 @@ namespace Sandbox {
         InitializeBlurKernel();
         GenerateRandomPoints();
 
+        ConstructAOFBO();
+
         camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
     }
 
@@ -68,56 +71,71 @@ namespace Sandbox {
 
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
 
-        // Render shadow map.
         glm::vec4 viewport = Backend::Core::GetViewport();
 
+        // ----------------------------
+        // Shadow map pass.
         Backend::Core::SetViewport(0, 0, shadowMap_.GetWidth(), shadowMap_.GetHeight());
         shadowMap_.BindForReadWrite();
 
         GenerateShadowMap();
         BlurShadowMap();
 
+        shadowMap_.Unbind();
+        Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+
+        // ----------------------------
+        // GBuffer pass.
+        Backend::Core::SetViewport(0, 0, fbo_.GetWidth(), fbo_.GetHeight());
+        fbo_.BindForReadWrite();
+
+        GeometryPass();
+
+        // Restore viewport.
+        fbo_.Unbind();
+        Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+
+        // ----------------------------
+        // Ambient occlusion pass.
+        Backend::Core::SetViewport(0, 0, ao_.GetWidth(), ao_.GetHeight());
+        ao_.BindForReadWrite();
+
+        Backend::Core::DisableFlag(GL_DEPTH_TEST);
+
+        AOPass();
+        BlurAO();
+
+        Backend::Core::EnableFlag(GL_DEPTH_TEST);
+
         // Restore viewport.
         shadowMap_.Unbind();
         Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
 
-        // Set viewport.
-        fbo_.BindForReadWrite();
+        // ----------------------------
+        // Lighting pass.
         Backend::Core::SetViewport(0, 0, fbo_.GetWidth(), fbo_.GetHeight());
-
-        // 1. G-buffer pass.
-        GeometryPass();
+        fbo_.BindForReadWrite();
 
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
-        AmbientOcclusionPass();
-
-        // 2. Global lighting pass.
         GlobalLightingPass();
 
-        glDepthMask(GL_FALSE); // Don't write to depth buffer.
-
-        // 3. Local lighting pass.
-        Backend::Core::EnableFlag(GL_BLEND); // Enable blending.
-        glBlendFunc(GL_ONE, GL_ONE);         // Additive blending TODO: abstract out.
+        // Enable additive blending.
+        Backend::Core::EnableFlag(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
 
         Backend::Core::EnableFlag(GL_CULL_FACE);
         Backend::Core::CullFace(GL_FRONT);
 
-        // LocalLightingPass();
+        LocalLightingPass();
 
         Backend::Core::DisableFlag(GL_CULL_FACE);
         Backend::Core::DisableFlag(GL_BLEND);
 
-        Backend::Core::DisableFlag(GL_BLEND); // Disable blending.
-
-        glDepthMask(GL_TRUE);
         Backend::Core::EnableFlag(GL_DEPTH_TEST);
 
-        // 4. Render skydome.
         RenderSkydome();
 
-        // Restore viewport.
         fbo_.Unbind();
         Backend::Core::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
     }
@@ -151,12 +169,9 @@ namespace Sandbox {
         Window& window = Window::Instance();
 
         // Draw the final output from the hybrid rendering pipeline.
-        static bool showFinalOutput = true;
-        float aspectRatio = camera_.GetAspectRatio();
-
-        if (ImGui::Begin("Framebuffer"), &showFinalOutput) {
+        if (ImGui::Begin("Framebuffer")) {
             float maxWidth = ImGui::GetWindowContentRegionWidth();
-            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspectRatio);
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / camera_.GetAspectRatio());
 
             ImGui::SetCursorPosY(ImGui::GetItemRectSize().y + (ImGui::GetWindowSize().y - ImGui::GetItemRectSize().y - imageSize.y) * 0.5f);
             ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("output")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
@@ -164,78 +179,82 @@ namespace Sandbox {
         ImGui::End();
 
         // Draw individual deferred rendering textures.
-        static bool showDebugTextures = false;
-        if (ImGui::Begin("Debug Textures"), &showDebugTextures) {
-            {
-                float maxWidth = ImGui::GetWindowContentRegionWidth();
-                ImVec2 imageSize = ImVec2(maxWidth, maxWidth / aspectRatio);
+        if (ImGui::Begin("Debug Textures")) {
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / camera_.GetAspectRatio());
 
-                ImGui::Text("Position (world space):");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("position")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Position (world space):");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("position")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Normals (world space):");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("normal")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Normals (world space):");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("normal")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Ambient component:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("ambient")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Ambient component:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("ambient")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Diffuse component:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("diffuse")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Diffuse component:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("diffuse")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Specular component:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("specular")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
+            ImGui::Text("Specular component:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("specular")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
 
-                ImGui::Text("Ambient Occlusion Radius:");
-                ImGui::SliderFloat("##aoRadius", &ambientOcclusionRadius_, 0.0f, 5.0f);
-
-                ImGui::Text("Ambient Occlusion Scaling Factor:");
-                ImGui::SliderFloat("##aoScale", &ambientOcclusionScale_, 0.0f, 5.0f);
-
-                ImGui::Text("Ambient Occlusion Contrast:");
-                ImGui::SliderFloat("##aoContrast", &ambientOcclusionContrast_, 0.0f, 5.0f);
-
-                ImGui::Text("Ambient Occlusion:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("ambient occlusion")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
-
-                ImGui::Text("Scene depth:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("depth")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
-            }
-
-            {
-                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("depth output");
-                float maxWidth = ImGui::GetWindowContentRegionWidth();
-                ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
-
-                ImGui::Text("Shadow Map:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-                ImGui::Separator();
-            }
-
-            {
-                ImGui::Text("Blur Kernel Radius: ");
-                if (ImGui::SliderInt("##kernelRadius", &blurKernelRadius_, 0, 50)) {
-                    InitializeBlurKernel();
-                }
-
-                Texture* shadowMap = shadowMap_.GetNamedRenderTarget("blur output");
-                float maxWidth = ImGui::GetWindowContentRegionWidth();
-                ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap->GetWidth()) / static_cast<float>(shadowMap->GetHeight())));
-
-                ImGui::Text("Blurred Shadow Map:");
-                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
-            }
+            ImGui::Text("Scene depth:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(fbo_.GetNamedRenderTarget("depth")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
         }
         ImGui::End();
 
-        static bool showSceneConfiguration = false;
-        if (ImGui::Begin("Scene Configuration"), &showSceneConfiguration) {
+        if (ImGui::Begin("Shadow Map Textures")) {
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(shadowMap_.GetWidth()) / static_cast<float>(shadowMap_.GetHeight())));
+
+            ImGui::Text("Shadow Map:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap_.GetNamedRenderTarget("depth output")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+
+            ImGui::Text("Blur Kernel Radius: ");
+            if (ImGui::SliderInt("##kernelRadius", &blurKernelRadius_, 0, 50)) {
+                InitializeBlurKernel();
+            }
+
+            ImGui::Text("Blurred Shadow Map:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(shadowMap_.GetNamedRenderTarget("blur output")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+        }
+        ImGui::End();
+
+        if (ImGui::Begin("Ambient Occlusion")) {
+            float maxWidth = ImGui::GetWindowContentRegionWidth();
+            ImVec2 imageSize = ImVec2(maxWidth, maxWidth / (static_cast<float>(ao_.GetWidth()) / static_cast<float>(ao_.GetHeight())));
+
+            ImGui::Text("Ambient Occlusion Radius:");
+            ImGui::SliderFloat("##aoRadius", &ambientOcclusionRadius_, 0.0f, 5.0f);
+
+            ImGui::Text("Ambient Occlusion Scaling Factor:");
+            ImGui::SliderFloat("##aoScale", &ambientOcclusionScale_, 0.0f, 5.0f);
+
+            ImGui::Text("Ambient Occlusion Contrast:");
+            ImGui::SliderFloat("##aoContrast", &ambientOcclusionContrast_, 0.0f, 5.0f);
+
+            ImGui::Text("Ambient Occlusion:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(ao_.GetNamedRenderTarget("ao")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Blurred Ambient Occlusion:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(ao_.GetNamedRenderTarget("ao blur horizontal")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+
+            ImGui::Text("Blurred Ambient Occlusion:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(ao_.GetNamedRenderTarget("ao blur vertical")->ID()), imageSize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Separator();
+        }
+        ImGui::End();
+
+        if (ImGui::Begin("Scene Configuration")) {
             ImGui::Text("Exposure: ");
             ImGui::SliderFloat("##exposure", &exposure_, 0.1f, 100.0f);
 
@@ -283,6 +302,8 @@ namespace Sandbox {
         shaderLibrary.CreateShader("Skydome", { "assets/shaders/skydome.vert", "assets/shaders/skydome.frag" });
 
         shaderLibrary.CreateShader("Ambient Occlusion Pass", { "assets/shaders/ao.vert", "assets/shaders/ao.frag" });
+        shaderLibrary.CreateShader("AO Blur Horizontal", { "assets/shaders/ao_blur_horizontal.comp" });
+        shaderLibrary.CreateShader("AO Blur Vertical", { "assets/shaders/ao_blur_vertical.comp" });
     }
 
     void SceneCS562Project4::InitializeMaterials() {
@@ -311,7 +332,7 @@ namespace Sandbox {
             });
             ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.4f));
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
                 phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
                 phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
                 phong->GetUniform("specularExponent")->SetData(50.0f);
@@ -375,6 +396,15 @@ namespace Sandbox {
 
                 transform.SetScale(glm::vec3(max * 5.0f));
             });
+            ecs.AddComponent<MaterialCollection>(skydome).Configure([this](MaterialCollection& materialCollection) {
+                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.0f));
+                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.0f));
+                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.0f));
+                phong->GetUniform("specularExponent")->SetData(0.0f);
+
+                materialCollection.SetMaterial(phong);
+            });
         }
     }
 
@@ -393,7 +423,7 @@ namespace Sandbox {
 
             ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
                 transform.SetPosition(glm::vec3(2.0f, 0.0f, 0.0f));
-                transform.SetScale(glm::vec3(4.0f));
+                transform.SetScale(glm::vec3(3.0f));
             });
             ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f, 0.6f, 0.25f), 1.0f);
         }
@@ -407,7 +437,7 @@ namespace Sandbox {
 
             ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
                 transform.SetPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
-                transform.SetScale(glm::vec3(4.0f));
+                transform.SetScale(glm::vec3(3.0f));
             });
             ecs.AddComponent<LocalLight>(ID, glm::vec3(0.5f, 0.3f, 0.8f), 1.0f);
         }
@@ -417,8 +447,8 @@ namespace Sandbox {
     }
 
     void SceneCS562Project4::ConstructFBO() {
-        int contentWidth = 2560;
-        int contentHeight = 1440;
+        int contentWidth = fbo_.GetWidth();
+        int contentHeight = fbo_.GetHeight();
 
         fbo_.BindForReadWrite();
 
@@ -457,13 +487,6 @@ namespace Sandbox {
         specularTexture->Unbind();
         fbo_.AttachRenderTarget(specularTexture);
 
-        // Ambient occlusion.
-        Texture* ambientOcclusionTexture = new Texture("ambient occlusion");
-        ambientOcclusionTexture->Bind();
-        ambientOcclusionTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
-        ambientOcclusionTexture->Unbind();
-        fbo_.AttachRenderTarget(ambientOcclusionTexture);
-
         // Depth texture (for visualizing depth information).
         Texture* depthTexture = new Texture("depth");
         depthTexture->Bind();
@@ -485,12 +508,6 @@ namespace Sandbox {
         depthBuffer->Unbind();
         fbo_.AttachRenderTarget(depthBuffer);
 
-        // Depth buffer (RBO).
-//        RenderBufferObject* depthBuffer = new RenderBufferObject();
-//        depthBuffer->Bind();
-//        depthBuffer->ReserveData(contentWidth, contentHeight);
-//        fbo_.AttachDepthBuffer(depthBuffer);
-
         if (!fbo_.CheckStatus()) {
             throw std::runtime_error("Custom FBO is not complete.");
         }
@@ -499,8 +516,8 @@ namespace Sandbox {
     }
 
     void SceneCS562Project4::ConstructShadowMap() {
-        int contentWidth = 2048;
-        int contentHeight = 2048;
+        int contentWidth = shadowMap_.GetWidth();
+        int contentHeight = shadowMap_.GetHeight();
 
         shadowMap_.BindForReadWrite();
 
@@ -557,7 +574,7 @@ namespace Sandbox {
     }
 
     void SceneCS562Project4::GeometryPass() {
-        fbo_.DrawBuffers(0, 6);
+        fbo_.DrawBuffers(0, 5);
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear everything for a new scene.
 
@@ -588,13 +605,26 @@ namespace Sandbox {
             // Post render stage.
         });
 
+        ECS::Instance().IterateOver<Transform, Mesh, Skydome>([geometryShader](Transform& transform, Mesh& mesh, Skydome&) {
+            const glm::mat4& modelTransform = transform.GetMatrix();
+            geometryShader->SetUniform("modelTransform", modelTransform);
+            geometryShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+
+            // Render stage.
+            mesh.Bind();
+            mesh.Render();
+            mesh.Unbind();
+
+            // Post render stage.
+        });
+
         geometryShader->Unbind();
 
         Backend::Core::DisableFlag(GL_DEPTH_TEST);
 
         // Render scene depth.
         {
-            fbo_.DrawBuffers(6, 1);
+            fbo_.DrawBuffers(5, 1);
             Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // Clear everything for a new scene.
 
@@ -612,7 +642,7 @@ namespace Sandbox {
 
     void SceneCS562Project4::GlobalLightingPass() {
         // Render to 'output' texture.
-        fbo_.DrawBuffers(7, 1);
+        fbo_.DrawBuffers(6, 1);
 
         Backend::Core::ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT); // We are not touching depth buffer here.
@@ -641,12 +671,11 @@ namespace Sandbox {
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("position"), 0);
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("normal"), 1);
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("ambient"), 2);
-        Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("ambient occlusion"), "ambientOcclusion", 3);
+        Backend::Rendering::BindTextureWithSampler(globalLightingShader, ao_.GetNamedRenderTarget("ao blur vertical"), "ao", 3);
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("diffuse"), 4);
         Backend::Rendering::BindTextureWithSampler(globalLightingShader, fbo_.GetNamedRenderTarget("specular"), 5);
 
         // Bind shadow map.
-        shadowMap_.BindForRead();
         if (blurKernelRadius_ > 0) {
             // Vertical blurring pass happens after horizontal blurring pass.
             Backend::Rendering::BindTextureWithSampler(globalLightingShader, shadowMap_.GetNamedRenderTarget("blur vertical"), "shadowMap", 6);
@@ -666,7 +695,7 @@ namespace Sandbox {
 
     void SceneCS562Project4::LocalLightingPass() {
         // Render to 'output' texture.
-        fbo_.DrawBuffers(7, 1);
+        fbo_.DrawBuffers(6, 1);
 
         Shader* localLightingShader = ShaderLibrary::Instance().GetShader("Local Lighting BRDF Pass");
         localLightingShader->Bind();
@@ -1145,9 +1174,8 @@ namespace Sandbox {
     }
 
     void SceneCS562Project4::RenderSkydome() {
-        fbo_.DrawBuffers(7, 1);
+        fbo_.DrawBuffers(6, 1);
 
-        // Render four channel depth buffer.
         Shader* skydomeShader = ShaderLibrary::Instance().GetShader("Skydome");
         skydomeShader->Bind();
 
@@ -1171,28 +1199,140 @@ namespace Sandbox {
         skydomeShader->Unbind();
     }
 
-    void SceneCS562Project4::AmbientOcclusionPass() {
-        fbo_.DrawBuffers(5, 1);
-        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+    void SceneCS562Project4::ConstructAOFBO() {
+        int contentWidth = ao_.GetWidth();
+        int contentHeight = ao_.GetHeight();
 
-        // Render four channel depth buffer.
-        Shader* aoShader = ShaderLibrary::Instance().GetShader("Ambient Occlusion Pass");
-        aoShader->Bind();
+        ao_.BindForReadWrite();
 
-        aoShader->SetUniform("resolution", glm::vec2(fbo_.GetWidth(), fbo_.GetHeight()));
-        aoShader->SetUniform("aoRadius", ambientOcclusionRadius_);
-        aoShader->SetUniform("aoScale", ambientOcclusionScale_);
-        aoShader->SetUniform("aoContrast", ambientOcclusionContrast_);
-        aoShader->SetUniform("cameraTransform", camera_.GetCameraTransform());
+        // Texture for (unblurred) ambient occlusion.
+        Texture* aoTexture = new Texture("ao");
+        aoTexture->Bind();
+        aoTexture->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        aoTexture->Unbind();
+        ao_.AttachRenderTarget(aoTexture);
+
+        // Texture for holding ambient occlusion results from blur.
+        Texture* aoBlurHorizontal = new Texture("ao blur horizontal");
+        aoBlurHorizontal->Bind();
+        aoBlurHorizontal->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        aoBlurHorizontal->Unbind();
+        ao_.AttachRenderTarget(aoBlurHorizontal);
+
+        Texture* aoBlurVertical = new Texture("ao blur vertical");
+        aoBlurVertical->Bind();
+        aoBlurVertical->ReserveData(Texture::AttachmentType::COLOR, contentWidth, contentHeight);
+        aoBlurVertical->Unbind();
+        ao_.AttachRenderTarget(aoBlurVertical);
+
+        // Depth buffer (RBO).
+        RenderBufferObject* depthBuffer = new RenderBufferObject();
+        depthBuffer->Bind();
+        depthBuffer->ReserveData(contentWidth, contentHeight);
+        ao_.AttachDepthBuffer(depthBuffer);
+
+        if (!ao_.CheckStatus()) {
+            throw std::runtime_error("Custom FBO is not complete.");
+        }
+
+        ao_.Unbind();
+    }
+
+    void SceneCS562Project4::AOPass() {
+        ao_.DrawBuffers(0, 1);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        Shader* shader = ShaderLibrary::Instance().GetShader("Ambient Occlusion Pass");
+        shader->Bind();
+
+        shader->SetUniform("resolution", glm::vec2(ao_.GetWidth(), ao_.GetHeight()));
+        shader->SetUniform("aoRadius", ambientOcclusionRadius_);
+        shader->SetUniform("aoScale", ambientOcclusionScale_);
+        shader->SetUniform("aoContrast", ambientOcclusionContrast_);
 
         // Bind geometry pass textures.
-        Backend::Rendering::BindTextureWithSampler(aoShader, fbo_.GetNamedRenderTarget("position"), 0);
-        Backend::Rendering::BindTextureWithSampler(aoShader, fbo_.GetNamedRenderTarget("normal"), 1);
-        // Backend::Rendering::BindTextureWithSampler(aoShader, fbo_.GetNamedRenderTarget("depth buffer"), 2);
+        Backend::Rendering::BindTextureWithSampler(shader, fbo_.GetNamedRenderTarget("position"), 0);
+        Backend::Rendering::BindTextureWithSampler(shader, fbo_.GetNamedRenderTarget("normal"), 1);
+        Backend::Rendering::BindTextureWithSampler(shader, fbo_.GetNamedRenderTarget("depth buffer"), "depth", 2);
 
         Backend::Rendering::DrawFSQ();
 
-        aoShader->Unbind();
+        shader->Unbind();
     }
+
+    void SceneCS562Project4::BlurAO() {
+        ao_.DrawBuffers(1, 2);
+        Backend::Core::ClearFlag(GL_COLOR_BUFFER_BIT);
+
+        Backend::Core::DisableFlag(GL_DEPTH_TEST);
+
+        // Horizontal blur pass.
+        {
+            ao_.DrawBuffers(1, 1);
+            Shader* shader = ShaderLibrary::Instance().GetShader("AO Blur Horizontal");
+
+            shader->Bind();
+            GLuint ID = shader->GetID();
+
+            // Set uniforms.
+            glBindImageTexture(0, ao_.GetNamedRenderTarget("ao")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint src = glGetUniformLocation(ID, "src");
+            glUniform1i(src, 0);
+
+            glBindImageTexture(1, ao_.GetNamedRenderTarget("ao blur horizontal")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            static GLint dst = glGetUniformLocation(ID, "dst");
+            glUniform1i(dst, 1);
+
+            glBindImageTexture(2, fbo_.GetNamedRenderTarget("normal")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint normal = glGetUniformLocation(ID, "normal");
+            glUniform1i(normal, 2);
+
+            glBindImageTexture(3, fbo_.GetNamedRenderTarget("depth buffer")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint depth = glGetUniformLocation(ID, "depth");
+            glUniform1i(depth, 3);
+
+            // 'blurKernel' already set.
+            shader->SetUniform("blurKernelRadius", blurKernelRadius_);
+
+            // Dispatch shader horizontally.
+            glDispatchCompute(ao_.GetWidth() / 128, ao_.GetHeight(), 1);
+
+            shader->Unbind();
+        }
+
+        // Vertical blur pass.
+        {
+            ao_.DrawBuffers(2, 1);
+            Shader* shader = ShaderLibrary::Instance().GetShader("AO Blur Vertical");
+
+            shader->Bind();
+            GLuint ID = shader->GetID();
+
+            // Set uniforms.
+            glBindImageTexture(0, ao_.GetNamedRenderTarget("ao blur horizontal")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint src = glGetUniformLocation(ID, "src");
+            glUniform1i(src, 0);
+
+            glBindImageTexture(1, ao_.GetNamedRenderTarget("ao blur vertical")->ID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            static GLint dst = glGetUniformLocation(ID, "dst");
+            glUniform1i(dst, 1);
+
+            glBindImageTexture(2, fbo_.GetNamedRenderTarget("normal")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint normal = glGetUniformLocation(ID, "normal");
+            glUniform1i(normal, 2);
+
+            glBindImageTexture(3, fbo_.GetNamedRenderTarget("depth buffer")->ID(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+            static GLint depth = glGetUniformLocation(ID, "depth");
+            glUniform1i(depth, 3);
+
+            // 'blurKernel' already set.
+            shader->SetUniform("blurKernelRadius", blurKernelRadius_);
+
+            // Dispatch shader vertically.
+            glDispatchCompute(ao_.GetWidth(), ao_.GetHeight() / 128, 1);
+
+            shader->Unbind();
+        }
+    }
+
 
 }

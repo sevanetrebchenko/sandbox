@@ -41,6 +41,7 @@ namespace Sandbox {
             void ConfigureLights();
             void ConstructFBO();
             void ConstructShadowMap();
+            void ConstructAOFBO();
 
             void GeometryPass();
 
@@ -63,7 +64,8 @@ namespace Sandbox {
             void GenerateIrradianceMap(std::string filename) const;
             void RenderSkydome();
 
-            void AmbientOcclusionPass();
+            void AOPass();
+            void BlurAO();
 
             Bounds bounds_;
 
@@ -84,6 +86,7 @@ namespace Sandbox {
             float exposure_;
             float contrast_;
 
+            FrameBufferObject ao_;
             float ambientOcclusionRadius_;
             float ambientOcclusionScale_;
             float ambientOcclusionContrast_;

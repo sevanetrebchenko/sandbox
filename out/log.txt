@@ -13,9 +13,13 @@
 [  TRACE  ]  Compiling Shader 'Blur Vertical' from source.
 [  TRACE  ]  Compiling Shader 'Skydome' from source.
 [  TRACE  ]  Compiling Shader 'Ambient Occlusion Pass' from source.
+[  TRACE  ]  Compiling Shader 'AO Blur Horizontal' from source.
+[  TRACE  ]  Compiling Shader 'AO Blur Vertical' from source.
 [  TRACE  ]  Loading scene: 'CS562: Project 4'
 [  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_4\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 588 ms.
+[  TRACE  ]  Scene loaded in: 567 ms.
+[  TRACE  ]  Compiling Shader 'Global Lighting BRDF Pass' from source.
+[  TRACE  ]  Compiling Shader 'Global Lighting BRDF Pass' from source.
 [  TRACE  ]  Unloading scene: 'CS562: Project 4'
 [  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_4\ui_layout.ini
-[  TRACE  ]  Scene unloaded in: 0 ms.
+[  TRACE  ]  Scene unloaded in: 133 ms.

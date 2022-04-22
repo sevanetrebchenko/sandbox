@@ -23,7 +23,7 @@ void main() {
     ivec2 imagePosition = ivec2(gl_GlobalInvocationID.xy);
     uint threadIndex = gl_LocalInvocationID.x; // 128 x 1, only x matters.
 
-    v[threadIndex] = imageLoad(src, imagePosition + ivec2(-blurKernelRadius, 0)); // Reading depth information, all channels store the same.
+    v[threadIndex] = imageLoad(src, imagePosition + ivec2(-blurKernelRadius, 0));
 
     // First 2 w threads load an extra pixel out past the 128 thread boundary.
     if (threadIndex < 2 * blurKernelRadius) {

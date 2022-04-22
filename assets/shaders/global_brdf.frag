@@ -11,7 +11,7 @@ out vec4 fragColor;
 uniform sampler2D position;
 uniform sampler2D normal;
 uniform sampler2D ambient;
-uniform sampler2D ambientOcclusion;
+uniform sampler2D ao;
 uniform sampler2D diffuse;
 uniform sampler2D specular;
 
@@ -261,12 +261,18 @@ float T(float xi) {
 // Section: Image Based Lighting
 vec2 NormalToSphereMapUV(vec3 n) {
     n = normalize(n);
+//    return vec2(atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
 
     float theta = atan(n.z, n.x);
     float r = length(n);
     float phi = acos(n.y / r);
-
     return vec2(theta / (2.0f * PI), phi / PI);
+}
+
+vec3 SphereMapUVToNormal(vec2 uv) {
+    float u = uv.x;
+    float v = uv.y;
+    return normalize(vec3(cos((2.0f * PI) * (0.5f - u)) * sin(PI * v), sin((2.0f * PI) * (0.5f - u)) * sin(PI * v), cos(PI * v)));
 }
 
 //vec3 BRDFSpecular(vec3 N, vec3 L, vec3 H, vec3 V) {
@@ -299,11 +305,15 @@ vec3 EnvironmentSpecular(vec3 N, vec3 V) {
     for (int i = 0; i < count; ++i) {
         // Generate pseudo-random specular reflection direction using Hammersley distribution.
         vec2 random = hammersley.points[i];
-        float theta = T(random.x);
-        float phi = random.y * (2.0f * PI);
-        vec3 L = normalize((sin(theta) * cos(phi) * A) + (sin(theta) * sin(phi) * B) + (cos(theta) * R)); // Rotated direction 'wk'.
 
+        vec3 L = SphereMapUVToNormal(vec2(random.x, T(random.y) / PI));
+        L = normalize((L.x * A) + (L.y * B) + (L.z * R)); // Rotated direction 'wk'.
         vec3 H = normalize(L + V);
+
+//        float theta = T(random.x);
+//        float phi = random.y * (2.0f * PI);
+//        vec3 L = normalize((sin(theta) * cos(phi) * A) + (sin(theta) * sin(phi) * B) + (cos(theta) * R)); // Rotated direction 'wk'.
+//        vec3 H = normalize(L + V);
 
         // https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-20-gpu-based-importance-sampling
         // Averaging all pixels within the solid angle can be approximated by choosing an appropriate mipmap level.
@@ -335,13 +345,10 @@ void main(void) {
     vec3 H = normalize(L + V);
 
     // Ambient.
-    vec3 Ka = texture(ambient, uvCoord).rgb;
-    float factor = texture(ambientOcclusion, uvCoord).r;
-    vec3 ambientComponent = Ka * factor;
+    vec3 ambientComponent = texture(ambient, uvCoord).rgb * texture(ao, uvCoord).r;
 
     // Diffuse.
-    vec3 Kd = texture(diffuse, uvCoord).rgb;
-    vec3 diffuseComponent = (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
+    vec3 diffuseComponent = (texture(diffuse, uvCoord).rgb / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
 
     // Specular.
     vec3 Ks = texture(specular, uvCoord).xyz;
@@ -353,10 +360,7 @@ void main(void) {
     vec3 color = ambientComponent + shadowComponent * (Li * max(dot(N, L), 0.0f) * (diffuseComponent + specularComponent));
 
     // Tone mapping.
-    color.r = pow((exposure * color.r) / (exposure * color.r + 1.0f), contrast / 2.2f);
-    color.g = pow((exposure * color.g) / (exposure * color.g + 1.0f), contrast / 2.2f);
-    color.b = pow((exposure * color.b) / (exposure * color.b + 1.0f), contrast / 2.2f);
-
+    color = pow((exposure * color) / (exposure * color + 1.0f), vec3(contrast) / 2.2f);
     fragColor = vec4(color, 1.0f);
 }
 

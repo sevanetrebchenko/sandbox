@@ -13,10 +13,10 @@ uniform float contrast;
 vec2 NormalToSphereMapUV(vec3 n) {
     n = normalize(n);
 
+//    return vec2(atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
     float theta = atan(n.z, n.x);
     float r = length(n);
     float phi = acos(n.y / r);
-
     return vec2(theta / (2.0f * PI), phi / PI);
 }
 
