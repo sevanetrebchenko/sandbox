@@ -44,7 +44,9 @@ namespace Sandbox {
         InitializeBlurKernel();
         GenerateRandomPoints();
 
-        camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
+        camera_.SetPosition(glm::vec3(0.0f, 0.0f, 3.5f));
+        camera_.SetTargetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+        camera_.SetFarPlaneDistance(20.0f);
     }
 
     void SceneCS562Project3::OnUpdate() {
@@ -99,7 +101,7 @@ namespace Sandbox {
         Backend::Core::EnableFlag(GL_CULL_FACE);
         Backend::Core::CullFace(GL_FRONT);
 
-        LocalLightingPass();
+        // LocalLightingPass();
 
         Backend::Core::DisableFlag(GL_CULL_FACE);
         Backend::Core::DisableFlag(GL_BLEND);
@@ -136,8 +138,10 @@ namespace Sandbox {
             ImGui::Separator();
 
             if (ImGui::Button("Take Screenshot")) {
-                fbo_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
-                shadowMap_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
+                fbo_.GetNamedRenderTarget("output")->WriteDataToDirectory("data/scenes/cs562/project2/");
+
+//                fbo_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
+//                shadowMap_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
             }
         }
         ImGui::End();
@@ -293,8 +297,8 @@ namespace Sandbox {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
                 phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
                 phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
-                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
-                phong->GetUniform("specularExponent")->SetData(50.0f);
+                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(2.0f));
+                phong->GetUniform("specularExponent")->SetData(2000.0f);
 
                 materialCollection.SetMaterial(phong);
             });
@@ -353,7 +357,7 @@ namespace Sandbox {
                     }
                 }
 
-                transform.SetScale(glm::vec3(max * 5.0f));
+                transform.SetScale(glm::vec3(20.0f));
             });
         }
     }
@@ -373,7 +377,7 @@ namespace Sandbox {
 
             ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
                 transform.SetPosition(glm::vec3(2.0f, 0.0f, 0.0f));
-                transform.SetScale(glm::vec3(4.0f));
+                transform.SetScale(glm::vec3(2.5f));
             });
             ecs.AddComponent<LocalLight>(ID, glm::vec3(1.0f, 0.6f, 0.25f), 1.0f);
         }
@@ -387,7 +391,7 @@ namespace Sandbox {
 
             ecs.GetComponent<Transform>(ID).Configure([](Transform& transform) {
                 transform.SetPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
-                transform.SetScale(glm::vec3(4.0f));
+                transform.SetScale(glm::vec3(2.5f));
             });
             ecs.AddComponent<LocalLight>(ID, glm::vec3(0.5f, 0.3f, 0.8f), 1.0f);
         }
@@ -1003,7 +1007,7 @@ namespace Sandbox {
 //        fclose(fp);
 //    }
 
-    void SceneCS562Project3::GenerateIrradianceMap(std::string filename) const {
+        void SceneCS562Project3::GenerateIrradianceMap(std::string filename) const {
         filename = ConvertToNativeSeparators(filename);
         std::string name = GetAssetName(filename);
         std::string location = GetAssetDirectory(filename);

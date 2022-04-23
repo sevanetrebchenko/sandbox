@@ -11,7 +11,6 @@ out vec4 fragColor;
 uniform sampler2D position;
 uniform sampler2D normal;
 uniform sampler2D ambient;
-uniform sampler2D ao;
 uniform sampler2D diffuse;
 uniform sampler2D specular;
 
@@ -88,7 +87,7 @@ float remap(float depth) {
 }
 
 // Returns the amount of shadowing present on point 'p'.
-float G(vec4 p) {
+float Shadow(vec4 p) {
     vec4 shadowCoordinate = shadowTransform * p; // Range: [0.0f, 1.0f] (UV space).
     shadowCoordinate /= shadowCoordinate.w;
 
@@ -261,7 +260,7 @@ float T(float xi) {
 // Section: Image Based Lighting
 vec2 NormalToSphereMapUV(vec3 n) {
     n = normalize(n);
-//    return vec2(atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
+    return vec2(atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
 
     float theta = atan(n.z, n.x);
     float r = length(n);
@@ -274,20 +273,6 @@ vec3 SphereMapUVToNormal(vec2 uv) {
     float v = uv.y;
     return normalize(vec3(cos((2.0f * PI) * (0.5f - u)) * sin(PI * v), sin((2.0f * PI) * (0.5f - u)) * sin(PI * v), cos(PI * v)));
 }
-
-//vec3 BRDFSpecular(vec3 N, vec3 L, vec3 H, vec3 V) {
-//    vec3 specular = vec3(0.0f);
-//    if (dot(N, L) > 0.0f) {
-//        // Components of BRDF model.
-//        float roughness = D(H);
-//        vec3 fresnel = F(L, H);
-//        float occlusion = G(L, H) * G(V, H); // Calculated using Smith form.
-//
-//        specular = (roughness * fresnel * occlusion) / (4.0f * dot(N, L) * dot(V, N));
-//    }
-//
-//    return specular;
-//}
 
 vec3 EnvironmentSpecular(vec3 N, vec3 V) {
     int count = hammersley.count;
@@ -310,10 +295,10 @@ vec3 EnvironmentSpecular(vec3 N, vec3 V) {
         L = normalize((L.x * A) + (L.y * B) + (L.z * R)); // Rotated direction 'wk'.
         vec3 H = normalize(L + V);
 
-//        float theta = T(random.x);
-//        float phi = random.y * (2.0f * PI);
-//        vec3 L = normalize((sin(theta) * cos(phi) * A) + (sin(theta) * sin(phi) * B) + (cos(theta) * R)); // Rotated direction 'wk'.
-//        vec3 H = normalize(L + V);
+        //        float theta = T(random.x);
+        //        float phi = random.y * (2.0f * PI);
+        //        vec3 L = normalize((sin(theta) * cos(phi) * A) + (sin(theta) * sin(phi) * B) + (cos(theta) * R)); // Rotated direction 'wk'.
+        //        vec3 H = normalize(L + V);
 
         // https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-20-gpu-based-importance-sampling
         // Averaging all pixels within the solid angle can be approximated by choosing an appropriate mipmap level.
@@ -341,23 +326,25 @@ void main(void) {
 
     vec3 N = normalize(texture(normal, uvCoord).xyz);
     vec3 V = normalize(cameraPosition - p.xyz);
-    vec3 L = normalize(-lightDirection); // Directional light.
-    vec3 H = normalize(L + V);
 
     // Ambient.
-    vec3 ambientComponent = texture(ambient, uvCoord).rgb * texture(ao, uvCoord).r;
+    vec3 Ka = texture(ambient, uvCoord).rgb;
+    vec3 ambientComponent = Ka;
 
     // Diffuse.
-    vec3 diffuseComponent = (texture(diffuse, uvCoord).rgb / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
+    vec3 Kd = texture(diffuse, uvCoord).rgb;
+    vec3 diffuseComponent = (Kd / PI) * texture(irradianceMap, NormalToSphereMapUV(N)).rgb;
 
     // Specular.
     vec3 Ks = texture(specular, uvCoord).xyz;
     vec3 specularComponent = Ks * EnvironmentSpecular(N, V);
 
+    vec3 L = normalize(-lightDirection); // Directional light.
+    vec3 H = normalize(L + V);
     vec3 Li = lightColor * lightBrightness;
-    float shadowComponent = (1.0f - G(p));
+    float shadowComponent = 1.0f;// TODO: (1.0f - Shadow(p)) * max(dot(N, L), 0.0f);
 
-    vec3 color = ambientComponent + shadowComponent * (Li * max(dot(N, L), 0.0f) * (diffuseComponent + specularComponent));
+    vec3 color = ambientComponent + shadowComponent * Li * (diffuseComponent + specularComponent);
 
     // Tone mapping.
     color = pow((exposure * color) / (exposure * color + 1.0f), vec3(contrast) / 2.2f);

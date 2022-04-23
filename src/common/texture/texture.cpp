@@ -147,10 +147,8 @@ namespace Sandbox {
         ImGuiLog& log = ImGuiLog::Instance();
 
         // Make sure directory exists.
-        if (!std::filesystem::is_directory(directory)) {
-            log.LogTrace("Creating new directory under: %s", directory.c_str());
-            std::filesystem::create_directory(directory);
-        }
+//        log.LogTrace("Creating new directory under: %s", directory.c_str());
+        CreateDirectory(directory);
 
         // Convert texture name to be directory friendly.
         std::stringstream stringbuilder;
