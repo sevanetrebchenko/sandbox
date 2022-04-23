@@ -18,7 +18,7 @@ namespace Sandbox {
     SceneCS562Project4::SceneCS562Project4() : fbo_(2560, 1440),
                                                shadowMap_(2048, 2048),
                                                camera_(Window::Instance().GetWidth(), Window::Instance().GetHeight()),
-                                               blurKernelRadius_(25),
+                                               blurKernelRadius_(15),
                                                brdfModel_(PHONG),
                                                environmentMap_("environment"),
                                                irradianceMap_("irradiance"),
@@ -50,7 +50,8 @@ namespace Sandbox {
 
         ConstructAOFBO();
 
-        camera_.SetPosition(glm::vec3(0.0f, 0.0f, 5.0f));
+        camera_.SetPosition(glm::vec3(0.0f, 1.0f, -2.5f));
+        camera_.SetTargetPosition(glm::vec3(0.0f));
     }
 
     void SceneCS562Project4::OnUpdate() {
@@ -127,7 +128,7 @@ namespace Sandbox {
         Backend::Core::EnableFlag(GL_CULL_FACE);
         Backend::Core::CullFace(GL_FRONT);
 
-        LocalLightingPass();
+        // LocalLightingPass();
 
         Backend::Core::DisableFlag(GL_CULL_FACE);
         Backend::Core::DisableFlag(GL_BLEND);
@@ -159,8 +160,11 @@ namespace Sandbox {
             ImGui::Separator();
 
             if (ImGui::Button("Take Screenshot")) {
-                fbo_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
-                shadowMap_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
+//                fbo_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
+//                shadowMap_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
+
+                fbo_.GetNamedRenderTarget("output")->WriteDataToDirectory("data/scenes/cs562/project3/");
+                ao_.SaveRenderTargetsToDirectory("data/scenes/cs562/project3/");
             }
         }
         ImGui::End();
@@ -333,36 +337,39 @@ namespace Sandbox {
             ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
                 phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));
-                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(1.0f));
+                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.4f));
                 phong->GetUniform("specularCoefficient")->SetData(glm::vec3(1.0f));
-                phong->GetUniform("specularExponent")->SetData(50.0f);
+                phong->GetUniform("specularExponent")->SetData(3000.0f);
 
                 materialCollection.SetMaterial(phong);
+            });
+            ecs.GetComponent<Transform>(bunny).Configure([](Transform& transform) {
+                transform.SetRotation(glm::vec3(0.0f, 180.0f, 0.0f));
             });
             ecs.AddComponent<ShadowCaster>(bunny);
         }
 
         // Floor.
         {
-            int floor = ecs.CreateEntity("Floor");
-            ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
-                mesh.Complete();
-            });
-            ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
-                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
-                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
-                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
-                phong->GetUniform("specularExponent")->SetData(1400.0f);
-
-                materialCollection.SetMaterial(phong);
-            });
-            ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
-                transform.SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
-                transform.SetScale(glm::vec3(5.0f));
-                transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
-            });
-            ecs.AddComponent<ShadowCaster>(floor);
+//            int floor = ecs.CreateEntity("Floor");
+//            ecs.AddComponent<Mesh>(floor, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/quad.obj"))).Configure([](Mesh& mesh) {
+//                mesh.Complete();
+//            });
+//            ecs.AddComponent<MaterialCollection>(floor).Configure([this](MaterialCollection& materialCollection) {
+//                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+//                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.2f));
+//                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.1f));
+//                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.8f));
+//                phong->GetUniform("specularExponent")->SetData(1400.0f);
+//
+//                materialCollection.SetMaterial(phong);
+//            });
+//            ecs.GetComponent<Transform>(floor).Configure([](Transform& transform) {
+//                transform.SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
+//                transform.SetScale(glm::vec3(5.0f));
+//                transform.SetRotation(glm::vec3(270.0f, 0.0f, 0.0f));
+//            });
+//            ecs.AddComponent<ShadowCaster>(floor);
         }
 
         // Compute scene bounds.
@@ -396,15 +403,15 @@ namespace Sandbox {
 
                 transform.SetScale(glm::vec3(max * 5.0f));
             });
-            ecs.AddComponent<MaterialCollection>(skydome).Configure([this](MaterialCollection& materialCollection) {
-                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
-                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.0f));
-                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.0f));
-                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.0f));
-                phong->GetUniform("specularExponent")->SetData(0.0f);
-
-                materialCollection.SetMaterial(phong);
-            });
+//            ecs.AddComponent<MaterialCollection>(skydome).Configure([this](MaterialCollection& materialCollection) {
+//                Material* phong = materialLibrary_.GetMaterialInstance("Phong");
+//                phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.0f));
+//                phong->GetUniform("diffuseCoefficient")->SetData(glm::vec3(0.0f));
+//                phong->GetUniform("specularCoefficient")->SetData(glm::vec3(0.0f));
+//                phong->GetUniform("specularExponent")->SetData(0.0f);
+//
+//                materialCollection.SetMaterial(phong);
+//            });
         }
     }
 
@@ -605,18 +612,18 @@ namespace Sandbox {
             // Post render stage.
         });
 
-        ECS::Instance().IterateOver<Transform, Mesh, Skydome>([geometryShader](Transform& transform, Mesh& mesh, Skydome&) {
-            const glm::mat4& modelTransform = transform.GetMatrix();
-            geometryShader->SetUniform("modelTransform", modelTransform);
-            geometryShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
-
-            // Render stage.
-            mesh.Bind();
-            mesh.Render();
-            mesh.Unbind();
-
-            // Post render stage.
-        });
+//        ECS::Instance().IterateOver<Transform, Mesh, Skydome>([geometryShader](Transform& transform, Mesh& mesh, Skydome&) {
+//            const glm::mat4& modelTransform = transform.GetMatrix();
+//            geometryShader->SetUniform("modelTransform", modelTransform);
+//            geometryShader->SetUniform("normalTransform", glm::transpose(glm::inverse(modelTransform)));
+//
+//            // Render stage.
+//            mesh.Bind();
+//            mesh.Render();
+//            mesh.Unbind();
+//
+//            // Post render stage.
+//        });
 
         geometryShader->Unbind();
 
@@ -993,7 +1000,7 @@ namespace Sandbox {
     }
 
     void SceneCS562Project4::InitializeTextures() {
-        const std::string environmentMapName = ConvertToNativeSeparators("assets/textures/ibl/monument_valley.hdr");
+        const std::string environmentMapName = ConvertToNativeSeparators("assets/textures/ibl/newport_loft.hdr");
         const std::string irradianceMapName = ConvertToNativeSeparators(GetAssetDirectory(environmentMapName) + "/" + GetAssetName(environmentMapName) + "_irradiance.hdr");
 
         environmentMap_.ReserveData(environmentMapName);
@@ -1328,7 +1335,7 @@ namespace Sandbox {
             shader->SetUniform("blurKernelRadius", blurKernelRadius_);
 
             // Dispatch shader vertically.
-            glDispatchCompute(ao_.GetWidth(), ao_.GetHeight() / 128, 1);
+            glDispatchCompute(ao_.GetWidth(), 12, 1);
 
             shader->Unbind();
         }

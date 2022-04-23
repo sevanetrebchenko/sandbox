@@ -50,17 +50,17 @@ namespace Sandbox {
         _contentHeight = contentHeight;
 
         // Texture wrapping.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         // Texturing filtering.
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         switch (_attachmentType) {
             case COLOR:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, contentWidth, contentHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, contentWidth, contentHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
                 break;
             case DEPTH:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, contentWidth, contentHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
@@ -91,8 +91,8 @@ namespace Sandbox {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         // Texturing filtering.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         if (extension == "png" || extension == "jpg") {
@@ -111,7 +111,7 @@ namespace Sandbox {
                 throw std::runtime_error("Failed to load texture: " + textureName);
             }
 
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
             stbi_image_free(data);
         }
 

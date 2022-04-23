@@ -11,6 +11,7 @@ out vec4 fragColor;
 uniform sampler2D position;
 uniform sampler2D normal;
 uniform sampler2D ambient;
+uniform sampler2D ao;
 uniform sampler2D diffuse;
 uniform sampler2D specular;
 
@@ -260,7 +261,7 @@ float T(float xi) {
 // Section: Image Based Lighting
 vec2 NormalToSphereMapUV(vec3 n) {
     n = normalize(n);
-    return vec2(atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
+    // return vec2(atan(n.z, n.x) / (2.0f * PI), acos(n.y) / PI);
 
     float theta = atan(n.z, n.x);
     float r = length(n);
@@ -328,8 +329,7 @@ void main(void) {
     vec3 V = normalize(cameraPosition - p.xyz);
 
     // Ambient.
-    vec3 Ka = texture(ambient, uvCoord).rgb;
-    vec3 ambientComponent = Ka;
+    vec3 ambientComponent = texture(ambient, uvCoord).rgb * vec3(texture(ao, uvCoord).r);
 
     // Diffuse.
     vec3 Kd = texture(diffuse, uvCoord).rgb;
@@ -344,7 +344,7 @@ void main(void) {
     vec3 Li = lightColor * lightBrightness;
     float shadowComponent = 1.0f;// TODO: (1.0f - Shadow(p)) * max(dot(N, L), 0.0f);
 
-    vec3 color = ambientComponent + shadowComponent * Li * (diffuseComponent + specularComponent);
+    vec3 color = ambientComponent + shadowComponent * Li * max(dot(N, L), 0.0f) * (diffuseComponent + specularComponent);
 
     // Tone mapping.
     color = pow((exposure * color) / (exposure * color + 1.0f), vec3(contrast) / 2.2f);

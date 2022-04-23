@@ -16,6 +16,11 @@ uniform float aoScale;
 uniform float aoContrast;
 
 void main() {
+    float d = texture(depth, uvCoord).r; // Camera space depth.
+    if (d >= 1.0f) {
+        discard;
+    }
+
     int xp = int(gl_FragCoord.x);
     int yp = int(gl_FragCoord.y);
 
@@ -26,13 +31,11 @@ void main() {
     vec4 p = texture(position, uvCoord);
     vec4 n = texture(normal, uvCoord);
 
-    float d = texture(depth, uvCoord).r; // Camera space depth.
-
     // Pseudo-random rotation.
-    float phi = ((30 * xp) ^ yp) + (10 * xp * yp);
+    float phi = (30 * xp ^ yp) + (10 * xp * yp);
 
     // Generate random points.
-    const int numPoints = 10;
+    const int numPoints = 20;
     vec2 points[numPoints];
 
     for (int i = 0; i < numPoints; ++i) {
@@ -51,11 +54,11 @@ void main() {
     for (int i = 0; i < numPoints; ++i) {
         vec4 pi = texture(position, points[i]);
 
-        vec4 wi = normalize(pi - p);
+        vec4 wi = pi - p;
         float di = texture(depth, points[i]).r;
 
         // Heaviside step function.
-        float H = ((aoRadius - length(wi)) < 0.0f) ? 0.0f : 1.0f;
+        float H = step(0.0, aoRadius - length(wi)); //((aoRadius - length(wi)) < 0.0f) ? 0.0f : 1.0f;
 
         s += (max(0.0f, dot(n, wi) - delta * di) * H) / max(c * c, dot(wi, wi));
     }

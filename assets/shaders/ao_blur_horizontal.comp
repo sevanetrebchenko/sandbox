@@ -71,6 +71,10 @@ void main() {
         denominator += weight;
     }
 
-    // Store in output image.
-    imageStore(dst, imagePosition, vec4((numerator / denominator).xyz, 1.0f));
+    // Avoid banding from division by 0.
+    if (denominator > 0.0001f) {
+        numerator /= denominator;
+    }
+
+    imageStore(dst, imagePosition, vec4(numerator.xyz, 1.0f));
 }
