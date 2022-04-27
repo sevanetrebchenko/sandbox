@@ -175,8 +175,8 @@ namespace Sandbox {
             ImGui::Separator();
 
             if (ImGui::Button("Take Screenshot")) {
-                fbo_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
-                shadowMap_.SaveRenderTargetsToDirectory("data/scenes/cs562_project_2/");
+                refractionFBO_.SaveRenderTargetsToDirectory("data/scenes/cs562/project5/");
+                causticFBO_.SaveRenderTargetsToDirectory("data/scenes/cs562/project5/");
             }
         }
         ImGui::End();
@@ -388,14 +388,14 @@ namespace Sandbox {
         // Bunny.
         {
             int bunny = ecs.CreateEntity("Bunny");
-//            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/cup.obj"))).Configure([](Mesh& mesh) {
-//                mesh.Complete();
-//                mesh.SetActive(false);
-//            });
-            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
+            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadFromFile(OBJLoader::Request("assets/models/bunny_high_poly.obj"))).Configure([](Mesh& mesh) {
                 mesh.Complete();
-                mesh.SetActive(true);
+                mesh.SetActive(false);
             });
+//            ecs.AddComponent<Mesh>(bunny, OBJLoader::Instance().LoadSphere()).Configure([](Mesh& mesh) {
+//                mesh.Complete();
+//                mesh.SetActive(true);
+//            });
             ecs.AddComponent<MaterialCollection>(bunny).Configure([this](MaterialCollection& materialCollection) {
                 Material* phong = materialLibrary_.GetMaterialInstance("Phong");
                 phong->GetUniform("ambientCoefficient")->SetData(glm::vec3(0.05f));

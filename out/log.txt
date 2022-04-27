@@ -1,7 +1,7 @@
 [  TRACE  ]  Vendor: NVIDIA Corporation
 [  TRACE  ]  Renderer: NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2
 [  TRACE  ]  OpenGL Version: 4.6.0 NVIDIA 512.15
-[  TRACE  ]  Setting startup scene as: 'CS562: Project 3'
+[  TRACE  ]  Setting startup scene as: 'CS562: Project 5'
 [  TRACE  ]  Compiling Shader 'Geometry Pass' from source.
 [  TRACE  ]  Compiling Shader 'Global Lighting BRDF Pass' from source.
 [  TRACE  ]  Compiling Shader 'Local Lighting BRDF Pass' from source.
@@ -12,9 +12,25 @@
 [  TRACE  ]  Compiling Shader 'Blur Horizontal' from source.
 [  TRACE  ]  Compiling Shader 'Blur Vertical' from source.
 [  TRACE  ]  Compiling Shader 'Skydome' from source.
-[  TRACE  ]  Loading scene: 'CS562: Project 3'
-[  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_3\ui_layout.ini
-[  TRACE  ]  Scene loaded in: 547 ms.
-[  TRACE  ]  Unloading scene: 'CS562: Project 3'
-[  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_3\ui_layout.ini
-[  TRACE  ]  Scene unloaded in: 0 ms.
+[  TRACE  ]  Compiling Shader 'Global Lighting BRDF Forward Pass' from source.
+[  TRACE  ]  Compiling Shader 'Environment Mapping' from source.
+[  TRACE  ]  Compiling Shader 'Caustic Receiver' from source.
+[  TRACE  ]  Compiling Shader 'Caustic Refractive' from source.
+[  TRACE  ]  Compiling Shader 'Caustic Mapping' from source.
+[  TRACE  ]  Loading scene: 'CS562: Project 5'
+[  TRACE  ]  Loading ImGui layout file: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_5\ui_layout.ini
+[  TRACE  ]  Scene loaded in: 627 ms.
+[  TRACE  ]  Saving RGBA image file: "negZ" under location: data\scenes\cs562\project5\screenshots\negz.png
+[  TRACE  ]  Saving RGBA image file: "posZ" under location: data\scenes\cs562\project5\screenshots\posz.png
+[  TRACE  ]  Saving RGBA image file: "negY" under location: data\scenes\cs562\project5\screenshots\negy.png
+[  TRACE  ]  Saving RGBA image file: "posY" under location: data\scenes\cs562\project5\screenshots\posy.png
+[  TRACE  ]  Saving RGBA image file: "negX" under location: data\scenes\cs562\project5\screenshots\negx.png
+[  TRACE  ]  Saving RGBA image file: "posX" under location: data\scenes\cs562\project5\screenshots\posx.png
+[  TRACE  ]  Saving RGBA image file: "output" under location: data\scenes\cs562\project5\screenshots\output.png
+[  TRACE  ]  Saving RGBA image file: "refractive normals" under location: data\scenes\cs562\project5\screenshots\refractive_normals.png
+[  TRACE  ]  Saving RGBA image file: "refractive positions" under location: data\scenes\cs562\project5\screenshots\refractive_positions.png
+[  TRACE  ]  Saving RGBA image file: "receiver positions" under location: data\scenes\cs562\project5\screenshots\receiver_positions.png
+[  TRACE  ]  Saving RGBA image file: "output" under location: data/scenes/cs562/project5/output.png
+[  TRACE  ]  Unloading scene: 'CS562: Project 5'
+[  TRACE  ]  Saving ImGui settings to: C:\Users\sevan\Desktop\Projects\sandbox\data\scenes\cs562_project_5\ui_layout.ini
+[  TRACE  ]  Scene unloaded in: 82 ms.
