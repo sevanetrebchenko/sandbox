@@ -8,6 +8,8 @@
 
 namespace Sandbox {
 
+    using word = std::uint32_t;
+
     class ShaderCompiler : public ISingleton<ShaderCompiler> {
         public:
             REGISTER_SINGLETON(ShaderCompiler);
@@ -16,7 +18,9 @@ namespace Sandbox {
                 ShaderInfo();
 
                 std::string filepath;
-                std::vector<std::uint32_t> binary;
+                std::string workingDirectory;
+
+                std::vector<word> binary;
             };
 
             [[nodiscard]] ShaderInfo ProcessFile(const ShaderPreprocessor::ShaderInfo& file);
@@ -28,8 +32,8 @@ namespace Sandbox {
             };
 
             [[nodiscard]] bool CompileToSPIRV(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, ProcessingContext& context) const;
-//            [[nodiscard]] shaderc_profile ToSPIRVShaderProfile(ShaderProfile profile) const;
-//            [[nodiscard]] shaderc_shader_kind ToSPIRVShaderType(ShaderType type) const;
+            [[nodiscard]] shaderc_profile ToSPIRVShaderProfile(ShaderProfile profile) const;
+            [[nodiscard]] shaderc_shader_kind ToSPIRVShaderType(ShaderType type) const;
 
             [[nodiscard]] bool GenerateReflectionData(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, ProcessingContext& context) const;
     };

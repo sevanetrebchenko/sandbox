@@ -34,8 +34,8 @@ set(SHADERC_SKIP_EXAMPLES ON)
 set(SHADERC_SKIP_COPYRIGHT_CHECK ON)
 set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
 set(SKIP_SPIRV_TOOLS_INSTALL ON)
-# include(shaderc_setup)
-# add_subdirectory(shaderc)
+include(shaderc_setup)
+add_subdirectory(shaderc)
 message(STATUS "--------------------")
 
 message(STATUS "Building SPIRV-Cross.")
@@ -43,7 +43,7 @@ set(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS OFF) # Instead of throwing exceptions a
 set(SPIRV_CROSS_SHARED OFF)                   # Build the C API as a single shared library.
 set(SPIRV_CROSS_STATIC ON)                    # Build the C and C++ API as static libraries.
 set(SPIRV_CROSS_CLI OFF)                      # Build the CLI binary. Requires SPIRV_CROSS_STATIC.
-set(SPIRV_CROSS_ENABLE_TESTS ON)              # Enable SPIRV-Cross tests.
+set(SPIRV_CROSS_ENABLE_TESTS OFF)             # Enable SPIRV-Cross tests.
 set(SPIRV_CROSS_ENABLE_GLSL ON)               # Enable GLSL support.
 set(SPIRV_CROSS_ENABLE_HLSL OFF)              # Enable HLSL target support.
 set(SPIRV_CROSS_ENABLE_MSL OFF)               # Enable MSL target support.
@@ -61,5 +61,5 @@ set(SPIRV_CROSS_SKIP_INSTALL ON)              # Skips installation targets.
 set(SPIRV_CROSS_WERROR OFF)                   # Fail build on warnings.
 set(SPIRV_CROSS_MISC_WARNINGS OFF)            # Misc warnings useful for Travis runs.
 set(SPIRV_CROSS_FORCE_PIC OFF)                # Force position-independent code for all targets.
-# add_subdirectory(spirv-cross)
+add_subdirectory(spirv-cross)
 message(STATUS "--------------------")
