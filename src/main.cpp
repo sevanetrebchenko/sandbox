@@ -8,11 +8,15 @@
 #include <scenes/cs562/project3/project3.h>
 
 #include "common/api/shader/shader_preprocessor.h"
+#include "common/api/shader/shader_compiler.h"
 #include "common/api/shader/shader_uniform_lut.h"
 
 using namespace Sandbox;
 
 int main() {
+    auto pp = ShaderPreprocessor::Instance().ProcessFile("assets/shaders/ascii.frag");
+    auto c = ShaderCompiler::Instance().ProcessFile(pp);
+
     Application& application = Application::Instance();
     application.Init(1920, 1080);
 

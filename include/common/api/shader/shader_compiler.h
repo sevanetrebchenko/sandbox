@@ -8,8 +8,6 @@
 
 namespace Sandbox {
 
-    using word = std::uint32_t;
-
     class ShaderCompiler : public ISingleton<ShaderCompiler> {
         public:
             REGISTER_SINGLETON(ShaderCompiler);
@@ -20,7 +18,8 @@ namespace Sandbox {
                 std::string filepath;
                 std::string workingDirectory;
 
-                std::vector<word> binary;
+                std::vector<std::uint32_t> binary; // SPIR-V Binary.
+                std::string glsl;
             };
 
             [[nodiscard]] ShaderInfo ProcessFile(const ShaderPreprocessor::ShaderInfo& file);

@@ -18,6 +18,8 @@ namespace Sandbox {
             throw std::runtime_error("ShaderCompiler::ProcessFile call failed - see out/log.txt for more details.");
         }
 
+        GenerateReflectionData(file, info, context);
+
         return info;
     }
 
@@ -26,10 +28,10 @@ namespace Sandbox {
 
         shaderc::CompileOptions options;
         // No difference between OpenGL 4.5 and 4.6 (from documentation).
-        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5); // TODO: Detect target environment from shader version (currently unsupported?).
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3); // TODO: Detect target environment from shader version (currently unsupported?).
         options.SetSourceLanguage(shaderc_source_language_glsl);
         options.SetForcedVersionProfile(file.version.version, ToSPIRVShaderProfile(file.profile));
-        options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        options.SetOptimizationLevel(shaderc_optimization_level_zero);
 
         // TODO: change from hard-coding "main" as entry point.
         shaderc::Compiler compiler;
@@ -49,8 +51,6 @@ namespace Sandbox {
         info.filepath = file.filepath;
         info.workingDirectory = file.workingDirectory;
         info.binary = { module.cbegin(), module.cend() };
-
-        // Generate reflection data.
 
         return true;
     }
@@ -85,5 +85,53 @@ namespace Sandbox {
         }
     }
 
+    bool ShaderCompiler::GenerateReflectionData(const ShaderPreprocessor::ShaderInfo& file, ShaderCompiler::ShaderInfo& info, ShaderCompiler::ProcessingContext& context) const {
+        spirv_cross::CompilerGLSL compiler(info.binary);
+        spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+        // Shader inputs.
+        std::cout << "shader inputs: " << std::endl;
+        for (const spirv_cross::Resource& input: resources.stage_inputs) {
+            std::cout << compiler.get_name(input.type_id) << std::endl;
+        }
+        std::cout << std::endl;
+
+        // Shader outputs.
+        std::cout << "shader outputs: " << std::endl;
+        for (const spirv_cross::Resource& output: resources.stage_outputs) {
+            std::cout << compiler.get_name(output.id) << std::endl;
+        }
+        std::cout << std::endl;
+
+        for (const spirv_cross::Resource& resource: resources.uniform_buffers) {
+            const spirv_cross::SPIRType& type = compiler.get_type(resource.base_type_id);
+            unsigned size = compiler.get_declared_struct_size(type);
+            unsigned set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+            unsigned binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+            unsigned location = compiler.get_decoration(resource.id, spv::DecorationLocation);
+            unsigned memberCount = type.member_types.size();
+
+            std::cout << compiler.get_name(resource.id) << std::endl;
+
+            for (int member = 0; member < memberCount; ++member) {
+                std::cout << compiler.get_member_name(resource.base_type_id, member) << std::endl;
+            }
+
+            std::cout << "Found shader resource: " << resource.name << std::endl;
+            std::cout << "\tsize: " << size << std::endl;
+            std::cout << "\tbinding: " << binding << std::endl;
+            std::cout << "\tmembers: " << memberCount << std::endl;
+        }
+
+        spirv_cross::CompilerGLSL::Options options;
+        options.version = file.version.version;
+        options.es = false;
+
+        compiler.set_common_options(options);
+
+        info.glsl = compiler.compile();
+
+        return true;
+    }
 
 }
