@@ -2,6 +2,7 @@
 #pragma once
 
 #include "pch.h"
+#include "common/api/shader/shader_types.h"
 
 namespace Sandbox {
 
@@ -9,6 +10,7 @@ namespace Sandbox {
     enum class ShaderProfile {
         CORE,
         COMPATIBILITY,
+        ES,
 
         INVALID
     };
@@ -20,8 +22,8 @@ namespace Sandbox {
         VERTEX,
         FRAGMENT,
         GEOMETRY,
-        // TODO: support tesselation control / evaluation shader types.
-        TESSELATION,
+        TESSELATION_CONTROL,
+        TESSELATION_EVALUATION,
         COMPUTE,
 
         INVALID
@@ -52,7 +54,6 @@ namespace Sandbox {
         int version;
     };
 
-
     struct ShaderInclude {
         ShaderInclude();
         ShaderInclude(FileInfo parent, std::string file);
@@ -64,6 +65,7 @@ namespace Sandbox {
         FileInfo parent;
         std::string file;
     };
+
 
 }
 

@@ -14,7 +14,7 @@
 using namespace Sandbox;
 
 int main() {
-    auto pp = ShaderPreprocessor::Instance().ProcessFile("assets/shaders/ascii.frag");
+    auto pp = ShaderPreprocessor::Instance().ProcessFile("assets/shaders/ascii.vert");
     auto c = ShaderCompiler::Instance().ProcessFile(pp);
 
     Application& application = Application::Instance();

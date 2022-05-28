@@ -22,7 +22,7 @@ set(SOURCE_FILES
     # Dependencies
     "${PROJECT_SOURCE_DIR}/lib/imgui/backends/imgui_impl_opengl3.cpp"
     "${PROJECT_SOURCE_DIR}/lib/imgui/backends/imgui_impl_glfw.cpp"
-    )
+        ../include/common/api/shader/descriptor/shader_input.h ../include/common/utility/defines.h)
 
 set(IMGUI_INCLUDE_DIRS
     "${PROJECT_SOURCE_DIR}/lib/imgui"

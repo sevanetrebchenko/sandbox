@@ -2,7 +2,6 @@
 #ifndef SANDBOX_SHADER_H
 #define SANDBOX_SHADER_H
 
-#include "pch.h"
 #include "common/utility/reloadable.h"
 #include "common/api/shader/shader_component.h"
 

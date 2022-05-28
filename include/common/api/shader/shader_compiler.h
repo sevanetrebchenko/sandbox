@@ -18,7 +18,7 @@ namespace Sandbox {
                 std::string filepath;
                 std::string workingDirectory;
 
-                std::vector<std::uint32_t> binary; // SPIR-V Binary.
+                std::vector<unsigned> binary; // SPIR-V Binary.
                 std::string glsl;
             };
 
@@ -28,13 +28,16 @@ namespace Sandbox {
             struct ProcessingContext {
                 std::vector<std::string> errors;
                 std::vector<std::string> warnings;
+
+                std::vector<unsigned> spirv;
             };
 
-            [[nodiscard]] bool CompileToSPIRV(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, ProcessingContext& context) const;
+            void CompileToSPIRV(const ShaderPreprocessor::ShaderInfo& file, ProcessingContext& context, const shaderc::CompileOptions& options) const;
             [[nodiscard]] shaderc_profile ToSPIRVShaderProfile(ShaderProfile profile) const;
             [[nodiscard]] shaderc_shader_kind ToSPIRVShaderType(ShaderType type) const;
 
-            [[nodiscard]] bool GenerateReflectionData(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, ProcessingContext& context) const;
+            void GenerateReflectionData(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, const std::vector<unsigned>& binary) const;
+            void ReflectVertexShader() const;
     };
 
 }

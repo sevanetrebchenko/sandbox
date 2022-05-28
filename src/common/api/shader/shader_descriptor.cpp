@@ -41,8 +41,10 @@ namespace Sandbox {
 				return "fragment";
 			case ShaderType::GEOMETRY:
 				return "geometry";
-			case ShaderType::TESSELATION:
-				return "tesselation";
+			case ShaderType::TESSELATION_CONTROL:
+				return "tesselation control";
+            case ShaderType::TESSELATION_EVALUATION:
+                return "tesselation evaluation";
 			case ShaderType::COMPUTE:
 				return "compute";
 			case ShaderType::INVALID:
@@ -64,7 +66,7 @@ namespace Sandbox {
 			return ShaderType::GEOMETRY;
 		}
 		else if (type == "tess" || type == "tesselation") {
-			return ShaderType::TESSELATION;
+			return ShaderType::TESSELATION_CONTROL; // TODO:
 		}
 		else if (type == "comp" || type == "compute") {
 			return ShaderType::COMPUTE;

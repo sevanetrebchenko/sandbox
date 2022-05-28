@@ -25,8 +25,11 @@ namespace Sandbox {
             case ShaderType::GEOMETRY:
                 type = GL_GEOMETRY_SHADER;
                 break;
-            case ShaderType::TESSELATION:
+            case ShaderType::TESSELATION_CONTROL:
                 type = GL_TESS_CONTROL_SHADER; // TODO:
+                break;
+            case ShaderType::TESSELATION_EVALUATION:
+                type = GL_TESS_EVALUATION_SHADER;
                 break;
             case ShaderType::COMPUTE:
                 type = GL_COMPUTE_SHADER;

@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include "pch.h"
 #include "common/api/shader/shader.h"
 #include "common/utility/singleton.h"
 

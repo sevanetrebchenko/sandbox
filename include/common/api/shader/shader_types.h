@@ -1,8 +1,8 @@
 
-#ifndef SANDBOX_SHADER_TYPES_H
-#define SANDBOX_SHADER_TYPES_H
+#pragma once
 
 #include "pch.h"
+#include "common/utility/defines.h"
 
 namespace Sandbox {
 
@@ -13,8 +13,61 @@ namespace Sandbox {
         MAT4,
     };
 
-    std::size_t ShaderDataTypeSize(ShaderDataType shaderDataType);
+    u32 ShaderDataTypeSize(ShaderDataType shaderDataType);
+
+
+    enum class DataType {
+
+    };
+
+    struct IDataType {
+        IDataType(std::string inName, u32 inSize);
+        virtual ~IDataType() = 0;
+
+        u32 size; // Total size (in bytes) of element.
+        std::string name;
+    };
+
+    template <typename T>
+    struct ScalarType : public IDataType {
+        ScalarType(std::string inName);
+        ~ScalarType() override;
+    };
+
+    template <typename T>
+    struct VectorType : public IDataType {
+        VectorType(std::string inName, u32 inNumElements);
+        ~VectorType() override;
+
+        u32 numElements;
+    };
+
+    struct MatrixType : public IDataType {
+        MatrixType(std::string inName, glm::ivec2 inDimensions);
+        ~MatrixType() override;
+
+        glm::ivec2 dimensions;
+    };
+
+    struct StructType : public IDataType {
+        public:
+            StructType(std::string name, std::vector<IDataType*> inMembers);
+            ~StructType() override;
+
+            std::vector<IDataType*> members;
+
+        private:
+            [[nodiscard]] u32 CalculateSize(const std::vector<IDataType*>& inMembers) const;
+    };
+
+    struct ArrayType : public IDataType {
+        ArrayType(std::string inName, IDataType* inType, u32 inNumElements);
+        ~ArrayType() override;
+
+        IDataType* type;
+        u32 numElements;
+    };
 
 }
 
-#endif //SANDBOX_SHADER_TYPES_H
+#include "common/api/shader/shader_types.tpp"
