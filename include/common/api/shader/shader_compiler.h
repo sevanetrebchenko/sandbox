@@ -1,7 +1,11 @@
 
 #pragma once
 
-#include "pch.h"
+#include <vector>
+#include <string>
+#include <shaderc/shaderc.hpp>
+#include <spirv_glsl.hpp>
+
 #include "common/utility/singleton.h"
 #include "common/api/shader/shader_preprocessor.h"
 #include "common/api/shader/shader_uniform_lut.h"
@@ -37,7 +41,17 @@ namespace Sandbox {
             [[nodiscard]] shaderc_shader_kind ToSPIRVShaderType(ShaderType type) const;
 
             void GenerateReflectionData(const ShaderPreprocessor::ShaderInfo& file, ShaderInfo& info, const std::vector<unsigned>& binary) const;
-            void ReflectVertexShader() const;
+
+            template <typename T>
+            [[nodiscard]] IDataType* ConstructPrimitiveType(unsigned numElements) const;
+
+            template <typename T>
+            [[nodiscard]] IDataType* ConstructPrimitiveType(unsigned numElements, unsigned numColumns) const;
+
+            [[nodiscard]] std::vector<IDataType*> EnumerateStructMembers(const spirv_cross::CompilerGLSL& compiler, const spirv_cross::SPIRType& structType) const;
+            [[nodiscard]] IDataType* ReflectDataType(const spirv_cross::CompilerGLSL& compiler, const spirv_cross::SPIRType& declaredType, const spirv_cross::SPIRType& modifiedType) const;
     };
 
 }
+
+#include "common/api/shader/shader_compiler.tpp"

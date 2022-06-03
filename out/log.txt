@@ -1,5 +1,5 @@
 [  ERROR  ]  Compilation of shader file 'assets\shaders\ascii.vert' exited with 1 error(s):
-Compilation of shader file 'assets\shaders\ascii.vert' exited with 1 error(s). Provided error message: assets\shaders\ascii.vert:7: error: 'non-opaque uniforms outside a block' : not allowed when using GLSL for Vulkan
+Compilation of shader file 'assets\shaders\ascii.vert' exited with 1 error(s). Provided error message: assets\shaders\ascii.vert:43: error: 'location' : SPIR-V requires location for user input/output
 
 
 

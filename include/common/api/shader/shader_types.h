@@ -16,56 +16,90 @@ namespace Sandbox {
     u32 ShaderDataTypeSize(ShaderDataType shaderDataType);
 
 
-    enum class DataType {
+    enum class DataType : unsigned {
+        INVALID = 0,
 
+        // Valid scalar types.
+        BOOL,
+        INT, UINT,
+        FLOAT, DOUBLE,
+
+        // Valid vector types.
+        BVEC2, IVEC2, UVEC2, VEC2, DVEC2,
+        BVEC3, IVEC3, UVEC3, VEC3, DVEC3,
+        BVEC4, IVEC4, UVEC4, VEC4, DVEC4,
+
+        // Valid matrix types.
+        MAT2X2, MAT2X3, MAT2X4, MAT3X2, MAT3X3, MAT3X4, MAT4X2, MAT4X3, MAT4X4,
+        DMAT2X2, DMAT2X3, DMAT2X4, DMAT3X2, DMAT3X3, DMAT3X4, DMAT4X2, DMAT4X3, DMAT4X4,
+
+        // Valid aggregate types.
+        STRUCT,
+        ARRAY,
+        UBO, SSBO,
+        SAMPLER2D,
     };
 
+    [[nodiscard]] bool IsScalarType(DataType dataType);
+    [[nodiscard]] bool IsVectorType(DataType dataType);
+    [[nodiscard]] bool IsMatrixType(DataType dataType);
+
     struct IDataType {
-        IDataType(std::string inName, u32 inSize);
+        IDataType();
         virtual ~IDataType() = 0;
 
-        u32 size; // Total size (in bytes) of element.
-        std::string name;
+        DataType dataType;
     };
 
     template <typename T>
     struct ScalarType : public IDataType {
-        ScalarType(std::string inName);
+        ScalarType();
         ~ScalarType() override;
     };
 
     template <typename T>
     struct VectorType : public IDataType {
-        VectorType(std::string inName, u32 inNumElements);
+        VectorType(unsigned inNumElements);
         ~VectorType() override;
 
-        u32 numElements;
+        unsigned numElements;
     };
 
+    template <typename T>
     struct MatrixType : public IDataType {
-        MatrixType(std::string inName, glm::ivec2 inDimensions);
+        MatrixType(unsigned inNumRows, unsigned inNumColumns);
         ~MatrixType() override;
 
-        glm::ivec2 dimensions;
+        unsigned numRows;
+        unsigned numColumns;
     };
 
     struct StructType : public IDataType {
-        public:
-            StructType(std::string name, std::vector<IDataType*> inMembers);
-            ~StructType() override;
+        StructType(std::vector<IDataType*> inMembers);
+        ~StructType() override;
 
-            std::vector<IDataType*> members;
-
-        private:
-            [[nodiscard]] u32 CalculateSize(const std::vector<IDataType*>& inMembers) const;
+        std::vector<IDataType*> members;
     };
 
     struct ArrayType : public IDataType {
-        ArrayType(std::string inName, IDataType* inType, u32 inNumElements);
+        ArrayType(IDataType* inType, unsigned inNumElements);
         ~ArrayType() override;
 
-        IDataType* type;
-        u32 numElements;
+        IDataType* elementType;
+        unsigned numElements;
+    };
+
+    struct UniformBlockType : public IDataType {
+        UniformBlockType(std::vector<IDataType*> inMembers);
+        ~UniformBlockType() override;
+
+        std::vector<IDataType*> members;
+    };
+
+    struct ShaderStorageBlockType : public IDataType {
+    };
+
+    struct SamplerType : public IDataType {
     };
 
 }

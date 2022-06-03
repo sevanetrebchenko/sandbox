@@ -34,25 +34,176 @@ namespace Sandbox {
         }
     }
 
-    IDataType::IDataType(std::string inName, u32 inSize) : size(inSize),
-                                                           name(std::move(inName))
-                                                           {
+    bool IsScalarType(DataType dataType) {
+        switch (dataType) {
+            case DataType::BOOL:
+            case DataType::INT:
+            case DataType::UINT:
+            case DataType::FLOAT:
+            case DataType::DOUBLE:
+                return true;
+            case DataType::BVEC2:
+            case DataType::IVEC2:
+            case DataType::UVEC2:
+            case DataType::VEC2:
+            case DataType::DVEC2:
+            case DataType::BVEC3:
+            case DataType::IVEC3:
+            case DataType::UVEC3:
+            case DataType::VEC3:
+            case DataType::DVEC3:
+            case DataType::BVEC4:
+            case DataType::IVEC4:
+            case DataType::UVEC4:
+            case DataType::VEC4:
+            case DataType::DVEC4:
+            case DataType::MAT2X2:
+            case DataType::MAT2X3:
+            case DataType::MAT2X4:
+            case DataType::MAT3X2:
+            case DataType::MAT3X3:
+            case DataType::MAT3X4:
+            case DataType::MAT4X2:
+            case DataType::MAT4X3:
+            case DataType::MAT4X4:
+            case DataType::DMAT2X2:
+            case DataType::DMAT2X3:
+            case DataType::DMAT2X4:
+            case DataType::DMAT3X2:
+            case DataType::DMAT3X3:
+            case DataType::DMAT3X4:
+            case DataType::DMAT4X2:
+            case DataType::DMAT4X3:
+            case DataType::DMAT4X4:
+            case DataType::STRUCT:
+            case DataType::ARRAY:
+            case DataType::UBO:
+            case DataType::SSBO:
+            case DataType::SAMPLER2D:
+                return false;
+            case DataType::INVALID:
+            default:
+                throw std::runtime_error("Invalid value passed into IsScalarType(...).");
+        }
+    }
+
+    bool IsVectorType(DataType dataType) {
+        switch (dataType) {
+            case DataType::BVEC2:
+            case DataType::IVEC2:
+            case DataType::UVEC2:
+            case DataType::VEC2:
+            case DataType::DVEC2:
+            case DataType::BVEC3:
+            case DataType::IVEC3:
+            case DataType::UVEC3:
+            case DataType::VEC3:
+            case DataType::DVEC3:
+            case DataType::BVEC4:
+            case DataType::IVEC4:
+            case DataType::UVEC4:
+            case DataType::VEC4:
+            case DataType::DVEC4:
+                return true;
+            case DataType::BOOL:
+            case DataType::INT:
+            case DataType::UINT:
+            case DataType::FLOAT:
+            case DataType::DOUBLE:
+            case DataType::MAT2X2:
+            case DataType::MAT2X3:
+            case DataType::MAT2X4:
+            case DataType::MAT3X2:
+            case DataType::MAT3X3:
+            case DataType::MAT3X4:
+            case DataType::MAT4X2:
+            case DataType::MAT4X3:
+            case DataType::MAT4X4:
+            case DataType::DMAT2X2:
+            case DataType::DMAT2X3:
+            case DataType::DMAT2X4:
+            case DataType::DMAT3X2:
+            case DataType::DMAT3X3:
+            case DataType::DMAT3X4:
+            case DataType::DMAT4X2:
+            case DataType::DMAT4X3:
+            case DataType::DMAT4X4:
+            case DataType::STRUCT:
+            case DataType::ARRAY:
+            case DataType::UBO:
+            case DataType::SSBO:
+            case DataType::SAMPLER2D:
+                return false;
+            case DataType::INVALID:
+            default:
+                throw std::runtime_error("Invalid value passed into IsVectorType(...).");
+        }
+    }
+
+    bool IsMatrixType(DataType dataType) {
+        switch (dataType) {
+            case DataType::MAT2X2:
+            case DataType::MAT2X3:
+            case DataType::MAT2X4:
+            case DataType::MAT3X2:
+            case DataType::MAT3X3:
+            case DataType::MAT3X4:
+            case DataType::MAT4X2:
+            case DataType::MAT4X3:
+            case DataType::MAT4X4:
+            case DataType::DMAT2X2:
+            case DataType::DMAT2X3:
+            case DataType::DMAT2X4:
+            case DataType::DMAT3X2:
+            case DataType::DMAT3X3:
+            case DataType::DMAT3X4:
+            case DataType::DMAT4X2:
+            case DataType::DMAT4X3:
+            case DataType::DMAT4X4:
+                return true;
+            case DataType::BOOL:
+            case DataType::INT:
+            case DataType::UINT:
+            case DataType::FLOAT:
+            case DataType::DOUBLE:
+            case DataType::BVEC2:
+            case DataType::IVEC2:
+            case DataType::UVEC2:
+            case DataType::VEC2:
+            case DataType::DVEC2:
+            case DataType::BVEC3:
+            case DataType::IVEC3:
+            case DataType::UVEC3:
+            case DataType::VEC3:
+            case DataType::DVEC3:
+            case DataType::BVEC4:
+            case DataType::IVEC4:
+            case DataType::UVEC4:
+            case DataType::VEC4:
+            case DataType::DVEC4:
+            case DataType::STRUCT:
+            case DataType::ARRAY:
+            case DataType::UBO:
+            case DataType::SSBO:
+            case DataType::SAMPLER2D:
+                return false;
+            case DataType::INVALID:
+            default:
+                throw std::runtime_error("Invalid value passed into IsMatrixType(...).");
+        }
+    }
+
+
+    IDataType::IDataType() : dataType(DataType::INVALID) {
     }
 
     IDataType::~IDataType() = default;
 
 
-    MatrixType::MatrixType(std::string inName, glm::ivec2 inDimensions) : IDataType(std::move(inName), sizeof(f32) * inDimensions.x * inDimensions.y),
-                                                                          dimensions(inDimensions)
-                                                                          {
-    }
-
-    MatrixType::~MatrixType() = default;
-
-
-    StructType::StructType(std::string inName, std::vector<IDataType*> inMembers) : IDataType(std::move(inName), CalculateSize(inMembers)),
-                                                                                    members(std::move(inMembers))
-                                                                                    {
+    StructType::StructType(std::vector<IDataType*> inMembers) : IDataType(),
+                                                                members(std::move(inMembers))
+                                                                {
+        dataType = DataType::STRUCT;
     }
 
     StructType::~StructType() {
@@ -61,20 +212,15 @@ namespace Sandbox {
         }
     }
 
-    u32 StructType::CalculateSize(const std::vector<IDataType*>& inMembers) const {
-        return std::accumulate(inMembers.begin(), inMembers.end(), 0u, [](u32 sum, IDataType* type) -> u32 {
-            return sum + type->size;
-        });
-    }
-
-    ArrayType::ArrayType(std::string inName, IDataType* inType, u32 inNumElements) : IDataType(std::move(inName), inType->size * inNumElements),
-                                                                                     type(inType),
-                                                                                     numElements(inNumElements)
-                                                                                     {
+    ArrayType::ArrayType(IDataType* inType, u32 inNumElements) : IDataType(),
+                                                                 elementType(inType),
+                                                                 numElements(inNumElements)
+                                                                 {
+        dataType = DataType::ARRAY;
     }
 
     ArrayType::~ArrayType() {
-        delete type;
+        delete elementType;
     }
 
 }

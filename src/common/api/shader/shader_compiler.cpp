@@ -3,6 +3,7 @@
 #include "common/api/shader/shader_types.h"
 #include "common/api/shader/descriptor/shader_input.h"
 #include "common/utility/log.h"
+#include "common/api/shader/shader_types.h"
 
 namespace Sandbox {
 
@@ -22,6 +23,7 @@ namespace Sandbox {
 
         shaderc::CompileOptions options;
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3); // Vulkan GLSL.
+//        options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5); // Vulkan GLSL.
         options.SetSourceLanguage(shaderc_source_language_glsl);
         options.SetForcedVersionProfile(file.version.version, ToSPIRVShaderProfile(file.profile));
 
@@ -97,31 +99,46 @@ namespace Sandbox {
         spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
         // Shader inputs.
-        std::cout << "shader inputs: " << std::endl;
         std::vector<ShaderInput> inputs;
 
         switch (file.type) {
             case ShaderType::VERTEX:
                 for (const spirv_cross::Resource& resource : resources.stage_inputs) {
+                    // https://www.khronos.org/opengl/wiki/Vertex_Shader#Inputs
 
-// https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language
-
-// https://www.khronos.org/opengl/wiki/Vertex_Shader#Inputs
                     // Format:
                     // layout (location = LOCATION) in TYPE NAME;
                     const std::string& name = resource.name;
-                    const spirv_cross::SPIRType& type = compiler.get_type(resource.base_type_id);
+                    const spirv_cross::SPIRType& declaredType = compiler.get_type(resource.base_type_id);
+                    const spirv_cross::SPIRType& modifiedType = compiler.get_type(resource.type_id);
+
+                    IDataType* type = ReflectDataType(compiler, declaredType, modifiedType);
 
                     // Reflect vertex attribute indices.
-//                    if (compiler.has_decoration(resource.id, spv::DecorationLocation)) {
-                    unsigned location = compiler.get_decoration(resource.id, spv::DecorationLocation);
-                    if (compiler.has_decoration(resource.id, spv::DecorationRowMajor)) {
-                        unsigned columnMajor = compiler.get_decoration(resource.id, spv::DecorationRowMajor);
+                    std::optional<unsigned> location;
+
+                    if (compiler.has_decoration(resource.id, spv::DecorationLocation)) {
+                        // Attribute indices do not have to be assigned in the shader itself, either via a call to glBindAttribLocation
+                        // before shader program linking or automatically assigned by OpenGL when the program is linked.
+                        location = compiler.get_decoration(resource.id, spv::DecorationLocation);
+                        std::cout << name << " has location " << std::to_string(location.value()) << std::endl;
                     }
-//                    }
+                }
+
+                for (const spirv_cross::Resource& resource : resources.stage_outputs) {
+                    // https://www.khronos.org/opengl/wiki/Vertex_Shader#Inputs
+
+                    const std::string& name = resource.name;
+                    const spirv_cross::SPIRType& declaredType = compiler.get_type(resource.base_type_id);
+                    const spirv_cross::SPIRType& modifiedType = compiler.get_type(resource.type_id);
                 }
 
                 for (const spirv_cross::Resource& resource : resources.uniform_buffers) {
+                    const spirv_cross::SPIRType& declaredType = compiler.get_type(resource.base_type_id);
+                    const spirv_cross::SPIRType& modifiedType = compiler.get_type(resource.type_id);
+
+                    IDataType* type = ReflectDataType(compiler, declaredType, modifiedType);
+
                     // THIS WORKS.
                     auto flags = compiler.get_buffer_block_flags(resource.id);
                     bool cm = flags.get(spv::DecorationColMajor);
@@ -348,8 +365,122 @@ namespace Sandbox {
         }
     }
 
-    void ShaderCompiler::ReflectVertexShader() const {
+    std::vector<IDataType*> ShaderCompiler::EnumerateStructMembers(const spirv_cross::CompilerGLSL& compiler, const spirv_cross::SPIRType& structType) const {
+        unsigned numMembers = structType.member_types.size();
 
+        std::vector<IDataType*> members;
+        members.resize(numMembers);
+
+        for (unsigned memberIndex = 0; memberIndex < numMembers; ++memberIndex) {
+            const spirv_cross::SPIRType& memberType = compiler.get_type(structType.member_types[memberIndex]);
+            const std::string& memberName = compiler.get_member_name(structType.self, memberIndex);
+
+            unsigned memberSize = compiler.get_declared_struct_member_size(structType, memberIndex);
+            unsigned memberOffset = compiler.type_struct_member_offset(structType, memberIndex);
+
+            // Struct member type has no distinction between declared and modified type.
+            IDataType* type = ReflectDataType(compiler, memberType, memberType);
+
+            if (IsMatrixType(type->dataType)) {
+
+            }
+
+            members[memberIndex] = ReflectDataType(compiler, memberType, memberType);
+
+            std::cout << "found " << memberName << ", size: " << std::to_string(memberSize) << ", offset: " << std::to_string(memberOffset) << std::endl;
+        }
+
+        return members;
+    }
+
+    IDataType* ShaderCompiler::ReflectDataType(const spirv_cross::CompilerGLSL& compiler, const spirv_cross::SPIRType& declaredType, const spirv_cross::SPIRType& modifiedType) const {
+        IDataType* type;
+
+        unsigned numElements = declaredType.vecsize;
+        unsigned numColumns = declaredType.columns;
+
+        switch (declaredType.basetype) {
+            case spirv_cross::SPIRType::Boolean: {
+                assert(numColumns == 1); // Matrix of bools (bmatn) is not valid.
+                type = ConstructPrimitiveType<bool>(numElements);
+                break;
+            }
+            case spirv_cross::SPIRType::Int: {
+                assert(numColumns == 1); // Matrix of ints is valid (imatn), but underlying type is only allowed to be floating point.
+                type = ConstructPrimitiveType<int>(numElements);
+                break;
+            }
+            case spirv_cross::SPIRType::UInt: {
+                assert(numColumns == 1); // Matrix of uints is valid (umatn), but underlying type is only allowed to be floating point.
+                type = ConstructPrimitiveType<unsigned>(numElements);
+                break;
+            }
+            case spirv_cross::SPIRType::Float: {
+                type = ConstructPrimitiveType<float>(numElements, numColumns);
+                break;
+            }
+            case spirv_cross::SPIRType::Double: {
+                type = ConstructPrimitiveType<double>(numElements, numColumns);
+                break;
+            }
+            case spirv_cross::SPIRType::Struct: {
+                type = new StructType(EnumerateStructMembers(compiler, declaredType));
+                break;
+            }
+            case spirv_cross::SPIRType::AtomicCounter: {
+                break;
+            }
+            case spirv_cross::SPIRType::SampledImage: {
+                // sampler2D
+                break;
+            }
+                // Vulkan-specific.
+            case spirv_cross::SPIRType::Image: {
+                // texture2D
+                break;
+            }
+            case spirv_cross::SPIRType::Sampler: {
+                // sampler
+                break;
+            }
+            case spirv_cross::SPIRType::AccelerationStructure: {
+                // accelerationStructure
+                break;
+            }
+            case spirv_cross::SPIRType::RayQuery: {
+                //
+                break;
+            }
+                // Unsupported (variable) types in GLSL.
+            case spirv_cross::SPIRType::Unknown:
+            case spirv_cross::SPIRType::Void:
+            case spirv_cross::SPIRType::SByte:  // signed char
+            case spirv_cross::SPIRType::UByte:  // unsigned char
+            case spirv_cross::SPIRType::Short:  // signed short
+            case spirv_cross::SPIRType::UShort: // unsigned short
+            case spirv_cross::SPIRType::Int64:  // signed long long
+            case spirv_cross::SPIRType::UInt64: // unsigned long long
+            case spirv_cross::SPIRType::Half:   // half
+                // Internal types.
+            case spirv_cross::SPIRType::ControlPointArray:
+            case spirv_cross::SPIRType::Interpolant:
+            case spirv_cross::SPIRType::Char:
+                break; // TODO;
+        }
+
+        // Check decorators on modified type (arrays, pointers).
+        if (!modifiedType.array.empty()) {
+            // Array declaration of type[4][6] is declared as array = { 6, 4 }, with array_size_literal = { true, true }.
+            for (int i = 0; i < modifiedType.array.size(); ++i) {
+                unsigned dimension = modifiedType.array[i];
+                bool literal = modifiedType.array_size_literal[i];
+
+                // Stack array types within one another.
+                type = new ArrayType(type, dimension);
+            }
+        }
+
+        return type;
     }
 
 }
